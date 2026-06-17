@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ASEBEP</title>
+
+    <!-- Enlace a los estilos CSS -->
+    <link rel="stylesheet" href="/asebep-project/css/style.css">
+    <link rel="stylesheet" href="../css/navbar.css">
+    <link rel="stylesheet" href="../css/cards.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+
+    <!-- Iconos Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+
+        <div class="footer-brand">
+
+            <h3>
+                ASEBEP
+            </h3>
+        </div>
+
+        <nav class="nav-links">
+
+            <a href="dashboard.html" class="active">
+                Dashboard
+            </a>
+
+            <a href="about.html">
+                Acerca de Nosotros
+            </a>
+
+            <a href="reportes.html">
+                Reportes
+            </a>
+
+            <a href="ayuda.html">
+                Ayuda
+            </a>
+
+        </nav>
+
+        <div class="navbar-actions">
+
+    <div class="social-links navbar-social-links">
+
+        <a
+            href="https://www.instagram.com/asebepoficial?igsh=MWhzZHNyZmR4MzRkdQ%3D%3D&utm_source=qr"
+            class="social-link"
+            aria-label="Instagram de ASEBEP"
+            target="_blank"
+        >
+            <i class="fa-brands fa-instagram"></i>
+        </a>
+
+        <a
+            href="https://www.facebook.com/share/1YrmG3NiWD/?mibextid=wwXIfr"
+            class="social-link"
+            aria-label="Facebook de ASEBEP"
+            target="_blank"
+        >
+            <i class="fa-brands fa-facebook-f"></i>
+        </a>
+
+    </div>
+
+    <div class="user-profile">
+
+        <div class="avatar">P</div>
+
+        <span>Perfil</span>
+
+    </div>
+
+</div>
+
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container">
+
+        <!-- BANNER PRINCIPAL ASEBEP -->
+        <section class="dashboard-hero">
+
+            <div class="hero-content">
+                
+                <span class="hero-badge">
+                    Sistema de Gestión de Horas Becarias
+                </span>
+
+                <h1>
+                    ASEBEP UNAH
+                </h1>
+
+                <p>
+                    Plataforma para consultar horas, registrar actividades,
+                    verificar estado becario y dar seguimiento al cumplimiento mensual.
+                </p>
+
+                <div class="hero-actions">
+
+                    <a
+                        href="#activities-container"
+                        class="hero-button btn-primary"
+                    >
+                        Ver Actividades
+                    </a>
+
+                    <a
+                        href="#recent-activities"
+                        class="hero-button btn-primary"
+                    >
+                        Historial Reciente
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="hero-visual">
+
+                <div class="hero-logo-card">
+                    <img
+                        src="../assets/images/asebep/logo-asebep.png"
+                        alt="Logo ASEBEP UNAH"
+                        class="hero-logo"
+                    >
+                </div>
+
+                <div class="hero-floating-card">
+
+                    <span>
+                        20h
+                    </span>
+
+                    <p>
+                        Meta Mensual
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- CARDS SUPERIORES -->
+        <section class="dashboard-summary-grid">
+
+            <!-- HORAS CUMPLIDAS -->
+            <article class="summary-card completed">
+
+                <div class="summary-icon">
+                    ✓
+                </div>
+
+                <div class="summary-content">
+
+                    <span class="summary-label">
+                        Horas Cumplidas
+                    </span>
+
+                    <h2 id="completed-hours">
+                        0
+                    </h2>
+
+                    <p>
+                        De 20 horas mensuales
+                    </p>
+
+                </div>
+
+                <div class="summary-decoration"></div>
+
+            </article>
+
+            <!-- HORAS PENDIENTES -->
+            <article class="summary-card pending">
+
+                <div class="summary-icon">
+                    ⏱
+                </div>
+
+                <div class="summary-content">
+
+                    <span class="summary-label">
+                        Horas Pendientes
+                    </span>
+
+                    <h2 id="pending-hours">
+                        20
+                    </h2>
+
+                    <p>
+                        Horas faltantes
+                    </p>
+
+                </div>
+
+                <div class="summary-decoration"></div>
+
+            </article>
+
+            <!-- ESTADO -->
+            <article class="summary-card status-card">
+
+                <div class="summary-icon">
+                    ◉
+                </div>
+
+                <div class="summary-content">
+
+                    <span class="summary-label">
+                        Estado Actual
+                    </span>
+
+                    <h2 id="status-text">
+                        Activo o Inactivo
+                    </h2>
+
+                    <p>
+                        Tipo de Beca
+                    </p>
+
+                </div>
+
+                <div class="summary-decoration"></div>
+
+            </article>
+
+            <!-- PROXIMA ACTIVIDAD -->
+            <article class="summary-card next-activity-card">
+
+                <div class="summary-icon">
+                    📅
+                </div>
+
+                <div class="summary-content">
+
+                    <span class="summary-label">
+                        Próxima Actividad
+                    </span>
+
+                    <h2 id="next-activity">
+                        Ninguna
+                    </h2>
+
+                    <p>
+                        Estado: Pendiente
+                    </p>
+
+                </div>
+
+                <div class="summary-decoration"></div>
+
+            </article>
+
+        </section>
+
+        <!-- PROGRESO -->
+        <section class="card full-width">
+
+            <h3>Progreso Mensual</h3>
+
+            <div class="progress-bar">
+
+                <div id="progress-fill"></div>
+
+            </div>
+
+            <p id="progress-text">0%</p>
+
+        </section>
+
+        <!-- ACTIVIDADES DISPONIBLES -->
+        <section class="available-activities-section">
+
+            <div class="section-heading">
+
+                <span class="section-eyebrow">
+                    Actividades
+                </span>
+
+                <h3>
+                    Actividades Disponibles
+                </h3>
+
+                <p>
+                    Explora las actividades abiertas, revisa sus horas asignadas
+                    e inscríbete según tu disponibilidad.
+                </p>
+
+            </div>
+
+            <div
+                id="activities-container"
+                class="activities-grid"
+            >
+                <!-- JS inserta aqui -->
+            </div>
+
+        </section>
+
+        <!-- ACTIVIDADES RECIENTES -->
+        <section class="card">
+
+            <h3>Actividades Recientes</h3>
+
+            <div id="recent-activities">
+                <!-- JS inserta aqui -->
+            </div>
+
+        </section>
+
+        <!-- ACCIONES -->
+        <section class="dashboard-actions-grid">
+
+            <!-- RECORDATORIO DE APORTACIONES -->
+            <article class="reminder-card">
+
+                <div class="reminder-content">
+
+                    <span class="reminder-label">
+                        Recordatorio
+                    </span>
+
+                    <h3>
+                        Pago de Aportaciones
+                    </h3>
+
+                    <p>
+                        Recuerda realizar tu aportación correspondiente y enviar
+                        el comprobante al correo oficial de ASEBEP para su revisión respectiva.
+                    </p>
+
+                    <a
+                        href="mailto:consultasasebep@gmail.com"
+                        class="reminder-button btn-primary"
+                    >
+                        Enviar Comprobante
+                    </a>
+
+                </div>
+
+                <div class="reminder-floating-badge">
+
+                    <span>
+                        ✉
+                    </span>
+
+                    <p>
+                        Comprobante de Aportación
+                    </p>
+
+                </div>
+
+                <div class="reminder-decoration"></div>
+
+            </article>
+
+            <!-- ACERCA DE NOSOTROS -->
+            <article class="about-card">
+
+                <div class="about-content">
+
+                    <span class="reminder-label">
+                        Acerca de Nosotros
+                    </span>
+
+                    <h3>
+                        ¿Quiénes Somos?
+                    </h3>
+
+                    <p>
+                        Somos la Asociación de Estudiantes Becarios de la UNAH (ASEBEP),
+                        una organización dedicada a representar y apoyar a los estudiantes
+                        becarios de la Universidad Nacional Autónoma de Honduras.
+                    </p>
+
+                    <a
+                        href="about.html"
+                        class="about-button btn-primary"
+                    >
+                        Más acerca de ASEBEP
+                    </a>
+
+                </div>
+
+                <div class="about-floating-badge">
+
+                    <span>
+                        👥
+                    </span>
+
+                    <p>
+                        ASEBEP
+                    </p>
+
+                </div>
+
+                <div class="about-decoration"></div>
+
+            </article>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer class="footer">
+
+        <div class="footer-content">
+
+            <div class="footer-brand">
+
+                <h3>
+                    ASEBEP
+                </h3>
+
+                <p>
+                    Asociación de Estudiantes Becarios y Prestatarios de la UNAH.
+                </p>
+
+            </div>  
+
+            <div class="footer-right">
+
+                <p>
+                    ASEBEP © 2026. Todos los derechos reservados.
+                </p>
+
+                <div class="social-links footer-social-links">
+
+                    <a
+                        href="https://www.instagram.com/asebepoficial?igsh=MWhzZHNyZmR4MzRkdQ%3D%3D&utm_source=qr"
+                        class="social-link"
+                        aria-label="Instagram de ASEBEP"
+                        target="_blank"
+                    >
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+
+                    <a
+                        href="https://www.facebook.com/share/1YrmG3NiWD/?mibextid=wwXIfr"
+                        class="social-link"
+                        aria-label="Facebook de ASEBEP"
+                        target="_blank"
+                    >
+                        <i class="fa-brands fa-facebook-f"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+    <!-- MODAL DE INSCRIPCION -->
+    <div id="enrollment-modal"class="modal-overlay">
+
+        <div class="modal activity-enrollment-modal">
+
+            <!-- BOTON CERRAR -->
+            <button
+                class="close-button modal-close-floating"
+                onclick="closeModal()"
+            >
+                ✕
+            </button>
+
+            <!-- CONTENIDO DEL MODAL -->
+            <div class="modal-layout">
+
+                <!-- INFORMACION DE LA ACTIVIDAD -->
+                <section class="modal-activity-preview">
+
+                    <div class="activity-preview-header">
+
+                        <span class="activity-preview-label">
+                            Actividad seleccionada
+                        </span>
+
+                        <h2 id="modal-activity-title">
+                            Título de la actividad
+                        </h2>
+
+                    </div>
+
+                    <div class="activity-preview-image-wrapper">
+
+                        <img
+                            id="modal-activity-image"
+                            class="activity-preview-image"
+                            src="https://picsum.photos/500/300?random=1"
+                            alt="Imagen de la actividad"
+                        >
+
+                    </div>
+
+                    <p
+                        id="modal-activity-description"
+                        class="activity-preview-description"
+                    >
+                        Descripción de la actividad.
+                    </p>
+
+                    <div class="activity-preview-details">
+
+                        <div class="activity-detail-item">
+
+                            <span class="detail-label">
+                                Fecha
+                            </span>
+
+                            <strong id="modal-activity-date">
+                                --
+                            </strong>
+
+                        </div>
+
+                        <div class="activity-detail-item">
+
+                            <span class="detail-label">
+                                Duración
+                            </span>
+
+                            <strong id="modal-activity-hours">
+                                --
+                            </strong>
+
+                        </div>
+
+                        <div class="activity-detail-item">
+
+                            <span class="detail-label">
+                                Tipo de actividad
+                            </span>
+
+                            <strong id="modal-activity-type">
+                                --
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- FORMULARIO DE INSCRIPCION -->
+                <section class="modal-form-section">
+
+                    <!-- HEADER -->
+                    <div class="modal-header">
+
+                        <div>
+
+                            <span class="modal-eyebrow">
+                                Formulario
+                            </span>
+
+                            <h2>
+                                Inscripción a Actividad
+                            </h2>
+
+                            <p>
+                                Completa tus datos para solicitar tu inscripción.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <!-- FORMULARIO -->
+                    <form id="enrollment-form">
+
+                        <!-- NOMBRE -->
+                        <div class="form-group">
+
+                            <label>Nombre Completo</label>
+
+                            <input
+                                type="text"
+                                id="full-name"
+                                placeholder="Ingrese su nombre"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- NUMERO DE CUENTA -->
+                        <div class="form-group">
+
+                            <label>Número de Cuenta</label>
+
+                            <input
+                                type="text"
+                                id="account-number"
+                                placeholder="20261000000"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- TELEFONO -->
+                        <div class="form-group">
+
+                            <label>Número de Teléfono</label>
+
+                            <input
+                                type="text"
+                                id="phone-number"
+                                placeholder="9999-9999"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- CARRERA -->
+                        <div class="form-group">
+
+                            <label>Carrera</label>
+
+                            <input
+                                type="text"
+                                id="career"
+                                placeholder="Ingeniería en Sistemas"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- CORREO INSTITUCIONAL -->
+                        <div class="form-group">
+
+                            <label>Correo Institucional</label>
+
+                            <input
+                                type="email"
+                                id="institutional-email"
+                                placeholder="usuario@unah.hn"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- CORREO PERSONAL -->
+                        <div class="form-group">
+
+                            <label>Correo Personal</label>
+
+                            <input
+                                type="email"
+                                id="personal-email"
+                                placeholder="correo@gmail.com"
+                                required
+                            >
+
+                            <span class="input-error"></span>
+
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="modal-actions">
+
+                            <button
+                                type="button"
+                                class="cancel-button"
+                                onclick="closeModal()"
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="submit"
+                                class="submit-button btn-primary"
+                            >
+                                Confirmar Inscripción
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </section>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JS -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script src="../js/activities.js"></script>
+
+</body>
+</html>

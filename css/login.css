@@ -1,0 +1,611 @@
+/* =========================================================
+   LOGIN ASEBEP - ESTILOS GENERALES
+   Este archivo controla únicamente la pantalla de login.
+   ========================================================= */
+
+/* Reinicio básico para evitar márgenes inesperados del navegador */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Variables principales del diseño */
+:root {
+    --primary-purple: #7c3aed;
+    --soft-purple: #a78bfa;
+    --light-purple: #f3e8ff;
+
+    --unah-blue: #0b3b75;
+    --gold: #f5b301;
+
+    --dark-text: #1f2937;
+    --muted-text: #6b7280;
+
+    --white: #ffffff;
+    --soft-white: #f9fafb;
+
+    --danger: #dc2626;
+    --danger-bg: #fee2e2;
+
+    --shadow-soft: 0 24px 60px rgba(124, 58, 237, 0.18);
+    --shadow-card: 0 20px 45px rgba(31, 41, 55, 0.12);
+
+    --radius-lg: 32px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+}
+
+/* Cuerpo general de la página */
+body {
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--dark-text);
+    background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(245, 179, 1, 0.22), transparent 32%),
+        linear-gradient(135deg, #ffffff 0%, #f6f0ff 48%, #fff8e5 100%);
+}
+
+/* Contenedor principal del login */
+.login-page {
+    width: 100%;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    padding: 48px;
+    gap: 42px;
+}
+
+/* =========================================================
+   SECCIÓN IZQUIERDA: HERO INSTITUCIONAL GIRATORIO
+   ========================================================= */
+
+/* Contenedor exterior de la sección institucional */
+.login-hero {
+    min-height: 620px;
+    position: relative;
+    perspective: 1400px;
+}
+
+/* Botón flotante para girar la tarjeta */
+.hero-flip-button {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 5;
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(124, 58, 237, 0.18);
+    border-radius: 50%;
+    color: var(--primary-purple);
+    background: rgba(255, 255, 255, 0.86);
+    font-size: 1.35rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 14px 30px rgba(124, 58, 237, 0.16);
+    backdrop-filter: blur(14px);
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        background 0.25s ease;
+}
+
+/* Efecto del botón al pasar el mouse */
+.hero-flip-button:hover {
+    transform: translateY(-2px) rotate(35deg);
+    background: var(--white);
+    box-shadow: 0 18px 38px rgba(124, 58, 237, 0.24);
+}
+
+/* Tarjeta interna que puede girar en 3D */
+.hero-flip-card {
+    width: 100%;
+    min-height: 620px;
+    position: relative;
+    border-radius: var(--radius-lg);
+    transform-style: preserve-3d;
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Clase que activará el giro de la tarjeta desde JavaScript */
+.hero-flip-card.is-flipped {
+    transform: rotateY(180deg);
+}
+
+/* Cada cara ocupa el mismo espacio */
+.hero-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 56px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    backface-visibility: hidden;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Cara frontal con banner y capa elegante */
+.hero-face--front {
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(243, 232, 255, 0.76), rgba(255, 248, 229, 0.62)),
+        url("../assets/images/asebep/banner-asebep.png");
+    background-size: cover;
+    background-position: center;
+}
+
+/* Brillo ambiental de la cara frontal */
+.hero-face--front::before {
+    content: "";
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    right: -90px;
+    top: -80px;
+    border-radius: 50%;
+    background: rgba(245, 179, 1, 0.22);
+    filter: blur(18px);
+}
+
+/* Brillo morado inferior */
+.hero-face--front::after {
+    content: "";
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    left: -130px;
+    bottom: -140px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.18);
+    filter: blur(22px);
+}
+
+/* Cara trasera con presentación limpia del logo */
+.hero-face--back {
+    justify-content: center;
+    text-align: center;
+    background:
+        radial-gradient(circle at top, rgba(124, 58, 237, 0.16), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(245, 179, 1, 0.22), transparent 36%),
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(246,240,255,0.94));
+    transform: rotateY(180deg);
+}
+
+/* Contenido textual de la cara frontal */
+.login-hero__content {
+    position: relative;
+    z-index: 2;
+    max-width: 620px;
+}
+
+/* Etiqueta superior */
+.login-hero__badge {
+    display: inline-block;
+    margin-bottom: 22px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    color: var(--primary-purple);
+    background: rgba(124, 58, 237, 0.13);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+/* Título principal */
+.login-hero h1 {
+    margin-bottom: 20px;
+    font-size: clamp(2.6rem, 5vw, 4.8rem);
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--dark-text);
+}
+
+/* Párrafo descriptivo */
+.login-hero p {
+    max-width: 540px;
+    color: var(--muted-text);
+    font-size: 1.08rem;
+    line-height: 1.8;
+}
+
+/* Tarjeta flotante de la meta mensual */
+.monthly-goal-card {
+    position: absolute;
+    right: 48px;
+    bottom: 48px;
+    z-index: 2;
+    min-width: 138px;
+    padding: 18px 20px;
+    border-radius: 22px;
+    color: #111827;
+    background: linear-gradient(135deg, #ffd34d, var(--gold));
+    box-shadow:
+        0 18px 36px rgba(245, 179, 1, 0.34),
+        0 0 0 8px rgba(245, 179, 1, 0.10);
+    animation: goalFloat 3.4s ease-in-out infinite;
+}
+
+/* Número grande de la meta */
+.monthly-goal-card strong {
+    display: block;
+    font-size: 1.65rem;
+    line-height: 1;
+    font-weight: 950;
+}
+
+/* Texto pequeño de la meta */
+.monthly-goal-card span {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.82rem;
+    font-weight: 900;
+}
+
+/* Animación inspirada en la tarjeta de 20h del dashboard */
+@keyframes goalFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        box-shadow:
+            0 18px 36px rgba(245, 179, 1, 0.34),
+            0 0 0 8px rgba(245, 179, 1, 0.10);
+    }
+
+    50% {
+        transform: translateY(-10px) scale(1.035);
+        box-shadow:
+            0 26px 48px rgba(245, 179, 1, 0.42),
+            0 0 0 14px rgba(245, 179, 1, 0.08);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        box-shadow:
+            0 18px 36px rgba(245, 179, 1, 0.34),
+            0 0 0 8px rgba(245, 179, 1, 0.10);
+    }
+}
+
+/* Contenedor del logo en la cara trasera */
+.hero-logo-preview {
+    position: relative;
+    z-index: 2;
+    width: min(430px, 90%);
+    padding: 42px;
+    border-radius: 34px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(124, 58, 237, 0.14);
+    box-shadow: 0 26px 60px rgba(31, 41, 55, 0.14);
+    backdrop-filter: blur(18px);
+}
+
+/* Imagen del logo institucional */
+.hero-logo-preview img {
+    width: 230px;
+    max-width: 100%;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 18px 28px rgba(11, 59, 117, 0.18));
+}
+
+/* Texto principal bajo el logo */
+.hero-logo-preview__text span {
+    display: block;
+    color: var(--unah-blue);
+    font-size: 2.1rem;
+    font-weight: 950;
+    letter-spacing: 1px;
+}
+
+/* Lema bajo el logo */
+.hero-logo-preview__text p {
+    margin-top: 8px;
+    color: var(--muted-text);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* =========================================================
+   SECCIÓN DERECHA: TARJETA DEL LOGIN
+   ========================================================= */
+
+.login-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tarjeta principal */
+.login-card {
+    width: 100%;
+    max-width: 430px;
+    padding: 38px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(124, 58, 237, 0.16);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(18px);
+}
+
+/* Encabezado de la tarjeta */
+.login-card__header {
+    text-align: center;
+    margin-bottom: 26px;
+}
+
+/* Logo pequeño dentro de la tarjeta */
+.login-card__logo {
+    width: 108px;
+    height: 108px;
+    object-fit: contain;
+    padding: 10px;
+    margin-bottom: 18px;
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 14px 34px rgba(11, 59, 117, 0.16);
+}
+
+/* Título del formulario */
+.login-card__header h2 {
+    margin-bottom: 8px;
+    font-size: 2rem;
+    color: var(--dark-text);
+}
+
+/* Descripción del formulario */
+.login-card__header p {
+    color: var(--muted-text);
+    font-size: 0.96rem;
+    line-height: 1.6;
+}
+
+/* =========================================================
+   ALERTA VISUAL DEL LOGIN
+   Inicialmente está oculta. Luego JS la mostrará.
+   ========================================================= */
+
+.login-alert {
+    display: none;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid rgba(220, 38, 38, 0.16);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+/* Clase que usaremos desde JavaScript para mostrar la alerta */
+.login-alert.show {
+    display: block;
+    animation: alertShake 0.35s ease;
+}
+
+/* Animación pequeña para indicar error */
+@keyframes alertShake {
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    50% {
+        transform: translateX(5px);
+    }
+
+    75% {
+        transform: translateX(-3px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* =========================================================
+   FORMULARIO DEL LOGIN
+   ========================================================= */
+
+/* Formulario completo */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Grupo de cada campo: label + input */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Etiquetas de los campos */
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--dark-text);
+}
+
+/* Campos de entrada */
+.form-group input {
+    width: 100%;
+    padding: 15px 16px;
+    border: 2px solid rgba(124, 58, 237, 0.14);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--dark-text);
+    font-size: 0.98rem;
+    font-weight: 600;
+    outline: none;
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease,
+        background 0.25s ease;
+}
+
+/* Texto interno del input */
+.form-group input::placeholder {
+    color: #a1a1aa;
+    font-weight: 500;
+}
+
+/* Estado cuando el usuario selecciona un campo */
+.form-group input:focus {
+    border-color: var(--primary-purple);
+    background: var(--white);
+    box-shadow: 0 0 0 5px rgba(124, 58, 237, 0.12);
+    transform: translateY(-1px);
+}
+
+/* =========================================================
+   BOTÓN PRINCIPAL
+   ========================================================= */
+
+.login-button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 15px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    background: linear-gradient(135deg, var(--primary-purple), var(--soft-purple));
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 16px 34px rgba(124, 58, 237, 0.28);
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        filter 0.25s ease;
+}
+
+/* Efecto al pasar el mouse */
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 42px rgba(124, 58, 237, 0.34);
+    filter: brightness(1.03);
+}
+
+/* Efecto al presionar */
+.login-button:active {
+    transform: translateY(0);
+    box-shadow: 0 12px 24px rgba(124, 58, 237, 0.24);
+}
+
+/* Texto inferior de la tarjeta */
+.login-card__footer {
+    margin-top: 22px;
+    text-align: center;
+    color: var(--muted-text);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   Adaptación para tablets y celulares.
+   ========================================================= */
+
+/* Pantallas medianas */
+@media (max-width: 1024px) {
+    .login-page {
+        grid-template-columns: 1fr;
+        padding: 32px;
+        gap: 28px;
+    }
+
+    .login-hero,
+    .hero-flip-card {
+        min-height: 480px;
+    }
+
+    .hero-face {
+        padding: 42px;
+    }
+
+    .login-card {
+        max-width: 520px;
+    }
+}
+
+/* Celulares */
+@media (max-width: 640px) {
+    .login-page {
+        padding: 20px;
+    }
+
+    .login-hero,
+    .hero-flip-card {
+        min-height: 430px;
+    }
+
+    .hero-face {
+        padding: 30px 24px;
+    }
+
+    .login-hero h1 {
+        font-size: 2.4rem;
+        letter-spacing: -1px;
+    }
+
+    .login-hero p {
+        font-size: 0.98rem;
+    }
+
+    .monthly-goal-card {
+        right: 24px;
+        bottom: 24px;
+        min-width: 120px;
+        padding: 15px 16px;
+    }
+
+    .monthly-goal-card strong {
+        font-size: 1.4rem;
+    }
+
+    .hero-flip-button {
+        top: 18px;
+        right: 18px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .hero-logo-preview {
+        padding: 30px 24px;
+    }
+
+    .hero-logo-preview img {
+        width: 180px;
+    }
+
+    .hero-logo-preview__text span {
+        font-size: 1.65rem;
+    }
+
+    .login-card {
+        padding: 30px 24px;
+        border-radius: 26px;
+    }
+
+    .login-card__logo {
+        width: 94px;
+        height: 94px;
+    }
+
+    .login-card__header h2 {
+        font-size: 1.7rem;
+    }
+}
+
+/* Estado visual cuando el botón está desactivado durante la carga */
+.login-button:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    transform: none;
+    filter: saturate(0.9);
+}

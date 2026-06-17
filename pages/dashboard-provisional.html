@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Provisional - ASEBEP</title>
+
+    <link rel="stylesheet" href="../css/dashboard-provisional.css">
+</head>
+<body>
+
+    <main class="provisional-page">
+
+        <section class="dashboard-shell">
+
+            <header class="dashboard-header">
+
+                <div class="brand-box">
+                    <img 
+                        src="../assets/images/asebep/logo-asebep.png" 
+                        alt="Logo ASEBEP UNAH"
+                        class="brand-logo"
+                    >
+
+                    <div>
+                        <span class="brand-label">ASEBEP UNAH</span>
+                        <h1>Dashboard Provisional</h1>
+                    </div>
+                </div>
+
+                <button class="logout-button" id="logoutButton" type="button">
+                    Cerrar sesión
+                </button>
+
+            </header>
+
+            <section class="welcome-card">
+
+                <div>
+                    <span class="welcome-badge" id="userRole">Rol</span>
+
+                    <h2>
+                        Bienvenido, 
+                        <span id="userFullName">Estudiante</span>
+                    </h2>
+
+                    <p>
+                        Esta vista muestra información básica obtenida desde la API REST
+                        y guardada temporalmente para pruebas del frontend.
+                    </p>
+                </div>
+
+                <div class="status-pill" id="scholarshipStatus">
+                    Estado
+                </div>
+
+            </section>
+
+            <section class="summary-grid">
+
+                <article class="summary-card">
+                    <span class="summary-label">Horas acumuladas</span>
+                    <strong id="completedHours">0</strong>
+                    <p>Horas registradas en el sistema.</p>
+                </article>
+
+                <article class="summary-card summary-card--gold">
+                    <span class="summary-label">Horas faltantes</span>
+                    <strong id="missingHours">0</strong>
+                    <p>Horas pendientes para completar el período.</p>
+                </article>
+
+                <article class="summary-card">
+                    <span class="summary-label">Meses sin pagar</span>
+                    <strong id="unpaidMonths">0</strong>
+                    <p>Registro provisional según datos del becario.</p>
+                </article>
+
+            </section>
+
+            <section class="info-grid">
+
+                <article class="info-card">
+                    <h3>Datos personales</h3>
+
+                    <div class="info-list">
+                        <div class="info-row">
+                            <span>Número de cuenta</span>
+                            <strong id="accountNumber">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Carrera</span>
+                            <strong id="career">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Correo institucional</span>
+                            <strong id="institutionalEmail">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Correo personal</span>
+                            <strong id="personalEmail">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Teléfono</span>
+                            <strong id="phone">---</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="info-card">
+                    <h3>Datos becarios</h3>
+
+                    <div class="info-list">
+                        <div class="info-row">
+                            <span>Período de inicio</span>
+                            <strong id="startPeriod">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Año de inicio</span>
+                            <strong id="startYear">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Estado de beca</span>
+                            <strong id="scholarshipState">---</strong>
+                        </div>
+
+                        <div class="info-row">
+                            <span>Cuenta activa</span>
+                            <strong id="activeStatus">---</strong>
+                        </div>
+                    </div>
+                </article>
+
+            </section>
+
+        </section>
+
+    </main>
+
+    <script src="../js/dashboard-provisional.js"></script>
+</body>
+</html>

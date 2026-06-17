@@ -1,0 +1,318 @@
+/* MODAL RESPONSIVE */
+@media (max-width: 900px) {
+    .modal-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-activity-preview {
+        border-right: none;
+        border-bottom:
+            1px solid rgba(124, 58, 237, 0.12);
+    }
+
+    .activity-enrollment-modal {
+        max-height: 92vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: var(--spacing-md);
+    }
+
+    .modal-activity-preview, .modal-form-section {
+        padding: 1.5rem;
+    }
+
+    #enrollment-form {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+        grid-column: span 1;
+        flex-direction: column-reverse;
+    }
+
+    .cancel-button, .submit-button {
+        width: 100%;
+    }
+
+    .modal-header h2, .activity-preview-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .activity-preview-image {
+        height: 190px;
+    }
+}
+
+/* TIMELINE RESPONSIVE */
+@media (max-width: 768px) {
+
+    .recent-timeline {
+        padding-left: 1.7rem;
+        gap: var(--spacing-lg);
+    }
+
+    .recent-timeline::before {
+        left: 0.72rem;
+    }
+
+    .timeline-marker {
+        left: -1.78rem;
+        width: 1.7rem;
+        height: 1.7rem;
+    }
+
+    .timeline-icon {
+        font-size: 0.85rem;
+    }
+
+    .timeline-card {
+        padding: var(--spacing-lg);
+        border-radius: 20px;
+    }
+
+    .timeline-card-header {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .timeline-status {
+        width: fit-content;
+    }
+
+    .timeline-card h4 {
+        font-size: var(--font-size-lg);
+    }
+
+    .timeline-meta {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .timeline-description {
+        max-height: 3.6rem;
+    }
+
+    .timeline-card.expanded .timeline-description {
+        max-height: 320px;
+    }
+}
+
+/* =========================================
+   DASHBOARD HERO RESPONSIVE
+========================================= */
+
+@media (max-width: 1100px) {
+
+    .dashboard-summary-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .dashboard-hero {
+        grid-template-columns: 1fr;
+
+        text-align: center;
+    }
+
+    .hero-content p {
+        margin-left: auto;
+
+        margin-right: auto;
+    }
+
+    .hero-actions {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .dashboard-hero {
+        padding:
+            2rem
+            1.5rem;
+
+        border-radius: 24px;
+    }
+
+    .hero-visual {
+        min-height: 230px;
+    }
+
+    .hero-logo-card {
+        width: 210px;
+        height: 210px;
+
+        border-radius: 26px;
+    }
+
+    .hero-floating-card {
+        right: 50%;
+
+        transform:
+            translateX(50%);
+
+        bottom: 0;
+    }
+
+    .hero-floating-card {
+        animation: none;
+    }
+
+    .dashboard-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-card {
+        min-height: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .hero-content h1 {
+        font-size: 2.3rem;
+    }
+
+    .hero-content p {
+        font-size: var(--font-size-base);
+    }
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+    .hero-button {
+        width: 100%;
+    }
+}
+
+/* ACCIONES RESPONSIVE */
+@media (max-width: 900px) {
+
+    .dashboard-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reminder-card,
+    .about-card {
+        min-height:240px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .reminder-card,
+    .about-card {
+        min-height: 240px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .reminder-card,
+    .about-card {
+        padding: var(--spacing-lg);
+        border-radius: 22px;
+        min-height: 300px;
+    }
+
+    .reminder-floating-badge,
+    .about-floating-badge {
+        right: 1rem;
+        bottom: 1rem;
+        min-width: 120px;
+    }
+
+    .reminder-button,
+    .about-button {
+        width: 100%;
+    }
+}
+
+/* =========================================
+   NAVBAR Y FOOTER RESPONSIVE
+========================================= */
+
+@media (max-width: 1100px) {
+
+    .navbar {
+        flex-wrap: wrap;
+
+        justify-content: center;
+    }
+
+    .logo {
+        min-width: auto;
+    }
+
+    .nav-links {
+        order: 3;
+
+        width: 100%;
+
+        flex-wrap: wrap;
+
+        gap: var(--spacing-lg);
+    }
+
+    .navbar-actions {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .navbar {
+        padding:
+            0.85rem
+            var(--spacing-md);
+    }
+
+    .logo {
+        font-size: var(--font-size-xl);
+    }
+
+    .navbar-social-links {
+        display: none;
+    }
+
+    .user-profile span {
+        display: none;
+    }
+
+    .nav-links {
+        gap: var(--spacing-md);
+    }
+
+    .nav-links a {
+        font-size: var(--font-size-xs);
+    }
+
+    .footer-content {
+        flex-direction: column;
+
+        text-align: center;
+    }
+
+    .footer-brand {
+        flex-direction: column;
+    }
+
+    .footer-right {
+        flex-direction: column;
+
+        gap: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+
+    .social-link {
+        width: 36px;
+        height: 36px;
+    }
+}

@@ -1,0 +1,440 @@
+/* DASHBOARD PROVISIONAL ASEBEP */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-purple: #7c3aed;
+    --soft-purple: #a78bfa;
+    --light-purple: #f3e8ff;
+
+    --unah-blue: #0b3b75;
+    --gold: #f5b301;
+
+    --dark-text: #1f2937;
+    --muted-text: #6b7280;
+
+    --white: #ffffff;
+    --soft-white: #f9fafb;
+
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+
+    --border-soft: rgba(124, 58, 237, 0.14);
+    --shadow-card: 0 18px 45px rgba(31, 41, 55, 0.10);
+    --shadow-purple: 0 24px 60px rgba(124, 58, 237, 0.16);
+
+    --radius-lg: 30px;
+    --radius-md: 20px;
+    --radius-sm: 14px;
+}
+
+body {
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--dark-text);
+    background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.18), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(245, 179, 1, 0.20), transparent 30%),
+        linear-gradient(135deg, #ffffff 0%, #f6f0ff 52%, #fff8e5 100%);
+}
+
+/* Página general */
+.provisional-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 42px;
+}
+
+/* Contenedor principal */
+.dashboard-shell {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+}
+
+/* HEADER */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+    padding: 22px 26px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(16px);
+}
+
+.brand-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-logo {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    padding: 8px;
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 12px 28px rgba(11, 59, 117, 0.14);
+}
+
+.brand-label {
+    display: inline-block;
+    margin-bottom: 5px;
+    color: var(--primary-purple);
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.dashboard-header h1 {
+    font-size: clamp(1.55rem, 3vw, 2.15rem);
+    line-height: 1.1;
+    color: var(--dark-text);
+}
+
+.logout-button {
+    padding: 13px 18px;
+    border: none;
+    border-radius: 999px;
+    color: var(--white);
+    background: linear-gradient(135deg, var(--primary-purple), var(--soft-purple));
+    font-size: 0.92rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 14px 30px rgba(124, 58, 237, 0.24);
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        filter 0.25s ease;
+}
+
+.logout-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 38px rgba(124, 58, 237, 0.30);
+    filter: brightness(1.03);
+}
+
+/* WELCOME CARD */
+
+.welcome-card {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 28px;
+    padding: 34px;
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(243, 232, 255, 0.78)),
+        url("../assets/images/asebep/banner-asebep.png");
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    box-shadow: var(--shadow-purple);
+}
+
+.welcome-card::before {
+    content: "";
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    right: -120px;
+    top: -150px;
+    border-radius: 50%;
+    background: rgba(245, 179, 1, 0.24);
+    filter: blur(12px);
+}
+
+.welcome-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.welcome-badge {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 9px 15px;
+    border-radius: 999px;
+    color: var(--primary-purple);
+    background: rgba(124, 58, 237, 0.12);
+    font-size: 0.82rem;
+    font-weight: 900;
+}
+
+.welcome-card h2 {
+    margin-bottom: 12px;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    color: var(--dark-text);
+}
+
+.welcome-card p {
+    max-width: 620px;
+    color: var(--muted-text);
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.status-pill {
+    min-width: 130px;
+    padding: 16px 20px;
+    border-radius: 999px;
+    text-align: center;
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid rgba(22, 163, 74, 0.16);
+    font-size: 0.95rem;
+    font-weight: 950;
+    box-shadow: 0 16px 34px rgba(22, 163, 74, 0.14);
+}
+
+/* SUMMARY CARDS */
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-bottom: 28px;
+}
+
+.summary-card {
+    position: relative;
+    padding: 26px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 24px 52px rgba(31, 41, 55, 0.14);
+}
+
+.summary-card::after {
+    content: "";
+    position: absolute;
+    width: 110px;
+    height: 110px;
+    right: -38px;
+    top: -38px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.12);
+}
+
+.summary-card--gold::after {
+    background: rgba(245, 179, 1, 0.24);
+}
+
+.summary-label {
+    display: block;
+    margin-bottom: 12px;
+    color: var(--muted-text);
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-card strong {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--primary-purple);
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 950;
+}
+
+.summary-card--gold strong {
+    color: #b77900;
+}
+
+.summary-card p {
+    color: var(--muted-text);
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+/* INFO CARDS */
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+}
+
+.info-card {
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(14px);
+}
+
+.info-card h3 {
+    margin-bottom: 20px;
+    color: var(--dark-text);
+    font-size: 1.25rem;
+}
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.10);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row span {
+    color: var(--muted-text);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.info-row strong {
+    max-width: 58%;
+    color: var(--dark-text);
+    font-size: 0.95rem;
+    font-weight: 900;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* ENTRADA SUAVE */
+
+.dashboard-header,
+.welcome-card,
+.summary-card,
+.info-card {
+    animation: fadeUp 0.65s ease both;
+}
+
+.summary-card:nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.summary-card:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.info-card:nth-child(1) {
+    animation-delay: 0.18s;
+}
+
+.info-card:nth-child(2) {
+    animation-delay: 0.26s;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 920px) {
+    .provisional-page {
+        padding: 28px;
+    }
+
+    .dashboard-header,
+    .welcome-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .logout-button {
+        width: 100%;
+    }
+
+    .summary-grid,
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-pill {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 560px) {
+    .provisional-page {
+        padding: 18px;
+    }
+
+    .dashboard-header {
+        padding: 20px;
+    }
+
+    .brand-box {
+        align-items: flex-start;
+    }
+
+    .brand-logo {
+        width: 58px;
+        height: 58px;
+    }
+
+    .welcome-card {
+        padding: 26px 22px;
+    }
+
+    .welcome-card h2 {
+        font-size: 2rem;
+    }
+
+    .summary-card,
+    .info-card {
+        padding: 22px;
+    }
+
+    .summary-card strong {
+        font-size: 2.5rem;
+    }
+
+    .info-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .info-row strong {
+        max-width: 100%;
+        text-align: left;
+    }
+}

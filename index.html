@@ -1,0 +1,93 @@
+<!-- Pagina principal de presentacion de ASEBEP UNAH, esta
+pagina funciona como entrada visual al sistema, no contiene
+logica de dashboard ni autenticacion -->
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ASEBEP UNAH | Inicio</title>
+        <link rel="stylesheet" href="css/index.css">
+    </head>
+
+    <body>
+        <!-- Contenedor principal de toda la pantalla 
+        La clase index-page nos permitira controlar el layout desde CSS-->
+        <main class="index-page">
+            <div class="background-glow background-glow-purple"></div>
+            <div class="background-glow background-glow-gold"></div>
+            <div class="background-grid"></div>
+
+            <!-- Seccion principal, esta sera la unica pantalla visible del index-->
+            <section class="hero-section">
+                <div class="hero-content">
+                    <span class="hero-badge">Sistema de Gestión de Horas Becarias</span>
+                    <h1 class="hero-title">ASEBEP UNAH</h1>
+                    <p class="hero-description">
+                        Una plataforma creada para fortalecer la organización, participación 
+                        y seguimiento de los estudiantes becarios de la Universidad Nacional 
+                        Autónoma de Honduras.
+                    </p>
+
+                    <div class="hero-values">
+                        <span>Estudio</span>
+                        <span>Excelencia</span>
+                        <span>Disciplina</span>
+                    </div>
+
+                    <div class="hero-actions">
+                       <!--Boton que redirige al login-->
+                       <a href="pages/login.html" class="btn btn-primary">Ingresar al Sistema</a>
+                       <!-- Boton visual secundario, por ahora baja a la experiencia visual-->
+                        <a href="#asebep-experience" class="btn btn-secondary">Explorar ASEBEP</a>
+                    </div>
+                </div>
+
+                <div class="hero-visual" id="asebep-experience">
+                    <!--Tarjetas flotantes temporales-->
+                    <article class="activity-card card-one">
+                        <span class="activity-card-label">Voluntariado</span>
+                    </article>
+
+                    <article class="activity-card card-two">
+                        <span class="activity-card-label">Asambleas</span>
+                    </article>
+
+                    <article class="activity-card card-three">
+                        <span class="activity-card-label">Eventos</span>
+                    </article>
+
+                    <article class="activity-card card-four">
+                        <span class="activity-card-label">Comunidad</span>
+                    </article>
+
+                    <!-- Logo protagonista de ASEBEP -->
+                     <div class="logo-stage">
+                        <!-- Anillo decorativo externo -->
+                        <div class="logo-orbit"></div>
+                        <!-- Tarjeta central del logo -->
+                         <div class="logo-card">
+                            <img src="assets/images/asebep/logo-asebep.png" alt="Logo oficial de ASEBEP UNAH" class="asebep-logo">
+                         </div>
+
+                        <!-- Insignia de meta mensual -->
+                        <div class="hours-badge">
+                            <strong>20h</strong>
+                            <span>Meta Mensual</span>
+                        </div>
+                     </div>
+                </div>
+            </section>
+
+            <!-- Indicador inferior decorativo -->
+            <div class="bottom-indicator">
+                <span></span>
+                <p>Gestión estudiantil con identidad, orden y compromiso.</p>
+            </div>
+        </main>
+
+        <!-- Script exclusivo del index -->
+        <script src="js/index.js"></script>
+    </body>
+</html>

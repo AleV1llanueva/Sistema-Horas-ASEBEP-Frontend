@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Configuracion basica -->
+     <meta charset="UTF-8">
+
+     <!-- Permite que el diseño se adapte correctamente a celulares y tablets-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+      <!-- Titulo que aparece en la pestaña del navegador -->
+       <title> Login - ASEBEP</title>
+
+       <!-- Archivo CSS para los estilos del login-->
+        <link rel="stylesheet" href="../css/login.css">
+</head>
+<body>
+
+    <!-- Contenedor principal de toda la pantalla de login-->
+     <main class="login-page">
+
+        <!-- Seccion visual izquierda: presentacion institucional -->
+        <!-- Sección visual izquierda: presentación institucional con efecto giratorio -->
+        <section class="login-hero">
+
+            <!-- Botón que más adelante usaremos para girar la tarjeta -->
+            <button class="hero-flip-button" id="heroFlipButton" type="button" aria-label="Ver logo ASEBEP">
+                ↻
+            </button>
+
+            <!-- Tarjeta interna que tendrá frente y reverso -->
+            <div class="hero-flip-card" id="heroFlipCard">
+
+                <!-- Cara frontal: mensaje de bienvenida -->
+                <div class="hero-face hero-face--front">
+
+                    <!-- Contenedor del texto principal -->
+                    <div class="login-hero__content">
+                        <span class="login-hero__badge">Sistema de Gestión de Horas Becarias</span>
+
+                        <h1>Bienvenido a ASEBEP UNAH</h1>
+
+                        <p>
+                            Consulta tus horas, revisa tu estado becario y da seguimiento
+                            a tus actividades mensuales desde una plataforma moderna.
+                        </p>
+                    </div>
+
+                    <!-- Tarjeta flotante inspirada en la meta mensual del dashboard -->
+                    <div class="monthly-goal-card">
+                        <strong>ID</strong>
+                        <span>Acceso Becario</span>
+                    </div>
+
+                </div>
+
+                <!-- Cara trasera: logo institucional -->
+                <div class="hero-face hero-face--back">
+
+                    <div class="hero-logo-preview">
+                        <img 
+                            src="../assets/images/asebep/logo-asebep.png" 
+                            alt="Logo completo de ASEBEP UNAH"
+                        >
+
+                        <div class="hero-logo-preview__text">
+                            <span>ASEBEP UNAH</span>
+                            <p>Estudio · Excelencia · Disciplina</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+         <!-- Seccion derecha: tarjeta del formulario -->
+          <section class="login-panel">
+
+                <!-- Tarjeta principal del login -->
+            <div class="login-card">
+
+                <!-- Encabezado de la tarjeta -->
+                 <div class="login-card__header">
+
+                    <!-- Logo de ASEBEP -->
+                     <img src="../assets/images/asebep/logo-asebep.png" alt="Logo ASEBEP UNAH" class="login-card__logo">
+                        <h2>Iniciar Sesión</h2>
+
+                        <p>
+                            Ingresa tu número de cuenta para acceder al sistema.
+                        </p>
+                 </div>
+
+                 <!-- Alerta visual: Permanecera Oculta-->
+                  <div class="login-alert" id="loginAlert">
+                    Número de cuenta incorrecto. Verifica tus datos e intenta nuevamente.
+                  </div>
+
+                  <!-- Formulario de login -->
+                   <form class="login-form" id="loginForm">
+
+                    <!-- Campo: numero de cuenta -->
+                     <div class="form-group">
+                        <label for="accountNumber">Número de Cuenta</label>
+                        <input
+                            type="text"
+                            id="accountNumber"
+                            name="accountNumber"
+                            placeholder="Ejemplo: 20241000000"
+                            autocomplete="off"
+                        >
+                     </div>
+
+                     <!-- Campo: Contraseña temporal -->
+                        <div class="form-group">
+                            <label for="password">Contraseña</label>
+
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Contraseña temporal"
+                            >
+                        </div>
+
+                        <!-- Boton Principal -->
+                         <button type="submit" class="login-button">Entrar al sistema</button>
+    
+                   </form>
+
+                   <!-- Texto inferior informativo-->
+                    <p class="login-card__footer">
+                        Acceso temporal para pruebas del frontend. No se requiere contraseña real.
+
+                    </p>
+
+            </div>
+
+        </section>
+
+     </main>
+     <!-- Archivo JavaScript exclusivo para la logica del login -->
+      <script src="../js/login.js"></script>
+</body>
+</html>
