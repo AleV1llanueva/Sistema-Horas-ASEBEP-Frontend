@@ -1,41 +1,10 @@
 /* Dashboard provisional ASEBEP
-Lee datos desde localStorage y los muestra en pantalla */
+   Lee el JSON real guardado por el login y lo muestra en pantalla */
 
-const ENABLE_VIEW_DEMO_DATA = true;
 const logoutButton = document.getElementById("logoutButton");
 
-/*Datos temporales solo para diseñar y probar la vista */
-function getDemoUserData() {
-    return {
-        credenciales: {
-            rol: "Becario",
-            active: true
-        },
 
-        datos_personales: {
-            num_cuenta: "20241002020",
-            p_nombre: "Roberto",
-            s_nombre: "Carlos",
-            p_apellido: "Mendoza",
-            s_apellido: "Rodriguez",
-            correo_personal: "correo.personal@example.com",
-            correo_inst: "roberto.carlos@unah.hn",
-            carrera: "Trabajo Social",
-            telefono: "00000000"
-        },
-
-        datos_becario: {
-            periodo_inicio: "IIPAC",
-            anio_inicio: 2024,
-            horas_acumuladas: 0,
-            horas_faltantes: 20,
-            meses_sin_pagar: 0,
-            estado_beca: "Activo"
-        }
-    };
-}
-
-/* Obtiene los datos guardados por el login */
+/* Obtiene los datos reales guardados por el login */
 function getStoredUserData() {
     const storedUser = localStorage.getItem("asebepUser");
 
@@ -51,6 +20,7 @@ function getStoredUserData() {
     }
 }
 
+
 /* Escribe texto en un elemento del HTML */
 function setText(elementId, value) {
     const element = document.getElementById(elementId);
@@ -61,6 +31,29 @@ function setText(elementId, value) {
 
     element.textContent = value ?? "---";
 }
+
+
+/* Convierte textos de la API a mayúsculas para mantener una vista uniforme */
+function formatUpperText(value) {
+    if (value === null || value === undefined || value === "") {
+        return "---";
+    }
+
+    return String(value).toLocaleUpperCase("es-HN");
+}
+
+
+/* Convierte valores numéricos de la API en números seguros */
+function parseNumber(value, fallback = 0) {
+    const numberValue = Number(value);
+
+    if (Number.isNaN(numberValue)) {
+        return fallback;
+    }
+
+    return numberValue;
+}
+
 
 /* Construye el nombre completo del estudiante */
 function getFullName(personalData) {
@@ -74,22 +67,21 @@ function getFullName(personalData) {
     return names.filter(Boolean).join(" ") || "Estudiante";
 }
 
-/* Muestra toda la información en el dashboard */
+
+/* Muestra la información real del estudiante en el dashboard */
 function renderDashboard(userData) {
     const credentials = userData.credenciales || {};
     const personalData = userData.datos_personales || {};
     const scholarshipData = userData.datos_becario || {};
 
     const fullName = getFullName(personalData);
-    const activeText = credentials.active ? "Activa" : "Inactiva";
 
-    setText("userRole", credentials.rol || "Rol no definido");
+    setText("userRole", formatUpperText(credentials.rol || "Becario"));
     setText("userFullName", fullName);
-    setText("scholarshipStatus", scholarshipData.estado_beca || "Sin estado");
+    setText("scholarshipStatus", formatUpperText(scholarshipData.estado_beca || "Sin estado"));
 
-    setText("completedHours", scholarshipData.horas_acumuladas ?? 0);
-    setText("missingHours", scholarshipData.horas_faltantes ?? 0);
-    setText("unpaidMonths", scholarshipData.meses_sin_pagar ?? 0);
+    setText("missingHours", parseNumber(scholarshipData.horas_faltantes, 0));
+    setText("pendingContributions", parseNumber(scholarshipData.meses_sin_pagar, 0));
 
     setText("accountNumber", personalData.num_cuenta);
     setText("career", personalData.carrera);
@@ -99,12 +91,11 @@ function renderDashboard(userData) {
 
     setText("startPeriod", scholarshipData.periodo_inicio);
     setText("startYear", scholarshipData.anio_inicio);
-    setText("scholarshipState", scholarshipData.estado_beca);
-    setText("activeStatus", activeText);
+    setText("scholarshipState", formatUpperText(scholarshipData.estado_beca));
 }
 
 
-/* Elimina la sesión temporal y regresa al login */
+/* Limpia los datos guardados por el login y regresa a la pantalla de acceso */
 function logout() {
     localStorage.removeItem("asebepUser");
     localStorage.removeItem("asebepLoggedIn");
@@ -114,13 +105,9 @@ function logout() {
 }
 
 
-/* Inicializa la vista */
+/* Inicializa el dashboard solo si existe información real guardada */
 function initDashboard() {
-    let userData = getStoredUserData();
-
-    if (!userData && ENABLE_VIEW_DEMO_DATA) {
-        userData = getDemoUserData();
-    }
+    const userData = getStoredUserData();
 
     if (!userData) {
         window.location.href = "login.html";

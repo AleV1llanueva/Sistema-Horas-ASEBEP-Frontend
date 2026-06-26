@@ -7,9 +7,6 @@ const accountNumberInput = document.getElementById("accountNumber");
 const loginAlert = document.getElementById("loginAlert");
 const loginButton = document.querySelector(".login-button");
 
-const heroFlipButton = document.getElementById("heroFlipButton");
-const heroFlipCard = document.getElementById("heroFlipCard");
-
 
 /* Muestra mensajes de error dentro de la tarjeta */
 function showLoginAlert(message) {
@@ -43,22 +40,24 @@ function setLoadingState(isLoading) {
 }
 
 
-/* Efecto para girar el panel izquierdo del login */
-if (heroFlipButton && heroFlipCard) {
-    heroFlipButton.addEventListener("click", () => {
-        heroFlipCard.classList.toggle("is-flipped");
-    });
-}
-
-
 /* Validación básica antes de consultar la API */
 function validateAccountNumber(accountNumber) {
+    const ACCOUNT_NUMBER_LENGHT = 11;
+
     if (!accountNumber) {
         return "Ingresa tu número de cuenta para continuar.";
     }
 
     if (!/^\d+$/.test(accountNumber)) {
         return "El número de cuenta debe contener únicamente números.";
+    }
+
+    if (accountNumber.length < ACCOUNT_NUMBER_LENGHT) {
+        return "Ingresa tu número de cuenta completo.";
+    }
+
+    if (accountNumber.length > ACCOUNT_NUMBER_LENGHT) {
+        return "Ingresa tu número de cuenta de manera correcta.";
     }
 
     return null;
@@ -93,7 +92,7 @@ async function loginWithAccountNumber(accountNumber) {
             }
         });
     } catch (error) {
-        throw new Error("No se pudo conectar con la API. Verifica tu conexión o intenta más tarde.");
+        throw new Error("No se pudo conectar con la API. Intenta nuevamente más tarde.");
     }
 
     let data = null;
@@ -160,7 +159,7 @@ function saveUserSession(userData) {
 }
 
 
-/* Redirige al dashboard actual */
+/* Redirige al dashboard provisional */
 function redirectToDashboard() {
     window.location.href = "dashboard-provisional.html";
 }

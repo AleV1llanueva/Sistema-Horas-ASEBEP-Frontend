@@ -43,6 +43,7 @@ body {
 }
 
 /* Página general */
+
 .provisional-page {
     width: 100%;
     min-height: 100vh;
@@ -50,6 +51,7 @@ body {
 }
 
 /* Contenedor principal */
+
 .dashboard-shell {
     width: min(1180px, 100%);
     margin: 0 auto;
@@ -206,7 +208,7 @@ body {
 
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 22px;
     margin-bottom: 28px;
 }
@@ -244,6 +246,10 @@ body {
     background: rgba(245, 179, 1, 0.24);
 }
 
+.summary-card--blue::after {
+    background: rgba(11, 59, 117, 0.14);
+}
+
 .summary-label {
     display: block;
     margin-bottom: 12px;
@@ -267,10 +273,25 @@ body {
     color: #b77900;
 }
 
+.summary-card--blue strong {
+    color: var(--unah-blue);
+}
+
 .summary-card p {
     color: var(--muted-text);
     font-size: 0.92rem;
     line-height: 1.6;
+}
+
+/* Estado cuando el estudiante ya completó sus 20 horas */
+
+.summary-card--completed strong {
+    display: none;
+}
+
+.summary-card--completed p {
+    color: var(--success);
+    font-weight: 900;
 }
 
 /* INFO CARDS */
@@ -342,10 +363,6 @@ body {
     animation-delay: 0.08s;
 }
 
-.summary-card:nth-child(3) {
-    animation-delay: 0.16s;
-}
-
 .info-card:nth-child(1) {
     animation-delay: 0.18s;
 }
@@ -367,6 +384,12 @@ body {
 }
 
 /* RESPONSIVE */
+
+@media (max-width: 1100px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 
 @media (max-width: 920px) {
     .provisional-page {

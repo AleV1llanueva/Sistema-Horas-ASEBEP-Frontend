@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Dashboard Provisional - ASEBEP</title>
+    <title>Panel Becario - ASEBEP</title>
 
+    <!-- Estilos exclusivos del dashboard provisional -->
     <link rel="stylesheet" href="../css/dashboard-provisional.css">
 </head>
 <body>
@@ -15,6 +15,7 @@
 
         <section class="dashboard-shell">
 
+            <!-- Encabezado principal del panel -->
             <header class="dashboard-header">
 
                 <div class="brand-box">
@@ -26,7 +27,7 @@
 
                     <div>
                         <span class="brand-label">ASEBEP UNAH</span>
-                        <h1>Dashboard Provisional</h1>
+                        <h1>Panel de Estudiante</h1>
                     </div>
                 </div>
 
@@ -36,10 +37,11 @@
 
             </header>
 
+            <!-- Bloque de bienvenida del estudiante -->
             <section class="welcome-card">
 
                 <div>
-                    <span class="welcome-badge" id="userRole">Rol</span>
+                    <span class="welcome-badge" id="userRole">Becario</span>
 
                     <h2>
                         Bienvenido, 
@@ -47,39 +49,35 @@
                     </h2>
 
                     <p>
-                        Esta vista muestra información básica obtenida desde la API REST
-                        y guardada temporalmente para pruebas del frontend.
+                        Consulta el avance de tus horas becarias, tus aportaciones pendientes
+                        y la información registrada en ASEBEP.
                     </p>
                 </div>
 
                 <div class="status-pill" id="scholarshipStatus">
-                    Estado
+                    Estado de beca
                 </div>
 
             </section>
 
+            <!-- Resumen principal del estado becario -->
             <section class="summary-grid">
 
-                <article class="summary-card">
-                    <span class="summary-label">Horas acumuladas</span>
-                    <strong id="completedHours">0</strong>
-                    <p>Horas registradas en el sistema.</p>
-                </article>
-
                 <article class="summary-card summary-card--gold">
-                    <span class="summary-label">Horas faltantes</span>
-                    <strong id="missingHours">0</strong>
-                    <p>Horas pendientes para completar el período.</p>
+                    <span class="summary-label">Horas pendientes</span>
+                    <strong id="missingHours"></strong>
+                    <p>Horas pendientes registradas en el sistema.</p>
                 </article>
 
-                <article class="summary-card">
-                    <span class="summary-label">Meses sin pagar</span>
-                    <strong id="unpaidMonths">0</strong>
-                    <p>Registro provisional según datos del becario.</p>
+                <article class="summary-card summary-card--blue">
+                    <span class="summary-label">Aportaciones pendientes</span>
+                    <strong id="pendingContributions"></strong>
+                    <p>Total de aportaciones pendientes registradas.</p>
                 </article>
 
             </section>
 
+            <!-- Información principal del estudiante y su beca -->
             <section class="info-grid">
 
                 <article class="info-card">
@@ -114,7 +112,7 @@
                 </article>
 
                 <article class="info-card">
-                    <h3>Datos becarios</h3>
+                    <h3>Información becaria</h3>
 
                     <div class="info-list">
                         <div class="info-row">
@@ -131,11 +129,6 @@
                             <span>Estado de beca</span>
                             <strong id="scholarshipState">---</strong>
                         </div>
-
-                        <div class="info-row">
-                            <span>Cuenta activa</span>
-                            <strong id="activeStatus">---</strong>
-                        </div>
                     </div>
                 </article>
 
@@ -145,6 +138,7 @@
 
     </main>
 
+    <!-- Carga los datos guardados por el login y actualiza el panel -->
     <script src="../js/dashboard-provisional.js"></script>
 </body>
 </html>
