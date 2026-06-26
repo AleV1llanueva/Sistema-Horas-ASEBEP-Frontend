@@ -1,10 +1,7 @@
-/* INDEX.CSS
-   Página principal de presentación institucional de ASEBEP UNAH
-   Este archivo controla únicamente el diseño del index.html. */
+/* INDEX.CSS */
 
 
-/* 1. VARIABLES GLOBALES DEL INDEX
-   Aquí definimos colores, sombras, tamaños y transiciones reutilizables. */
+/* 1. VARIABLES GLOBALES DEL INDEX */
 
 :root {
     /* Colores institucionales principales */
@@ -41,8 +38,7 @@
 }
 
 
-/* 2. RESETEO BASE
-   Normalizamos márgenes, paddings y comportamiento de caja. */
+/* 2. RESETEO BASE */
 
 * {
     box-sizing: border-box;
@@ -89,18 +85,15 @@ img {
 }
 
 
-/* 3. CONTENEDOR PRINCIPAL
-   La pantalla del index ocupa toda la altura del navegador. */
+/* 3. CONTENEDOR PRINCIPAL */
 
 .index-page {
     position: relative;
 
-    /* La pantalla queda fija al tamaño del viewport */
     width: 100%;
     height: 100vh;
     height: 100svh;
 
-    /* Evita scroll dentro del contenedor principal */
     overflow-x: hidden;
 
     /* Fondo con mezcla institucional: claro, morado y dorado */
@@ -111,8 +104,7 @@ img {
 }
 
 
-/* 4. ELEMENTOS DECORATIVOS DEL FONDO
-   Estos elementos dan profundidad sin usar imágenes pesadas. */
+/* 4. ELEMENTOS DECORATIVOS DEL FONDO */
 
 .background-glow {
     position: absolute;
@@ -153,14 +145,12 @@ img {
 }
 
 
-/* 5. SECCIÓN HERO
-   Divide la pantalla en texto institucional y experiencia visual. */
+/* 5. SECCIÓN HERO */
 
 .hero-section {
     position: relative;
     z-index: 2;
 
-    /* Ocupa la pantalla disponible sin generar scroll */
     width: min(1180px, calc(100% - 48px));
     min-height: 100vh;
     min-height: 100svh;
@@ -172,14 +162,12 @@ img {
     align-items: center;
     gap: 44px;
 
-    /* Menos padding para que todo quepa dentro del viewport */
     padding: 28px 0 54px;
 
 }
 
 
-/* 6. BLOQUE DE CONTENIDO
-   Aquí vive el título, descripción, valores y botones.*/
+/* 6. BLOQUE DE CONTENIDO */
 
 .hero-content {
     animation: fadeSlideLeft 0.9s ease both;
@@ -281,8 +269,7 @@ img {
 }
 
 
-/* 7. BOTONES
-   Botón principal hacia login y botón secundario de exploración. */
+/* 7. BOTONES */
 
 .btn {
     position: relative;
@@ -331,8 +318,7 @@ img {
 }
 
 
-/* 8. BLOQUE VISUAL PRINCIPAL
-   Contiene el logo protagonista y las tarjetas dinámicas. */
+/* 8. BLOQUE VISUAL PRINCIPAL */
 
 .hero-visual {
     position: relative;
@@ -482,9 +468,7 @@ img {
 }
 
 
-/* 10. LOGO PROTAGONISTA
-   Esta zona imita la idea de tener un "personaje central".
-   En nuestro caso, el protagonista será el logo de ASEBEP. */
+/* 10. LOGO PROTAGONISTA */
 
 .logo-stage {
     position: relative;
@@ -582,8 +566,7 @@ img {
 }
 
 
-/* 11. INSIGNIA DE HORAS
-   Refuerza el objetivo funcional del sistema.*/
+/* 11. INSIGNIA DE HORAS */
 
 .hours-badge {
     position: absolute;
@@ -623,8 +606,7 @@ img {
 }
 
 
-/* 12. INDICADOR INFERIOR
-   Da cierre visual a la pantalla única. */
+/* 12. INDICADOR INFERIOR */
 
 .bottom-indicator {
     position: fixed;
@@ -670,9 +652,7 @@ img {
 }
 
 
-/* 13. ANIMACIONES
-   Animaciones suaves y livianas.
-   Solo usamos transform y opacity para evitar lag. */
+/* 13. ANIMACIONES */
 
 @keyframes fadeSlideLeft {
     from {
@@ -785,8 +765,7 @@ img {
 }
 
 
-/* 14. RESPONSIVE DESIGN
-   Adaptamos la pantalla para tablets y celulares. */
+/* 14. RESPONSIVE DESIGN */
 
 @media (max-width: 1050px) {
     .hero-section {
@@ -990,9 +969,7 @@ img {
 }
 
 
-/* 15. ACCESIBILIDAD
-   Si el usuario tiene reducidas las animaciones en el sistema,
-   apagamos los movimientos continuos. */
+/* 15. ACCESIBILIDAD. */
 
 @media (prefers-reduced-motion: reduce) {
     * {

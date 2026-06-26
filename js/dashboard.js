@@ -1,7 +1,4 @@
 // dashboard.js
-
-// Estado global del dashboard
-// Aquí almacenamos toda la información del usuario de momento, como horas cumplidas, pendientes, progreso y estado
 const dashboardState = {
 
     totalHours: 20, // Total de horas requeridas

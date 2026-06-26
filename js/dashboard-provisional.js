@@ -1,5 +1,4 @@
-/* Dashboard provisional ASEBEP
-   Lee el JSON real guardado por el login y lo muestra en pantalla */
+/* Dashboard provisional ASEBEP */
 
 const logoutButton = document.getElementById("logoutButton");
 
@@ -21,7 +20,6 @@ function getStoredUserData() {
 }
 
 
-/* Escribe texto en un elemento del HTML */
 function setText(elementId, value) {
     const element = document.getElementById(elementId);
 
