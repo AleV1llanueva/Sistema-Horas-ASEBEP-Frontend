@@ -1,6 +1,6 @@
 /* LOGIN ASEBEP - CONSUMO API REST CON FETCH */
 
-const API_BASE_URL = "https://asebepunah.com/usuario";
+const API_BASE_URL = "/api/usuario";
 
 const loginForm = document.getElementById("loginForm");
 const accountNumberInput = document.getElementById("accountNumber");
