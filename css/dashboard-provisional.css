@@ -140,7 +140,7 @@ body {
     border-radius: var(--radius-lg);
     background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(243, 232, 255, 0.78)),
-        url("../assets/images/asebep/banner-asebep.png");
+        url("/assets/images/asebep/banner-asebep.png");
     background-size: cover;
     background-position: center;
     overflow: hidden;
