@@ -85,7 +85,8 @@ function renderDashboard(userData) {
     setText("career", personalData.carrera);
     setText("institutionalEmail", personalData.correo_inst);
     setText("personalEmail", personalData.correo_personal);
-    setText("phone", personalData.telefono);
+    //setText("phone", personalData.telefono);
+    setText("phone", "Oculto por privacidad");
 
     setText("startPeriod", scholarshipData.periodo_inicio);
     setText("startYear", scholarshipData.anio_inicio);
