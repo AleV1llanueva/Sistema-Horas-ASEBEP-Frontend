@@ -84,7 +84,8 @@ function renderDashboard(userData) {
     setText("accountNumber", personalData.num_cuenta);
     setText("career", personalData.carrera);
     setText("institutionalEmail", personalData.correo_inst);
-    setText("personalEmail", personalData.correo_personal);
+    //setText("personalEmail", personalData.correo_personal);
+    setText("personalEmail", "Oculto por privacidad");
     //setText("phone", personalData.telefono);
     setText("phone", "Oculto por privacidad");
 
