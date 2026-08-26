@@ -13,7 +13,7 @@ const ID_SESION_CERRADA = 'sesion-cerrada'
 // Centraliza todo el proceso de cierre de sesion (MobileNavigarion and AppSidebar)
 export function useCerrarSesion() {
     const navigate = useNavigate()
-    const { limipiarUsuario } = useUsuario()
+    const { limpiarUsuario } = useUsuario()
 
     // Ejecuta el cierre de sesion al recibir confirmacion del usuario
     function cerrarSesion() {
@@ -21,7 +21,7 @@ export function useCerrarSesion() {
             ID_CONFIRMACION_CIERRE,
         )
         
-        limipiarUsuario()
+        limpiarUsuario()
         navigate('/login', {
             replace: true,
         })
@@ -41,7 +41,7 @@ export function useCerrarSesion() {
             id: ID_CONFIRMACION_CIERRE,
             titulo: '¿Cerrar sesión?',
             descripcion: 'Tendrás que ingresar nuevamente para acceder al portal.',
-            textoConfirmar: 'Cancelar',
+            textoConfirmar: 'Confirmar',
             alConfirmar: cerrarSesion,
         })
     }

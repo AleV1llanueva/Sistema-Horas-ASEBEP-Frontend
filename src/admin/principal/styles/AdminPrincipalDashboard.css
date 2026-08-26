@@ -1,0 +1,523 @@
+/*
+ * Dashboard del administrador principal.
+ *
+ * Estos estilos dependen de las variables definidas
+ * en AdminLayout.css.
+ */
+
+.admin-principal-dashboard {
+  width: min(100%, 1420px);
+  margin: 0 auto;
+}
+
+/* ENCABEZADO */
+.admin-dashboard-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 24px;
+}
+
+.admin-dashboard-heading__copy {
+  min-width: 0;
+}
+
+.admin-dashboard-heading__eyebrow {
+  margin: 0 0 7px;
+  color: var(--admin-focus);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-heading h1 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size:
+    clamp(1.75rem, 2.6vw, 2.25rem);
+  line-height: 1.12;
+}
+
+.admin-dashboard-heading__copy > p:last-child {
+  max-width: 650px;
+  margin: 9px 0 0;
+  color: var(--admin-text-soft);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.admin-dashboard-create-button {
+  min-height: 43px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 17px;
+  color: var(--admin-white);
+  border-radius: 8px;
+  background: var(--admin-navy);
+  box-shadow:
+    0 8px 18px
+    rgb(0 43 79 / 16%);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-dashboard-create-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-dashboard-create-button:hover {
+  background: var(--admin-navy-hover);
+  box-shadow:
+    0 11px 22px
+    rgb(0 43 79 / 20%);
+  transform: translateY(-1px);
+}
+
+.admin-dashboard-create-button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 35%);
+  outline-offset: 3px;
+}
+
+/* MÉTRICAS */
+.admin-dashboard-metrics {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  animation: admin-dashboard-entry 600ms 80ms ease-out both;
+}
+
+.admin-metric-card {
+  --admin-metric-accent:
+    var(--admin-blue);
+  --admin-metric-icon-color:
+    var(--admin-blue);
+  --admin-metric-icon-background:
+    #e2f0fa;
+
+  min-width: 0;
+  min-height: 118px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  overflow: hidden;
+  border:
+    1px solid var(--admin-border);
+  border-left:
+    4px solid
+    var(--admin-metric-accent);
+  border-radius: 12px;
+  background: var(--admin-white);
+  box-shadow:
+    0 9px 25px
+    rgb(10 39 64 / 5%);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-metric-card:hover {
+  border-color: #bdcedb;
+  border-left-color:
+    var(--admin-metric-accent);
+  box-shadow:
+    0 13px 30px
+    rgb(10 39 64 / 8%);
+  transform: translateY(-2px);
+}
+
+/* COLORES DE CADA MÉTRICA */
+.admin-metric-card--actividades {
+  --admin-metric-accent: #0b5688;
+  --admin-metric-icon-color: #0b5688;
+  --admin-metric-icon-background:
+    #e2f0fa;
+}
+
+.admin-metric-card--horas {
+  --admin-metric-accent: #b7791f;
+  --admin-metric-icon-color: #8a641c;
+  --admin-metric-icon-background:
+    #fff3d2;
+}
+
+.admin-metric-card--aportaciones {
+  --admin-metric-accent: #a94343;
+  --admin-metric-icon-color: #9b414b;
+  --admin-metric-icon-background:
+    #fae5e8;
+}
+
+.admin-metric-card--estudiantes {
+  --admin-metric-accent: #218455;
+  --admin-metric-icon-color: #28734e;
+  --admin-metric-icon-background:
+    #e2f4ea;
+}
+
+/* ICONOS */
+.admin-metric-card__icon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color:
+    var(--admin-metric-icon-color);
+  border-radius: 10px;
+  background:
+    var(--admin-metric-icon-background);
+}
+
+.admin-metric-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* INFORMACIÓN */
+.admin-metric-card__content {
+  min-width: 0;
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+  flex: 1;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-metric-card__title {
+  color: var(--admin-text-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.admin-metric-card__value {
+  margin: 0;
+  color: var(--admin-navy);
+  font-size: 2.05rem;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* PORCENTAJE DE HORAS PENDIENTES */
+.admin-metric-card__progress {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      var(--admin-progress-color)
+        var(--admin-progress-angle),
+      #e7edf2 0deg
+    );
+}
+
+.admin-metric-card__progress--bajo {
+  --admin-progress-color: #c0392b;
+}
+
+.admin-metric-card__progress--medio {
+  --admin-progress-color: #d97706;
+}
+
+.admin-metric-card__progress--completo {
+  --admin-progress-color: #218455;
+}
+
+.admin-metric-card__progress::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--admin-white);
+}
+
+.admin-metric-card__progress span {
+  position: relative;
+  z-index: 1;
+  color:
+    var(--admin-progress-color);
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* PANEL DE ACTIVIDADES */
+.admin-activities-panel {
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-white);
+  box-shadow: 0 10px 28px rgb(10 39 64 / 6%);
+  animation: admin-dashboard-entry 620ms 150ms ease-out both;
+}
+
+.admin-activities-panel__header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  background: #fbfcfd;
+}
+
+.admin-activities-panel__eyebrow {
+  margin: 0 0 4px;
+  color: var(--admin-focus);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-activities-panel__header h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1rem;
+}
+
+.admin-activities-panel__link {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 8px 9px;
+  color: var(--admin-blue);
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.admin-activities-panel__link svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 160ms ease;
+}
+
+.admin-activities-panel__link:hover {
+  color: var(--admin-navy);
+  background: var(--admin-hover);
+}
+
+.admin-activities-panel__link:hover svg {
+  transform: translateX(2px);
+}
+
+.admin-activities-panel__link:focus-visible {
+  outline: 3px solid rgb(75 145 196 / 30%);
+  outline-offset: 2px;
+}
+
+/* TABLA */
+.admin-activities-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-activities-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.admin-activities-table caption {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.admin-activities-table th,
+.admin-activities-table td {
+  padding: 14px 16px;
+  border-bottom:
+    1px solid #e5eaee;
+  color: var(--admin-text-soft);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-activities-table thead th {
+  color: #6c7a88;
+  background: #f8fafc;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.admin-activities-table th:first-child {
+  width: 29%;
+}
+
+.admin-activities-table th:nth-child(2) {
+  width: 16%;
+}
+
+.admin-activities-table th:nth-child(3) {
+  width: 12%;
+}
+
+.admin-activities-table th:nth-child(4) {
+  width: 25%;
+}
+
+.admin-activities-table th:nth-child(5) {
+  width: 18%;
+}
+
+.admin-activities-table tbody tr {
+  transition: background 140ms ease;
+}
+
+.admin-activities-table tbody tr:hover {
+  background: #fbfdff;
+}
+
+.admin-activities-table tbody th {
+  color: var(--admin-text);
+  font-weight: 700;
+}
+
+.admin-activities-table tbody tr:last-child
+  th,
+.admin-activities-table tbody tr:last-child
+  td {
+  border-bottom: 0;
+}
+
+.admin-activities-table time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ESTADOS */
+.admin-activity-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  min-height: 25px;
+  padding: 3px 9px;
+  color: var(--admin-text-soft);
+  border-radius: 999px;
+  background: #edf1f4;
+  font-size: 0.62rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-activity-status--programada {
+  color: #0b5688;
+  background: #e2f0fa;
+}
+
+.admin-activity-status--en-curso {
+  color: #7c5b18;
+  background: #fff4d6;
+}
+
+.admin-activity-status--finalizada {
+  color: #28734e;
+  background: #e2f4ea;
+}
+
+.admin-activity-status--cancelada {
+  color: #963d49;
+  background: #fae5e8;
+}
+
+.admin-activities-table__empty {
+  height: 140px;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+/* ANIMACIÓN DE ENTRADA */
+@keyframes admin-dashboard-entry {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* COMPUTADORAS DE MENOR ANCHO */
+@media (max-width: 1180px) {
+  .admin-dashboard-metrics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-metric-card {
+    min-height: 102px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-dashboard-heading {
+    align-items: flex-start;
+    animation: admin-dashboard-entry 550ms ease-out both;
+  }
+
+  .admin-dashboard-heading__copy > p:last-child {
+    max-width: 540px;
+  }
+
+  .admin-activities-panel__header {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-heading,
+  .admin-dashboard-metrics,
+  .admin-activities-panel,
+  .admin-dashboard-create-button,
+  .admin-metric-card,
+  .admin-activities-panel__link,
+  .admin-activities-panel__link svg,
+  .admin-activities-table tbody tr {
+    animation: none;
+    transition: none;
+  }
+}
