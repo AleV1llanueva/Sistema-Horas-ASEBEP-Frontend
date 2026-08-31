@@ -18,7 +18,7 @@ const formularioInicial = {
   contrasena: '',
 }
 
-// Identificador unico para las notificaciones del Login
+// Identificador único para las notificaciones del Login.
 const ID_NOTIFICACION_LOGIN = 'inicio-sesion'
 
 function IconoOjo({ visible }) {
@@ -57,16 +57,15 @@ function Login() {
   const navigate = useNavigate()
 
   /*
-   * cargarUsuario obtiene el numero de cuenta desde
-   * la sesion y consulta la informacion del usuario.
+   * El contexto conserva tanto el inicio de sesión
+   * real como el modo simulado utilizado en desarrollo.
    */
-
   const {
-  cargarUsuario,
-  limpiarUsuario,
-  modoSimulado,
-  iniciarSesionPrueba,
-} = useUsuario()
+    cargarUsuario,
+    limpiarUsuario,
+    modoSimulado,
+    iniciarSesionPrueba,
+  } = useUsuario()
 
   const [formulario, setFormulario] =
     useState(formularioInicial)
@@ -81,7 +80,7 @@ function Login() {
   const [enviando, setEnviando] =
     useState(false)
 
-  // Actualiza el campo donde esta el usuario escribiendo
+  // Actualiza el campo donde está escribiendo el usuario.
   function manejarCambio(event) {
     const { name, value } = event.target
 
@@ -90,7 +89,10 @@ function Login() {
       [name]: value,
     }))
 
-    // Si el campo tenia un error, lo eliminamos cuando el usuario lo comienza a corregir
+    /*
+     * Eliminamos el error del campo cuando el
+     * usuario comienza a corregirlo.
+     */
     if (errores[name]) {
       setErrores((erroresAnteriores) => ({
         ...erroresAnteriores,
@@ -99,27 +101,32 @@ function Login() {
     }
   }
 
-  // Valida los datos antes de enviarlos al backend
+  // Valida los datos antes de iniciar sesión.
   function validarFormulario() {
     const nuevosErrores = {}
 
     /*
-     * Eliminamos espacios al inicio y al final solamente
-     * para realizar la validacion del numero de cuenta.
+     * Los espacios se eliminan únicamente para
+     * validar el número de cuenta.
      */
     const numeroCuenta =
       formulario.numeroCuenta.trim()
 
-    // El numero de cuenta es un id
     if (!numeroCuenta) {
       nuevosErrores.numeroCuenta =
         'Ingresa tu número de cuenta.'
     } else if (!/^\d+$/.test(numeroCuenta)) {
       nuevosErrores.numeroCuenta =
         'El número de cuenta solo puede contener números.'
+    } else if (!/^\d{11}$/.test(numeroCuenta)) {
+      nuevosErrores.numeroCuenta =
+        'El número de cuenta debe tener exactamente 11 dígitos.'
     }
 
-    // La contraseña unicamente la validamos como obligatoria en el Login.
+    /*
+     * En el inicio de sesión solo comprobamos
+     * que la contraseña haya sido proporcionada.
+     */
     if (!formulario.contrasena) {
       nuevosErrores.contrasena =
         'Ingresa tu contraseña.'
@@ -128,11 +135,11 @@ function Login() {
     return nuevosErrores
   }
 
-  // Le explica al usuario el error que ocurrio al intentar iniciar sesion
+  // Explica el error ocurrido al intentar iniciar sesión.
   function obtenerDescripcionError(error) {
     /*
-     * SesionError significa que el backend respondio,
-     * pero el JWT esta incompleto, vencido o no es valido.
+     * SesionError significa que el backend respondió,
+     * pero el JWT está incompleto, vencido o no es válido.
      */
     if (error instanceof SesionError) {
       return (
@@ -141,20 +148,20 @@ function Login() {
       )
     }
 
-    // 401 significa que las credenciales no son validas.
+    // 401 significa que las credenciales no son válidas.
     if (error.status === 401) {
       const mensajeServidor = String(
         error.message || '',
       ).toLowerCase()
 
       /*
-       * Revisamos por separado si el backend indica
-       * que la cuenta todavia no ha sido activada.
+       * Comprobamos si el backend indica que la
+       * cuenta todavía no ha sido activada.
        */
       if (mensajeServidor.includes('inactivo')) {
         return (
           'Tu cuenta todavía no está activa. ' +
-          'Configúrala antes de iniciar sesión.'
+          'Configúrala desde la opción de primer ingreso.'
         )
       }
 
@@ -166,7 +173,7 @@ function Login() {
 
     /*
      * 422 significa que los datos enviados no coinciden
-     * con la estructura que espera actualmente el backend.
+     * con la estructura esperada por el backend.
      */
     if (error.status === 422) {
       return (
@@ -175,7 +182,7 @@ function Login() {
       )
     }
 
-    // ApiError utiliza 0 cuando no existe una respuesta HTTP valida.
+    // ApiError utiliza 0 cuando no existe una respuesta HTTP válida.
     if (error.status === 0) {
       return (
         'No fue posible conectarse con el servidor. ' +
@@ -183,7 +190,10 @@ function Login() {
       )
     }
 
-    // Para respuestas 400, 404 o 500 apiFetch prepara un mensaje basado en la respuesta enviada por el backend.
+    /*
+     * Para respuestas 400, 404 o 500, apiFetch prepara
+     * el mensaje enviado por el backend.
+     */
     return (
       error.message ||
       'No fue posible completar la operación.'
@@ -191,23 +201,17 @@ function Login() {
   }
 
   /*
-   * Procesa el envio del formulario. El flujo de operacion es el siguiente:
-   * 1. Evitar recargar el navegador en cada ocasion
-   * 2. Validar los campos
-   * 3. Bloquear envios duplicados o el spam de peticiones
-   * 4. Consultar el endpoint de autenticacion
-   * 5. Guardar y validar el JWT recibido
-   * 6. Consultar la informacion del usuario autenticado
-   * 7. Informar el resultado mediante Sonner
-   * 8. Navegar hacia el Dashboard
+   * Procesa el envío del formulario:
+   * 1. Valida los campos.
+   * 2. Evita solicitudes duplicadas.
+   * 3. Utiliza el login simulado o el backend.
+   * 4. Carga al usuario cuando existe un JWT real.
+   * 5. Limpia sesiones incompletas si ocurre un error.
+   * 6. Redirige al Dashboard.
    */
   async function manejarEnvio(event) {
     event.preventDefault()
 
-    /*
-     * Aunque el boton este desactivado, agregamos esta
-     * comprobacion para impedir solicitudes duplicadas.
-     */
     if (enviando) {
       return
     }
@@ -220,49 +224,48 @@ function Login() {
     }
 
     setErrores({})
-
-    // Desactivamos el boton temporalmente para evitar spam
     setEnviando(true)
+
+    /*
+     * Permite saber si debemos limpiar una sesión
+     * parcialmente creada cuando ocurre un error.
+     */
     let sesionCreada = false
 
     try {
-
       if (modoSimulado) {
-      /*
-      * En modo beta validamos las credenciales
-      * ficticias sin consultar el backend.
-      */
-      await iniciarSesionPrueba({
-        numeroCuenta:
-          formulario.numeroCuenta,
-        contrasena:
-          formulario.contrasena,
-      })
+        /*
+         * En modo simulado validamos las credenciales
+         * ficticias sin consultar el backend.
+         */
+        await iniciarSesionPrueba({
+          numeroCuenta:
+            formulario.numeroCuenta,
+          contrasena:
+            formulario.contrasena,
+        })
 
-      sesionCreada = true
-    } else {
-      /*
-      * En modo real obtenemos el JWT y después
-      * consultamos la información del usuario.
-      */
-      await iniciarSesion({
-        numeroCuenta:
-          formulario.numeroCuenta,
-        contrasena:
-          formulario.contrasena,
-      })
+        sesionCreada = true
+      } else {
+        /*
+         * En modo real se obtiene el JWT y después
+         * se consulta la información del usuario.
+         */
+        await iniciarSesion({
+          numeroCuenta:
+            formulario.numeroCuenta,
+          contrasena:
+            formulario.contrasena,
+        })
 
-      sesionCreada = true
+        sesionCreada = true
 
-      await cargarUsuario()
-    }
-    /*
-    * Limpiamos las credenciales almacenadas en React
-    * antes de abandonar la pagina del Login.
-    */
-    setFormulario(formularioInicial)
+        await cargarUsuario()
+      }
 
-      // Mostramos una notificacion de exito
+      // Elimina las credenciales del estado del formulario.
+      setFormulario(formularioInicial)
+
       notificarExito({
         id: ID_NOTIFICACION_LOGIN,
         titulo: 'Inicio de sesión correcto',
@@ -271,18 +274,17 @@ function Login() {
       })
 
       /*
-       * replace evita que el usuario regrese al Login
-       * utilizando el boton atras del navegador.
+       * replace evita regresar al Login utilizando
+       * el botón atrás del navegador.
        */
       navigate('/dashboard', {
         replace: true,
       })
     } catch (error) {
       /*
-      * Si el JWT fue guardado pero no pudimos cargar
-      * al usuario, deshacemos completamente el login
-      */
-
+       * Si la sesión fue creada pero el resto del
+       * proceso falló, eliminamos sus datos.
+       */
       if (sesionCreada) {
         limpiarUsuario()
       }
@@ -294,22 +296,21 @@ function Login() {
         error.message || '',
       ).toLowerCase()
 
-      const tituloError = error instanceof SesionError
-        ? 'Sesión inválida'
-        : error.status === 401
-          ? mensajeError.includes('inactivo')
-            ? 'Cuenta inactiva'
-            : 'Credenciales incorrectas'
-          : 'No fue posible iniciar sesión'
+      const tituloError =
+        error instanceof SesionError
+          ? 'Sesión inválida'
+          : error.status === 401
+            ? mensajeError.includes('inactivo')
+              ? 'Cuenta inactiva'
+              : 'Credenciales incorrectas'
+            : 'No fue posible iniciar sesión'
 
-      // Mostramos el error con el identificador
       notificarError({
         id: ID_NOTIFICACION_LOGIN,
         titulo: tituloError,
         descripcion: descripcionError,
       })
     } finally {
-      // finally se ejecuta tanto si la peticion termina correctamente o con error
       setEnviando(false)
     }
   }
@@ -336,7 +337,9 @@ function Login() {
           </div>
 
           <div>
-            <h1 id="login-title">ASEBEP</h1>
+            <h1 id="login-title">
+              ASEBEP
+            </h1>
 
             <p>Portal de Gestión de Becas</p>
           </div>
@@ -375,7 +378,8 @@ function Login() {
               type="text"
               inputMode="numeric"
               autoComplete="username"
-              placeholder="Ej. 2026000000"
+              maxLength={11}
+              placeholder="Ej. 20261000001"
               value={formulario.numeroCuenta}
               onChange={manejarCambio}
               aria-invalid={Boolean(
@@ -482,23 +486,41 @@ function Login() {
             ) : (
               <>
                 Iniciar sesión{' '}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true">
+                  →
+                </span>
               </>
             )}
           </button>
         </form>
 
+        {/*
+         * El primer enlace permite activar cuentas nuevas.
+         * El segundo conserva la recuperación existente.
+         */}
         <nav
           className="access-links"
-          aria-label="Recuperación de acceso"
+          aria-label="Opciones de acceso"
         >
-          <Link to="/recuperar-contrasena">
-            ¿Olvidaste tus datos?
-          </Link>
+          <div>
+            <Link to="/primer-ingreso">
+              ¿Primera vez ingresando?
+            </Link>
+
+            <span aria-hidden="true">
+              {' · '}
+            </span>
+
+            <Link to="/recuperar-contrasena">
+              ¿Olvidaste tus datos?
+            </Link>
+          </div>
         </nav>
 
         <footer className="login-footer">
-          <p>© 2026 ASEBEP · Portal de Becas</p>
+          <p>
+            © 2026 ASEBEP · Portal de Becas
+          </p>
         </footer>
       </section>
     </main>

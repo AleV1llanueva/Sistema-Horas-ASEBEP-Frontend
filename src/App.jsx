@@ -9,9 +9,10 @@ import { Toaster as SonnerToaster } from 'sonner'
 
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Home from './pages/Home.jsx'
-import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
+import FirstAccess from './pages/FirstAccess.jsx'
 import PasswordRecovery from './pages/PasswordRecovery.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Profile from './pages/Profile.jsx'
 
 function App() {
@@ -99,8 +100,12 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/recuperar-contrasena" element={<PasswordRecovery />} />
+        <Route path="/primer-ingreso" element={<FirstAccess />} />
+
+        {/* Routes para el panel */}
         <Route path="/dashboard" element={<ProtectedRoute rolesPermitidos={['becario']}> <Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute rolesPermitidos={['becario']}><Profile /> </ProtectedRoute>} />
+
         {/* Cualquier direccion desconocida retorna al inicio*/}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
