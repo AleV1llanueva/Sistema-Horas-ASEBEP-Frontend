@@ -1,7 +1,14 @@
 // Clave utilizada para identificar la sesión de ASEBEP.
 const CLAVE_SESION = 'asebep_sesion'
 
-// Error especializado para problemas relacionados con la sesión.
+/*
+ * Permite informar al contexto de React cuando
+ * la API determina que la sesión dejó de ser válida.
+ */
+export const EVENTO_SESION_INVALIDADA =
+  'asebep:sesion-invalidada'
+
+// Error especializado para problemas de sesión.
 export class SesionError extends Error {
   constructor(mensaje) {
     super(mensaje)
@@ -59,8 +66,8 @@ function decodificarBase64Url(valor) {
  *
  * Importante:
  * esta función no verifica la firma criptográfica.
- * La firma y los permisos siempre deben ser validados
- * por el backend en cada solicitud protegida.
+ * La firma y los permisos siempre deben validarse
+ * desde el backend en cada solicitud protegida.
  */
 function obtenerPayloadJwt(token) {
   if (
@@ -110,11 +117,8 @@ function obtenerPayloadJwt(token) {
 }
 
 /*
- * Obtiene y valida el número de cuenta contenido
- * en el payload del JWT.
- *
- * El nombre del claim debe coincidir exactamente
- * con el del backend.
+ * Obtiene y valida el número de cuenta
+ * contenido dentro del JWT.
  */
 function obtenerNumeroCuenta(payload) {
   const numeroCuenta = String(
@@ -136,7 +140,16 @@ function obtenerNumeroCuenta(payload) {
   return numeroCuenta
 }
 
-// Obtiene y valida el rol contenido en el JWT.
+/*
+ * Obtiene y valida el rol contenido en el JWT.
+ *
+ * Conservamos exactamente las mayúsculas y minúsculas
+ * enviadas por el backend porque los nombres oficiales son:
+ * - becario
+ * - Admin General
+ * - Admin Aportaciones
+ * - Admin Horas
+ */
 function obtenerRol(payload) {
   const rol =
     typeof payload.rol === 'string'
@@ -191,7 +204,8 @@ export function guardarSesion(respuestaLogin) {
   const sesion = {
     accessToken: token,
     tipoToken: 'Bearer',
-    numeroCuenta: obtenerNumeroCuenta(payload),
+    numeroCuenta:
+      obtenerNumeroCuenta(payload),
     rol: obtenerRol(payload),
     expiraEn: payload.exp,
   }
@@ -223,8 +237,8 @@ export function guardarSesion(respuestaLogin) {
  * Recupera y vuelve a validar la sesión.
  *
  * Los datos de identidad se reconstruyen desde el JWT
- * para no confiar en los valores adicionales que puedan
- * existir dentro de sessionStorage.
+ * para no confiar en otros valores que pudieran haberse
+ * guardado dentro de sessionStorage.
  */
 export function obtenerSesion() {
   const almacenamiento =
@@ -242,7 +256,8 @@ export function obtenerSesion() {
       return null
     }
 
-    const sesion = JSON.parse(sesionGuardada)
+    const sesion =
+      JSON.parse(sesionGuardada)
 
     if (
       !sesion ||
@@ -262,7 +277,8 @@ export function obtenerSesion() {
     return {
       accessToken: token,
       tipoToken: 'Bearer',
-      numeroCuenta: obtenerNumeroCuenta(payload),
+      numeroCuenta:
+        obtenerNumeroCuenta(payload),
       rol: obtenerRol(payload),
       expiraEn: payload.exp,
     }
@@ -278,9 +294,11 @@ export function obtenerTokenAcceso() {
   return obtenerSesion()?.accessToken ?? null
 }
 
-// Devuelve el número de cuenta del usuario autenticado.
+// Devuelve el número de cuenta autenticado.
 export function obtenerNumeroCuentaSesion() {
-  return obtenerSesion()?.numeroCuenta ?? null
+  return (
+    obtenerSesion()?.numeroCuenta ?? null
+  )
 }
 
 // Devuelve el rol del usuario autenticado.
@@ -298,8 +316,33 @@ export function limpiarSesion() {
   }
 
   try {
-    almacenamiento.removeItem(CLAVE_SESION)
+    almacenamiento.removeItem(
+      CLAVE_SESION,
+    )
   } catch {
-    // No lanzamos otro error durante el cierre de sesión.
+    /*
+     * No lanzamos otro error durante
+     * la limpieza de la sesión.
+     */
+  }
+}
+
+/*
+ * Elimina el JWT y notifica al contexto
+ * cuando el backend rechaza la sesión.
+ */
+export function invalidarSesion() {
+  limpiarSesion()
+
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.dispatchEvent ===
+      'function'
+  ) {
+    window.dispatchEvent(
+      new Event(
+        EVENTO_SESION_INVALIDADA,
+      ),
+    )
   }
 }

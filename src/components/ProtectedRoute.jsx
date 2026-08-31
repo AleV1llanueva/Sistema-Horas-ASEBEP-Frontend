@@ -2,7 +2,10 @@ import { Navigate, useLocation } from 'react-router'
 import { useUsuario } from '../hooks/useUsuario.js'
 
 // Protege las paginas que necesitan una sesion valida.
-function ProtectedRoute({ children }) {
+function ProtectedRoute({
+    children,
+    rolesPermitidos = [],
+ }) {
     const location = useLocation()
 
     /*
@@ -12,6 +15,7 @@ function ProtectedRoute({ children }) {
     */
    const {
     autenticado,
+    rol,
     sesionComprobada,
    } = useUsuario()
 
@@ -30,6 +34,19 @@ function ProtectedRoute({ children }) {
         />
     )
    }
+
+   /*
+   * Esta validacion controla la navegacion del frotend.
+   */
+  const rolPermitido = rolesPermitidos.length === 0 || rolesPermitidos.includes(rol)
+
+  if (!rolPermitido) {
+    return (
+        <Navigate to="/" replace state={{accesoDenegado: true,
+        }}
+        />
+    )
+  }
 
    return children
 }

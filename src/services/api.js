@@ -1,5 +1,5 @@
 import {
-    limpiarSesion,
+    invalidarSesion,
     obtenerTokenAcceso,
 } from './sesionService.js'
 
@@ -101,7 +101,7 @@ export async function apiFetch(
 
     // Un 401 indica que el token no existe, es invalido o esta vencido
     if (response.status === 401) {
-        limpiarSesion()
+        invalidarSesion()
     }
 
     // Algunas respuestas exitosas no contienen cuerpo.

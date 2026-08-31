@@ -7,11 +7,13 @@ import {
 
 import UsuarioContext from './UsuarioContext.js'
 import {
+  EVENTO_SESION_INVALIDADA,
   limpiarSesion,
   obtenerNumeroCuentaSesion,
   obtenerSesion,
   SesionError,
 } from '../services/sesionService.js'
+
 import { obtenerUsuario } from '../services/usuarioService.js'
 
 // Proporciona la informacion del usuario autenticado
@@ -66,6 +68,30 @@ export function UsuarioProvider({ children }) {
     }
   }, [])
 
+  /*
+  * Mantiene sincronizados sessionStorage y React al arrojar error 401
+  */
+  useEffect(() => {
+    function manejarSesionInvalidada() {
+      setUsuario(null)
+      setCargandoUsuario(false)
+      setErrorUsuario(null)
+      setSesionComprobada(true)
+    }
+
+    window.addEventListener(
+      EVENTO_SESION_INVALIDADA,
+      manejarSesionInvalidada,
+    )
+
+    return () => {
+      window.removeEventListener(
+        EVENTO_SESION_INVALIDADA,
+        manejarSesionInvalidada,
+      )
+    }
+  }, [])
+
   // Al iniciar la app revisamos sessionStorage
   useEffect(() => {
     if (restauracionIniciada.current) {
@@ -83,6 +109,8 @@ export function UsuarioProvider({ children }) {
     cargarUsuario().catch(() => undefined)
   }, [cargarUsuario])
 
+
+
   /*
   * Elimina toda la informacion de autenticacion
   - JWT guardado en sessionStorage
@@ -96,17 +124,22 @@ export function UsuarioProvider({ children }) {
   setSesionComprobada(true)
  }
 
- // ObtenerSesion valida el JWT antes de devolverlo
- const autenticado = Boolean(obtenerSesion())
+// Obtenemos la sesion una sola vez para conocer la autenticacion como el rol
+const sesion =obtenerSesion()
+const autenticado = Boolean(sesion)
+const rol = sesion?.rol ?? null
 
  return (
   <UsuarioContext.Provider
     value={{
       usuario,
       autenticado,
+      rol,
       sesionComprobada,
       cargandoUsuario,
       errorUsuario,
+      modoSimulado: false,
+      iniciarSesionPrueba: null,
       cargarUsuario,
       limpiarUsuario,
     }}

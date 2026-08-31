@@ -1,15 +1,25 @@
 /*
-* Usuario utilizado exclusivamente para desarrollo
-*/
-export const usuarioMock = {
-    credenciales: {
-        rol: 'becario',
-        activo: true,
-    },
+ * Usuario utilizado exclusivamente durante
+ * el desarrollo del portal de becarios.
+ */
 
-    // Informacion personal ficticia
-datosPersonales: {
+// Credenciales ficticias para probar el login.
+export const credencialesUsuarioMock =
+  Object.freeze({
     numeroCuenta: '20249999999',
+    contrasena: 'AsebepBeta2026!',
+  })
+
+export const usuarioMock = {
+  credenciales: {
+    rol: 'becario',
+    activo: true,
+  },
+
+  // Información personal ficticia.
+  datosPersonales: {
+    numeroCuenta:
+      credencialesUsuarioMock.numeroCuenta,
     primerNombre: 'Usuario',
     segundoNombre: 'De',
     primerApellido: 'Prueba',
@@ -26,6 +36,7 @@ datosPersonales: {
     anioNacimiento: 2003,
   },
 
+  // Información ficticia relacionada con la beca.
   datosBecario: {
     periodoInicio: 'III PAC',
     anioInicio: 2024,

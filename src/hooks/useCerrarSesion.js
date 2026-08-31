@@ -1,101 +1,82 @@
-import {
-    useLocation,
-    useNavigate,
-} from 'react-router'
-
-import {
-    cerrarSesionAdmin,
-} from '../admin/principal/login/services/adminAuthService.js'
+import { useNavigate } from 'react-router'
 
 import { useUsuario } from './useUsuario.js'
 import {
-    limpiarNotificaciones,
-    notificarExito,
-    solicitarConfirmacion,
+  limpiarNotificaciones,
+  notificarExito,
+  solicitarConfirmacion,
 } from '../services/notificationService.js'
+import {
+  limpiarSesion,
+} from '../services/sesionService.js'
 
-// Identificadores unicos para las notificaciones
-const ID_CONFIRMACION_CIERRE = 'confirmacion-cierre-sesion'
-const ID_SESION_CERRADA = 'sesion-cerrada'
+// Identificadores únicos para las notificaciones.
+const ID_CONFIRMACION_CIERRE =
+  'confirmacion-cierre-sesion'
 
-const RUTA_LOGIN_USUARIO = '/login'
-const RUTA_LOGIN_ADMIN = '/login-admin'
+const ID_SESION_CERRADA =
+  'sesion-cerrada'
 
-// Estas son las raices de las diferentes areas administrativas del sistema.
-const RUTAS_ADMINISTRATIVAS = [
-    '/admin-principal',
-    '/admin-aportaciones',
-    '/admin-horas',
-]
+const RUTA_LOGIN = '/login'
 
 /*
-* Determina si el cierre de sesion se esta ejecutando desde alguna de las areas administrativas.
-*/
-function esRutaAdministrativa(pathname) {
-    return RUTAS_ADMINISTRATIVAS.some(
-        (rutaAdministrativa) =>
-            pathname === rutaAdministrativa || pathname.startsWith(
-                `${rutaAdministrativa}/`,
-            ),
-    )
-}
-
-/*
-* Centraliza el cierre de sesion tanto para el portal de becarios
-* como para el portal administrativo.
-*/
+ * Centraliza el cierre de sesión para el portal
+ * personal y todas las áreas administrativas.
+ */
 export function useCerrarSesion() {
-    const navigate = useNavigate()
-    const location = useLocation()
-    const { limpiarUsuario } = useUsuario()
+  const navigate = useNavigate()
+  const { limpiarUsuario } = useUsuario()
 
-    const cierreAdministrativo = esRutaAdministrativa(
-        location.pathname,
+  /*
+   * Elimina tanto el JWT general como cualquier
+   * estado personal o simulado mantenido por React.
+   */
+  function cerrarSesion() {
+    limpiarNotificaciones(
+      ID_CONFIRMACION_CIERRE,
     )
 
-    // Elimina la sesion correspondiente y redirige hacia el login correcto.
-    function cerrarSesion() {
-        limpiarNotificaciones(
-            ID_CONFIRMACION_CIERRE,
-        )
+    /*
+     * limpiarSesion elimina el JWT compartido por
+     * usuarios y administradores.
+     */
+    limpiarSesion()
 
-        // El login administrativo utiliza el mismo almacenamiento JWT, pero tiene su propio metodo de limpieza.
-        if (cierreAdministrativo) {
-            cerrarSesionAdmin()
-        }
+    /*
+     * limpiarUsuario elimina los datos personales
+     * y también cualquier sesión simulada.
+     */
+    limpiarUsuario()
 
-        // Tambien limpiamos el estado mantenido por UsuarioContexto para evitar residuos de datos.
-        limpiarUsuario()
-        const rutaDestino =
-            cierreAdministrativo
-                ? RUTA_LOGIN_ADMIN
-                : RUTA_LOGIN_USUARIO
+    /*
+     * Con el login unificado todos los portales
+     * regresan al mismo punto de acceso.
+     */
+    navigate(RUTA_LOGIN, {
+      replace: true,
+    })
 
-        navigate(rutaDestino, {
-            replace: true,
-        })
+    notificarExito({
+      id: ID_SESION_CERRADA,
+      titulo: 'Sesión cerrada',
+      descripcion:
+        'Has salido correctamente del portal ASEBEP.',
+    })
+  }
 
-        notificarExito({
-            id: ID_SESION_CERRADA,
-            titulo: 'Sesión cerrada',
-            descripcion:
-                'Has salido correctamente del portal ASEBEP.',
-        })
-    }
+  // Solicita confirmación antes de cerrar la sesión.
+  function solicitarCierreSesion() {
+    solicitarConfirmacion({
+      id: ID_CONFIRMACION_CIERRE,
+      titulo: '¿Cerrar sesión?',
+      descripcion:
+        'Tendrás que ingresar nuevamente para acceder al portal.',
+      textoConfirmar: 'Confirmar',
+      alConfirmar: cerrarSesion,
+    })
+  }
 
-    // Solicita confirmación antes de cerrar la sesión.
-    function solicitarCierreSesion() {
-        solicitarConfirmacion({
-            id: ID_CONFIRMACION_CIERRE,
-            titulo: '¿Cerrar sesión?',
-            descripcion:
-                'Tendrás que ingresar nuevamente para acceder al portal.',
-            textoConfirmar: 'Confirmar',
-            alConfirmar: cerrarSesion,
-        })
-    }
-
-    return {
-        solicitarCierreSesion,
-    }
+  return {
+    solicitarCierreSesion,
+  }
 }
