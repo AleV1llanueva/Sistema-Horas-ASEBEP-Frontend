@@ -25,6 +25,7 @@ import {
 
 import '../styles/AdminPrincipalDashboard.css'
 
+// Solamente estos estados pueden aparecer dentro del resumen de próximas actividades
 const ESTADOS_VIGENTES = ['programada', 'en-curso']
 
 function obtenerFechaHoy() {
@@ -36,6 +37,7 @@ function obtenerFechaHoy() {
   return `${anio}-${mes}-${dia}`
 }
 
+// Convierte las cantidades metricas en numeros seguros y no muestra valores negativos
 function prepararValor(valor) {
     const numero = Number(valor)
 
@@ -47,13 +49,19 @@ function prepararValor(valor) {
 }
 
 function AdminPrincipalDashboard() {
+  // Por ahora, las metricas administrativas vienen de los datos simulados
     const resumen = adminPrincipalDashboardMock.resumen
 
+  /*
+  * Estados necesarios para controlar:
+  * Las actividades obtenidas, la pantalla de carga, los posibles errores, los intentos de recarga.
+  */
     const [actividades, setActividades] = useState([])
     const [cargandoActividades, setCargandoActividades] = useState(true)
     const [errorActividades, setErrorActividades] = useState('')
     const [recarga, setRecarga] = useState(0)
 
+    // Consulta las actividades mediante el servicio
     useEffect(() => {
       let componenteMontado = true
 
@@ -94,6 +102,7 @@ function AdminPrincipalDashboard() {
       }
     }, [recarga])
 
+    // Muestra las actividades que deben aparecer en la agenda principal
     const actividadesProximas = useMemo(() => {
       const fechaHoy = obtenerFechaHoy()
 
@@ -110,6 +119,7 @@ function AdminPrincipalDashboard() {
         ))
     }, [actividades])
 
+    // Mientras las actividades cargan o existe un error muestra un guion antes de una informacino falsa
     const totalActividades = cargandoActividades || errorActividades
       ? '—'
       : actividadesProximas.length
@@ -161,6 +171,7 @@ function AdminPrincipalDashboard() {
 
    return (
     <div className="admin-principal-dashboard">
+      {/* Encabezado y acceso rápido para crear actividades. */}
       <header className="admin-dashboard-heading">
         <div className="admin-dashboard-heading__copy">
           <p className="admin-dashboard-heading__eyebrow">
@@ -186,6 +197,7 @@ function AdminPrincipalDashboard() {
         </Link>
       </header>
 
+      {/* Resumen general mediante tarjetas reutilizables. */}
       <section
         className="admin-dashboard-metrics"
         aria-label="Resumen administrativo"
@@ -208,6 +220,7 @@ function AdminPrincipalDashboard() {
         </section>
       )}
 
+      {/* Permite volver a intentar la consulta si ocurre un error. */}
       {!cargandoActividades && errorActividades && (
         <section className="admin-activities-panel" role="alert">
           <h2>No fue posible cargar las actividades</h2>
@@ -219,6 +232,7 @@ function AdminPrincipalDashboard() {
         </section>
       )}
 
+      {/* El dashboard muestra como maximo las primeras 4 actividades vigentes y ordenadas */}
       {!cargandoActividades && !errorActividades && (
         <UpcomingActivitiesTable actividades={actividadesProximas.slice(0, 4)} />
       )}

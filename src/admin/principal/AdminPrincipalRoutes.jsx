@@ -9,8 +9,14 @@ import {
     administradorPrincipalMock,
 } from './mocks/adminPrincipalMock.js'
 import AdminPrincipalDashboard from './pages/AdminPrincipalDashboard.jsx'
+// Imports pestaña actividades
 import AdminPrincipalActivities from './pages/AdminPrincipalActivities.jsx'
 import AdminPrincipalCreateActivity from './pages/AdminPrincipalCreateActivity.jsx'
+
+// Imports pestaña estudiantes
+import AdminPrincipalStudents from './pages/AdminPrincipalStudents.jsx'
+import AdminPrincipalStudentDetail from './pages/AdminPrincipalStudentDetail.jsx'
+
 const usarDatosAdminSimulados =
     import.meta.env.DEV && import.meta.env.VITE_USAR_DATOS_ADMIN_SIMULADOS === 'true'
 
@@ -34,8 +40,14 @@ function AdminPrincipalRoutes() {
       <Route element={<AdminLayout administrador={administradorPrincipalMock}/> }>
         <Route index element={<Navigate to="/admin-principal/dashboard" replace /> } />
         <Route path="dashboard" element={<AdminPrincipalDashboard />} />
+        {/* Rutas para pestañas de actividades */}
         <Route path="actividades" element={<AdminPrincipalActivities />} />
         <Route path="actividades/crear" element={<AdminPrincipalCreateActivity />} />
+
+        {/* Rutas para pestañas de estudiantes */}
+        <Route path="estudiantes" element={<AdminPrincipalStudents />} />
+        <Route path="estudiantes/:numeroCuenta" element={<AdminPrincipalStudentDetail />} />
+
         {/*
          * Mientras las demás páginas no estén
          * construidas, cualquier ruta administrativa

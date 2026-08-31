@@ -7,6 +7,12 @@ import {
 import { Navigate, Route, Routes } from 'react-router'
 import { Toaster as SonnerToaster } from 'sonner'
 
+// Imports vista admin
+import AdminPrincipalRoutes from './admin/principal/AdminPrincipalRoutes.jsx'
+import AdminProtectedRoute from './admin/principal/login/components/AdminProtectedRoute.jsx'
+import AdminLogin from './admin/principal/login/pages/AdminLogin.jsx'
+
+// Imports vista usuario
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Home from './pages/Home.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -14,8 +20,6 @@ import Login from './pages/Login.jsx'
 import PasswordRecovery from './pages/PasswordRecovery.jsx'
 import Profile from './pages/Profile.jsx'
 
-// Imports vista admin
-import AdminPrincipalRoutes from './admin/principal/AdminPrincipalRoutes.jsx'
 
 function App() {
   return (
@@ -105,8 +109,10 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /> </ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /> </ProtectedRoute>} />
 
-        {/* Rutas vista administrador */}
-        <Route path="/admin-principal/*" element={<AdminPrincipalRoutes />} />
+        {/* Rutas del login y vista administrador */}
+        <Route path="/login-admin" element={<AdminLogin />} />
+        <Route path="/admin-principal/*" element={<AdminProtectedRoute rolPermitido="Admin General"><AdminPrincipalRoutes /></AdminProtectedRoute>} />
+
         {/* Cualquier direccion desconocida retorna al login*/}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
