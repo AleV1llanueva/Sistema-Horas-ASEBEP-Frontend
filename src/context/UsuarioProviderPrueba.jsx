@@ -1,58 +1,26 @@
 import {
   useCallback,
+  useEffect,
   useState,
 } from 'react'
 
 import {
-  credencialesUsuarioMock,
-  usuarioMock,
-} from '../mocks/usuarioMock.js'
+  iniciarSesionMock,
+  obtenerUsuarioPersonalMock,
+} from '../mocks/autenticacionMock.js'
+
+import {
+  EVENTO_SESION_INVALIDADA,
+  limpiarSesion,
+  obtenerSesion,
+} from '../services/sesionService.js'
+
 import UsuarioContext from './UsuarioContext.js'
 
-const CLAVE_SESION_PRUEBA =
-  'asebep_sesion_usuario_prueba'
-
 /*
- * Obtiene sessionStorage de forma segura para
- * conservar la sesión simulada durante la pestaña actual.
- */
-function obtenerAlmacenamientoPrueba() {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
-/*
- * Comprueba si la cuenta simulada posee
- * una sesión activa en esta pestaña.
- */
-function existeSesionPrueba() {
-  const almacenamiento =
-    obtenerAlmacenamientoPrueba()
-
-  if (!almacenamiento) {
-    return false
-  }
-
-  try {
-    return (
-      almacenamiento.getItem(
-        CLAVE_SESION_PRUEBA,
-      ) ===
-      credencialesUsuarioMock.numeroCuenta
-    )
-  } catch {
-    return false
-  }
-}
-
-// Construye errores similares a los devueltos por la API.
+* Construye errores similares a los enviados por la API.
+* El status permite que Login muestre el mensaje apropiado.
+*/
 function crearErrorPrueba(
   mensaje,
   status,
@@ -64,136 +32,199 @@ function crearErrorPrueba(
   return error
 }
 
+// Recupera la sesion general almacenada y localiza la informacion personal de la cuenta simulada.
+function obtenerEstadoInicial() {
+  const sesion = obtenerSesion()
+
+  if (!sesion) {
+    return {
+      sesion: null,
+      usuario: null,
+    }
+  }
+
+  const usuario = obtenerUsuarioPersonalMock(
+    sesion.numeroCuenta,
+  )
+
+  /* Si la sesion pertenece a una cuenta que ya no existe en el mock,
+  evitamos conservarla.
+  */
+ if (!usuario) {
+  limpiarSesion()
+  return {
+    sesion: null,
+    usuario: null,
+  }
+ }
+
+ return {
+  sesion,
+  usuario,
+ }
+}
+
 /*
- * Provider utilizado exclusivamente para probar
- * la interfaz de usuario sin consultar la API.
- */
+* Utiliza la misma estructura de sesion que el backend,
+* permitiendo autenticar becarios y administradores desde un unico formulario.
+*/
 export function UsuarioProviderPrueba({
   children,
 }) {
-  /*
-   * La sesión simulada permanece al recargar,
-   * pero desaparece al cerrar la pestaña.
-   */
   const [
-    usuario,
-    setUsuario,
-  ] = useState(() =>
-    existeSesionPrueba()
-      ? usuarioMock
-      : null,
-  )
+    estadoAutenticacion,
+    setEstadoAutenticacion,
+  ] = useState(obtenerEstadoInicial)
 
+  const [
+    errorUsuario,
+    setErrorUsuario,
+  ] = useState(null)
+
+  const {
+    sesion,
+    usuario,
+  } = estadoAutenticacion
+
+  // El mock responde localmente, por lo que no necesita mantener un estado visual independiente de carga.
   const cargandoUsuario = false
-  const errorUsuario = null
   const sesionComprobada = true
 
   /*
-   * Valida las credenciales ficticias y crea
-   * una sesión exclusiva para el modo simulado.
-   */
-  const iniciarSesionPrueba =
-    useCallback(async ({
+  * Autentica cualquiera de las cuatro cuentas simuladas.
+  *
+  * iniciarSesionMock genera y guarda el JWT. Despues, el provider
+  * sincroniza la sesion con react.
+  */
+ const iniciarSesionPrueba = useCallback(async ({
+  numeroCuenta,
+  contrasena,
+ }) => {
+  setErrorUsuario(null)
+
+  const sesionCreada =
+    await iniciarSesionMock({
       numeroCuenta,
       contrasena,
-    }) => {
-      const cuentaNormalizada =
-        String(numeroCuenta ?? '').trim()
+    })
 
-      const contrasenaNormalizada =
-        String(contrasena ?? '')
+    const usuarioEncontrado =
+      obtenerUsuarioPersonalMock(
+        sesionCreada.numeroCuenta,
+      )
 
-      const credencialesCorrectas =
-        cuentaNormalizada ===
-          credencialesUsuarioMock.numeroCuenta &&
-        contrasenaNormalizada ===
-          credencialesUsuarioMock.contrasena
-
-      if (!credencialesCorrectas) {
-        throw crearErrorPrueba(
-          'Las credenciales simuladas no son correctas.',
-          401,
-        )
-      }
-
-      const almacenamiento =
-        obtenerAlmacenamientoPrueba()
-
-      if (!almacenamiento) {
-        throw crearErrorPrueba(
-          'El almacenamiento de sesión no está disponible.',
-          500,
-        )
-      }
-
-      try {
-        almacenamiento.setItem(
-          CLAVE_SESION_PRUEBA,
-          credencialesUsuarioMock.numeroCuenta,
-        )
-      } catch {
-        throw crearErrorPrueba(
-          'No fue posible guardar la sesión de prueba.',
-          500,
-        )
-      }
-
-      setUsuario(usuarioMock)
-
-      return usuarioMock
-    }, [])
-
-  /*
-   * Restaura el usuario únicamente cuando existe
-   * una sesión simulada válida en esta pestaña.
-   */
-  const cargarUsuario =
-    useCallback(async () => {
-      if (!existeSesionPrueba()) {
-        setUsuario(null)
+      if (!usuarioEncontrado) {
+        limpiarSesion()
 
         throw crearErrorPrueba(
-          'No existe una sesión de prueba válida.',
-          401,
+          'No se encontró la información personal de la cuenta simulada.',
+          404,
         )
       }
 
-      setUsuario(usuarioMock)
+      setEstadoAutenticacion({
+        sesion: sesionCreada,
+        usuario: usuarioEncontrado,
+      })
 
-      return usuarioMock
-    }, [])
+      /*
+      * Login utilizara este resultado para conocer
+      * el rol y seleccionar su ruta inicial.
+      */
+     return sesionCreada
+ }, [])
 
-  /*
-   * Elimina la sesión simulada y los datos
-   * mantenidos dentro del estado de React.
-   */
-  const limpiarUsuario =
-    useCallback(() => {
-      const almacenamiento =
-        obtenerAlmacenamientoPrueba()
+ /*
+ * Recupera la informacion personal del becario
+ * asociado con la sesion actual.
+ * Tambien funciona para los admins cuando ingresan a su portal personal.
+ */
+const cargarUsuario =
+ useCallback(async () => {
+  const sesionActual = obtenerSesion()
 
-      if (almacenamiento) {
-        try {
-          almacenamiento.removeItem(
-            CLAVE_SESION_PRUEBA,
-          )
-        } catch {
-          /*
-           * Aunque sessionStorage falle,
-           * siempre limpiamos el estado de React.
-           */
-        }
-      }
+  if (!sesionActual) {
+    const error = crearErrorPrueba(
+      'No existe una sesión de prueba válida.',
+      401,
+    )
 
-      setUsuario(null)
-    }, [])
+    setEstadoAutenticacion({
+      sesion: null,
+      usuario: null,
+    })
+    setErrorUsuario(error)
 
-  const autenticado =
-    Boolean(usuario) &&
-    existeSesionPrueba()
+    throw error
+  }
 
-  const rol =
-    usuario?.credenciales?.rol ?? null
+  const usuarioEncontrado = obtenerUsuarioPersonalMock(
+    sesionActual.numeroCuenta,
+  )
+
+  if (!usuarioEncontrado) {
+    const error = crearErrorPrueba(
+      'No se encontró la información personal de la cuenta simulada.',
+      404,
+    )
+
+    limpiarSesion()
+
+    setEstadoAutenticacion({
+      sesion: null,
+      usuario: null,
+    })
+    setErrorUsuario(error)
+
+    throw error
+  }
+
+  setEstadoAutenticacion({
+    sesion: sesionActual,
+    usuario: usuarioEncontrado,
+  })
+  setErrorUsuario(null)
+
+  return usuarioEncontrado
+ }, [])
+
+ // Elimina el JWT y todos los datos mantenidos por el provider de prueba.
+ const limpiarUsuario =
+  useCallback(() => {
+    limpiarSesion()
+
+    setEstadoAutenticacion({
+      sesion: null,
+      usuario: null,
+    })
+    setErrorUsuario(null)
+  }, [])
+
+  // Sincroniza el contexto si apiFetch determina que la sesion dejo de ser valida.
+  useEffect(() => {
+    function manejarSesionInvalidada() {
+      setEstadoAutenticacion({
+        sesion: null,
+        usuario: null,
+      })
+      setErrorUsuario(null)
+    }
+
+    window.addEventListener(
+      EVENTO_SESION_INVALIDADA,
+      manejarSesionInvalidada,
+    )
+
+    return () => {
+      window.removeEventListener(
+        EVENTO_SESION_INVALIDADA,
+        manejarSesionInvalidada,
+      )
+    }
+  }, [])
+
+  const autenticado = Boolean(sesion)
+  const rol = sesion?.rol ?? null
 
   return (
     <UsuarioContext.Provider
@@ -209,8 +240,8 @@ export function UsuarioProviderPrueba({
         cargarUsuario,
         limpiarUsuario,
       }}
-    >
-      {children}
-    </UsuarioContext.Provider>
+      >
+        {children}
+      </UsuarioContext.Provider>
   )
 }

@@ -11,13 +11,15 @@ import {
 } from 'react-router'
 import { Toaster as SonnerToaster } from 'sonner'
 
-// Componentes y rutas administrativas.
+// Imports de rutas para administrador
 import AdminPrincipalRoutes from './admin/principal/AdminPrincipalRoutes.jsx'
-import AdminProtectedRoute from './admin/principal/login/components/AdminProtectedRoute.jsx'
-import AdminLogin from './admin/principal/login/pages/AdminLogin.jsx'
-
-// Componentes y rutas del portal personal.
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import {
+  ROL_ADMIN_GENERAL,
+  ROLES_PORTAL_PERSONAL,
+} from './config/rutasPorRol.js'
+
+// Imports de rutas de usuario.
 import Dashboard from './pages/Dashboard.jsx'
 import FirstAccess from './pages/FirstAccess.jsx'
 import Home from './pages/Home.jsx'
@@ -120,17 +122,15 @@ function App() {
         <Route path="/recuperar-contrasena" element={<PasswordRecovery />} />
         <Route path="/primer-ingreso" element={<FirstAccess />} />
 
-        {/*
-         * Ruta administrativa temporal.
-         * Más adelante redirigirá hacia /login.
-         */}
-        <Route path="/login-admin" element={<AdminLogin />} />
         {/* Rutas protegidas del portal personal. */}
-        <Route path="/dashboard" element={<ProtectedRoute rolesPermitidos={['becario']}><Dashboard /></ProtectedRoute>} />
-        <Route path="/perfil" element={<ProtectedRoute rolesPermitidos={['becario']}><Profile /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><Dashboard /></ProtectedRoute>} />
+        <Route path="/perfil" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><Profile /></ProtectedRoute>} />
 
-        {/* Rutas protegidas del administrador principal. */}
-        <Route path="/admin-principal/*" element={<AdminProtectedRoute rolPermitido="Admin General"><AdminPrincipalRoutes /> </AdminProtectedRoute>}/>
+        {/* Rutas protegidas del administrador principal.
+        EL administrador general unicamente puede entrar cuando el JWT contiene
+        el rol Admin General
+        */}
+        <Route path="/admin-principal/*" element={<ProtectedRoute rolesPermitidos={[ROL_ADMIN_GENERAL,]}> <AdminPrincipalRoutes /> </ProtectedRoute>} />
 
         {/* Las direcciones desconocidas regresan al inicio. */}
         <Route path="*" element={<Navigate to="/" replace />} />

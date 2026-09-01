@@ -4,13 +4,18 @@ import {
   useNavigate,
 } from 'react-router'
 
+import {
+  obtenerRutaInicialPorRol,
+} from '../config/rutasPorRol.js'
 import { useUsuario } from '../hooks/useUsuario.js'
 import { iniciarSesion } from '../services/authService.js'
 import {
   notificarError,
   notificarExito,
 } from '../services/notificationService.js'
-import { SesionError } from '../services/sesionService.js'
+import {
+  SesionError,
+} from '../services/sesionService.js'
 import '../styles/Login.css'
 
 const formularioInicial = {
@@ -57,8 +62,8 @@ function Login() {
   const navigate = useNavigate()
 
   /*
-   * El contexto conserva tanto el inicio de sesión
-   * real como el modo simulado utilizado en desarrollo.
+   * El contexto permite utilizar el mismo formulario
+   * con la API real o con las cuentas simuladas.
    */
   const {
     cargarUsuario,
@@ -124,7 +129,7 @@ function Login() {
     }
 
     /*
-     * En el inicio de sesión solo comprobamos
+     * En el inicio de sesión únicamente comprobamos
      * que la contraseña haya sido proporcionada.
      */
     if (!formulario.contrasena) {
@@ -138,13 +143,13 @@ function Login() {
   // Explica el error ocurrido al intentar iniciar sesión.
   function obtenerDescripcionError(error) {
     /*
-     * SesionError significa que el backend respondió,
-     * pero el JWT está incompleto, vencido o no es válido.
+     * SesionError significa que el JWT está incompleto,
+     * vencido o contiene un rol no reconocido.
      */
     if (error instanceof SesionError) {
       return (
-        'La sesión enviada por el servidor está incompleta. ' +
-        'Verifica que el JWT contenga el número de cuenta, el rol y la expiración.'
+        'La sesión enviada por el servidor está incompleta ' +
+        'o contiene un rol que no está autorizado por ASEBEP.'
       )
     }
 
@@ -158,7 +163,7 @@ function Login() {
        * Comprobamos si el backend indica que la
        * cuenta todavía no ha sido activada.
        */
-      if (mensajeServidor.includes('inactivo')) {
+      if (mensajeServidor.includes('inactiv')) {
         return (
           'Tu cuenta todavía no está activa. ' +
           'Configúrala desde la opción de primer ingreso.'
@@ -190,10 +195,6 @@ function Login() {
       )
     }
 
-    /*
-     * Para respuestas 400, 404 o 500, apiFetch prepara
-     * el mensaje enviado por el backend.
-     */
     return (
       error.message ||
       'No fue posible completar la operación.'
@@ -204,10 +205,10 @@ function Login() {
    * Procesa el envío del formulario:
    * 1. Valida los campos.
    * 2. Evita solicitudes duplicadas.
-   * 3. Utiliza el login simulado o el backend.
-   * 4. Carga al usuario cuando existe un JWT real.
-   * 5. Limpia sesiones incompletas si ocurre un error.
-   * 6. Redirige al Dashboard.
+   * 3. Inicia la sesión simulada o real.
+   * 4. Obtiene la ruta correspondiente al rol.
+   * 5. Carga la información personal de la cuenta.
+   * 6. Redirige al dashboard apropiado.
    */
   async function manejarEnvio(event) {
     event.preventDefault()
@@ -227,63 +228,74 @@ function Login() {
     setEnviando(true)
 
     /*
-     * Permite saber si debemos limpiar una sesión
-     * parcialmente creada cuando ocurre un error.
+     * Permite limpiar una sesión parcialmente creada
+     * si falla alguno de los pasos posteriores.
      */
     let sesionCreada = false
 
     try {
+      let sesion
+
       if (modoSimulado) {
-        /*
-         * En modo simulado validamos las credenciales
-         * ficticias sin consultar el backend.
-         */
-        await iniciarSesionPrueba({
+        sesion = await iniciarSesionPrueba({
           numeroCuenta:
             formulario.numeroCuenta,
           contrasena:
             formulario.contrasena,
         })
-
-        sesionCreada = true
       } else {
-        /*
-         * En modo real se obtiene el JWT y después
-         * se consulta la información del usuario.
-         */
-        await iniciarSesion({
+        sesion = await iniciarSesion({
           numeroCuenta:
             formulario.numeroCuenta,
           contrasena:
             formulario.contrasena,
         })
-
-        sesionCreada = true
-
-        await cargarUsuario()
       }
 
-      // Elimina las credenciales del estado del formulario.
+      sesionCreada = true
+
+      /*
+       * El rol proviene del JWT, no del formulario
+       * ni de un valor elegido por el usuario.
+       */
+      const rutaInicial =
+        obtenerRutaInicialPorRol(
+          sesion?.rol,
+        )
+
+      if (!rutaInicial) {
+        throw new SesionError(
+          'El JWT contiene un rol que no está reconocido.',
+        )
+      }
+
+      /*
+       * Becarios y administradores tienen información
+       * personal dentro del portal de becas.
+       */
+      await cargarUsuario()
+
+      // Elimina las credenciales del formulario.
       setFormulario(formularioInicial)
 
       notificarExito({
         id: ID_NOTIFICACION_LOGIN,
         titulo: 'Inicio de sesión correcto',
         descripcion:
-          'Bienvenido al portal de becas ASEBEP.',
+          'Bienvenido al portal de ASEBEP.',
       })
 
       /*
-       * replace evita regresar al Login utilizando
+       * replace evita regresar al Login mediante
        * el botón atrás del navegador.
        */
-      navigate('/dashboard', {
+      navigate(rutaInicial, {
         replace: true,
       })
     } catch (error) {
       /*
-       * Si la sesión fue creada pero el resto del
-       * proceso falló, eliminamos sus datos.
+       * Si el JWT fue guardado pero falló otro paso,
+       * eliminamos toda la sesión incompleta.
        */
       if (sesionCreada) {
         limpiarUsuario()
@@ -300,7 +312,7 @@ function Login() {
         error instanceof SesionError
           ? 'Sesión inválida'
           : error.status === 401
-            ? mensajeError.includes('inactivo')
+            ? mensajeError.includes('inactiv')
               ? 'Cuenta inactiva'
               : 'Credenciales incorrectas'
             : 'No fue posible iniciar sesión'
@@ -345,23 +357,16 @@ function Login() {
           </div>
         </header>
 
-        {/*
-         * Esta introducción se muestra únicamente
-         * en dispositivos pequeños.
-         */}
+        {/* Introducción visible únicamente en pantallas pequeñas. */}
         <div className="login-intro">
           <h2>Bienvenido</h2>
 
           <p>
-            Ingresa tus credenciales para acceder a tu
-            panel de becario.
+            Ingresa tus credenciales para acceder al
+            portal correspondiente.
           </p>
         </div>
 
-        {/*
-         * onSubmit conecta el formulario con la función
-         * que valida y envía las credenciales.
-         */}
         <form
           className="login-card"
           onSubmit={manejarEnvio}
@@ -469,12 +474,6 @@ function Login() {
             )}
           </div>
 
-          {/*
-           * disabled evita solicitudes duplicadas.
-           *
-           * aria-busy comunica a las tecnologías
-           * de asistencia que la acción está en proceso.
-           */}
           <button
             className="login-button"
             type="submit"
@@ -494,10 +493,6 @@ function Login() {
           </button>
         </form>
 
-        {/*
-         * El primer enlace permite activar cuentas nuevas.
-         * El segundo conserva la recuperación existente.
-         */}
         <nav
           className="access-links"
           aria-label="Opciones de acceso"
