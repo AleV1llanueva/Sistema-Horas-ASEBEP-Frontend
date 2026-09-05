@@ -1,52 +1,82 @@
 import { useNavigate } from 'react-router'
-import { useUsuario } from './useUsuario'
+
+import { useUsuario } from './useUsuario.js'
 import {
-    limpiarNotificaciones,
-    notificarExito,
-    solicitarConfirmacion,
+  limpiarNotificaciones,
+  notificarExito,
+  solicitarConfirmacion,
 } from '../services/notificationService.js'
+import {
+  limpiarSesion,
+} from '../services/sesionService.js'
 
-// Identificadores unicos para las notificaciones
-const ID_CONFIRMACION_CIERRE = 'confirmacion-cierre-sesion'
-const ID_SESION_CERRADA = 'sesion-cerrada'
+// Identificadores únicos para las notificaciones.
+const ID_CONFIRMACION_CIERRE =
+  'confirmacion-cierre-sesion'
 
-// Centraliza todo el proceso de cierre de sesion (MobileNavigarion and AppSidebar)
+const ID_SESION_CERRADA =
+  'sesion-cerrada'
+
+const RUTA_LOGIN = '/login'
+
+/*
+ * Centraliza el cierre de sesión para el portal
+ * personal y todas las áreas administrativas.
+ */
 export function useCerrarSesion() {
-    const navigate = useNavigate()
-    const { limpiarUsuario } = useUsuario()
+  const navigate = useNavigate()
+  const { limpiarUsuario } = useUsuario()
 
-    // Ejecuta el cierre de sesion al recibir confirmacion del usuario
-    function cerrarSesion() {
-        limpiarNotificaciones(
-            ID_CONFIRMACION_CIERRE,
-        )
-        
-        limpiarUsuario()
-        navigate('/login', {
-            replace: true,
-        })
+  /*
+   * Elimina tanto el JWT general como cualquier
+   * estado personal o simulado mantenido por React.
+   */
+  function cerrarSesion() {
+    limpiarNotificaciones(
+      ID_CONFIRMACION_CIERRE,
+    )
 
-        // Informamos el cierre de sesion exitoso
-        notificarExito({
-            id: ID_SESION_CERRADA,
-            titulo: 'Sesión cerrada',
-            descripcion:
-                'Has salido correctamente del portal ASEBEP.',
-        })
-    }
+    /*
+     * limpiarSesion elimina el JWT compartido por
+     * usuarios y administradores.
+     */
+    limpiarSesion()
 
-    // Solicita confirmacion antes de ejecutar una accion sensible
-    function solicitarCierreSesion() {
-        solicitarConfirmacion({
-            id: ID_CONFIRMACION_CIERRE,
-            titulo: '¿Cerrar sesión?',
-            descripcion: 'Tendrás que ingresar nuevamente para acceder al portal.',
-            textoConfirmar: 'Confirmar',
-            alConfirmar: cerrarSesion,
-        })
-    }
+    /*
+     * limpiarUsuario elimina los datos personales
+     * y también cualquier sesión simulada.
+     */
+    limpiarUsuario()
 
-    return {
-        solicitarCierreSesion,
-    }
+    /*
+     * Con el login unificado todos los portales
+     * regresan al mismo punto de acceso.
+     */
+    navigate(RUTA_LOGIN, {
+      replace: true,
+    })
+
+    notificarExito({
+      id: ID_SESION_CERRADA,
+      titulo: 'Sesión cerrada',
+      descripcion:
+        'Has salido correctamente del portal ASEBEP.',
+    })
+  }
+
+  // Solicita confirmación antes de cerrar la sesión.
+  function solicitarCierreSesion() {
+    solicitarConfirmacion({
+      id: ID_CONFIRMACION_CIERRE,
+      titulo: '¿Cerrar sesión?',
+      descripcion:
+        'Tendrás que ingresar nuevamente para acceder al portal.',
+      textoConfirmar: 'Confirmar',
+      alConfirmar: cerrarSesion,
+    })
+  }
+
+  return {
+    solicitarCierreSesion,
+  }
 }

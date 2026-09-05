@@ -95,35 +95,39 @@ function PasswordRecovery() {
   const pinVerificado = false
 
   const requisitos = {
-    longitud: contrasena.length >= 10,
+    longitud: contrasena.length >= 8,
+
     mayusculaMinuscula:
-      /[a-z]/.test(contrasena) &&
-      /[A-Z]/.test(contrasena),
+    /[a-z]/.test(contrasena) &&
+    /[A-Z]/.test(contrasena),
+
     numero: /\d/.test(contrasena),
-    especial:
-      /[^A-Za-z0-9]/.test(contrasena),
+
     coinciden:
       Boolean(contrasena) &&
       contrasena === confirmacion,
   }
 
-  const totalCumplidos =
-    Object.values(requisitos).filter(Boolean).length
+  const totalCumplidos = Object.values(requisitos).filter(Boolean).length
 
-  const porcentajeFortaleza =
-    (totalCumplidos / 5) * 100
+  const requisitosCumplidos = totalCumplidos === 4
+  const porcentajeFortaleza = (totalCumplidos / 4) * 100
 
   let etiquetaFortaleza = 'Sin evaluar'
 
-  if (totalCumplidos >= 1) {
+  if (totalCumplidos === 1) {
     etiquetaFortaleza = 'Débil'
   }
 
-  if (totalCumplidos >= 3) {
+  if (totalCumplidos === 2) {
     etiquetaFortaleza = 'Media'
   }
 
-  if (totalCumplidos === 5) {
+  if (totalCumplidos === 3) {
+    etiquetaFortaleza = 'Buena'
+  }
+
+  if (totalCumplidos === 4) {
     etiquetaFortaleza = 'Fuerte'
   }
 
@@ -186,7 +190,7 @@ function PasswordRecovery() {
       return
     }
 
-    if (totalCumplidos !== 5) {
+    if (!requisitosCumplidos) {
       notificarError({
         id: ID_NUEVA_CONTRASENA,
         titulo: 'Revisa la contraseña',
@@ -495,7 +499,7 @@ function PasswordRecovery() {
                 type="submit"
                 disabled={
                   !pinVerificado ||
-                  totalCumplidos !== 5
+                  !requisitosCumplidos
                 }
               >
                 Actualizar contraseña
@@ -512,7 +516,7 @@ function PasswordRecovery() {
                 <Requisito
                   cumplido={requisitos.longitud}
                 >
-                  Mínimo 10 caracteres
+                  Mínimo 8 caracteres
                 </Requisito>
 
                 <Requisito
@@ -527,12 +531,6 @@ function PasswordRecovery() {
                   cumplido={requisitos.numero}
                 >
                   Al menos un número
-                </Requisito>
-
-                <Requisito
-                  cumplido={requisitos.especial}
-                >
-                  Al menos un carácter especial
                 </Requisito>
 
                 <Requisito
