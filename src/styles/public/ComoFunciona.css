@@ -1,0 +1,545 @@
+/* CONFIGURACIÓN GENERAL */
+.public-how {
+  --how-navy: #002b4f;
+  --how-navy-hover: #0b406a;
+  --how-blue: #0b5688;
+  --how-blue-soft: #dcecf8;
+  --how-background: #f6f8fb;
+  --how-white: #ffffff;
+  --how-text: #10283e;
+  --how-text-soft: #314c61;
+  --how-muted: #647383;
+  --how-border: #dbe2e8;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--how-text);
+  background: var(--how-background);
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+.public-how,
+.public-how *,
+.public-how *::before,
+.public-how *::after {
+  box-sizing: border-box;
+}
+
+.public-how__main a {
+  text-decoration: none;
+}
+
+.public-how__main a:focus-visible {
+  outline: 3px solid rgb(75 145 196 / 36%);
+  outline-offset: 3px;
+}
+
+/* CONTENIDO PRINCIPAL */
+.public-how__main {
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+  padding:
+    72px
+    clamp(24px, 4vw, 56px)
+    88px;
+}
+
+.public-how__content {
+  width: 100%;
+}
+
+/* ENCABEZADO DE LA PÁGINA */
+
+.public-how__header {
+  max-width: 860px;
+  margin: 0 auto 50px;
+  text-align: center;
+}
+
+.public-how__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 18px;
+  color: var(--how-blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.public-how__title {
+  margin: 0;
+  color: var(--how-navy);
+  font-size: clamp(2.7rem, 5vw, 3.7rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.public-how__description {
+  max-width: 780px;
+  margin: 22px auto 0;
+  color: var(--how-text-soft);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+/* SECCIONES PRINCIPALES */
+
+.public-how__section {
+  width: 100%;
+  margin-bottom: 28px;
+  padding: 34px;
+  border: 1px solid var(--how-border);
+  border-radius: 14px;
+  background: var(--how-white);
+  box-shadow: 0 12px 32px rgb(10 39 64 / 6%);
+}
+
+.public-how__section--private {
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #f9fcfe 100%
+    );
+}
+
+.public-how__section-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.public-how__section-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+}
+
+.public-how__section-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.public-how__section-icon--blue {
+  color: var(--how-blue);
+  background: var(--how-blue-soft);
+}
+
+.public-how__section-icon--navy {
+  color: var(--how-white);
+  background: var(--how-navy);
+  box-shadow: 0 8px 18px rgb(0 43 79 / 16%);
+}
+
+.public-how__section-copy {
+  min-width: 0;
+}
+
+.public-how__section-number {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--how-blue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.public-how__section-copy h2 {
+  margin: 0;
+  color: var(--how-navy);
+  font-size: 1.55rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.public-how__section-description {
+  max-width: 840px;
+  margin: 20px 0 28px;
+  color: var(--how-text-soft);
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+/* TARJETAS DE FUNCIONALIDADES */
+
+.public-how__feature-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.public-how__feature-grid--compact {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.public-how__feature-card {
+  min-width: 0;
+  min-height: 154px;
+  padding: 23px;
+  border: 1px solid var(--how-border);
+  border-top: 4px solid transparent;
+  border-radius: 10px;
+  background: var(--how-white);
+  box-shadow: 0 7px 20px rgb(10 39 64 / 4%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.public-how__feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 13px 28px rgb(10 39 64 / 8%);
+}
+
+.public-how__feature-card--blue {
+  border-top-color: var(--how-blue);
+}
+
+.public-how__feature-card--navy {
+  border-top-color: var(--how-navy);
+}
+
+.public-how__feature-card h3,
+.public-how__feature-card h4 {
+  margin: 0 0 11px;
+  color: var(--how-text);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.public-how__feature-card p {
+  margin: 0;
+  color: var(--how-text-soft);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+/* GRUPOS DEL PORTAL PRIVADO */
+
+.public-how__groups {
+  display: grid;
+  gap: 22px;
+  margin-top: 30px;
+}
+
+.public-how__group {
+  padding: 24px;
+  border: 1px solid #e4ebf0;
+  border-radius: 11px;
+  background: #f7fafc;
+}
+
+.public-how__group-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.public-how__group-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+}
+
+.public-how__group-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.public-how__group-icon--blue {
+  color: var(--how-blue);
+  background: var(--how-blue-soft);
+}
+
+.public-how__group-icon--navy {
+  color: var(--how-white);
+  background: var(--how-navy);
+}
+
+.public-how__group-heading h3 {
+  margin: 0;
+  color: var(--how-navy);
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+/* LLAMADO A LA ACCIÓN */
+
+.public-how__callout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 36px;
+  width: 100%;
+  margin-top: 34px;
+  padding: 34px 38px;
+  border-radius: 14px;
+  background: var(--how-navy);
+  box-shadow: 0 16px 34px rgb(0 43 79 / 16%);
+}
+
+.public-how__callout-copy h2 {
+  margin: 0;
+  color: var(--how-white);
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.public-how__callout-copy p {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: #cbd9e4;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.public-how a.public-how__callout-link,
+.public-how a.public-how__callout-link:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 22px;
+  color: var(--how-navy);
+  border-radius: 8px;
+  background: var(--how-white);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 14%);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.public-how__callout-link:hover {
+  transform: translateY(-2px);
+  background: var(--how-blue-soft);
+  box-shadow: 0 11px 22px rgb(0 0 0 / 18%);
+}
+
+.public-how__callout-link svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* COMPUTADORAS PEQUEÑAS Y TABLETS */
+
+@media (width <= 1000px) {
+  .public-how__feature-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .public-how__feature-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .public-how__feature-grid--compact
+    > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+@media (width <= 900px) {
+  .public-how__main {
+    padding:
+      60px
+      32px
+      76px;
+  }
+
+  .public-how__header {
+    margin-bottom: 42px;
+  }
+
+  .public-how__section {
+    padding: 30px;
+  }
+
+  .public-how__callout {
+    gap: 28px;
+    padding: 32px;
+  }
+}
+
+/* TABLETS VERTICALES */
+
+@media (width <= 720px) {
+  .public-how__main {
+    padding:
+      50px
+      20px
+      68px;
+  }
+
+  .public-how__header {
+    margin-bottom: 36px;
+  }
+
+  .public-how__description {
+    font-size: 1rem;
+  }
+
+  .public-how__section {
+    padding: 26px 22px;
+  }
+
+  .public-how__feature-grid,
+  .public-how__feature-grid--compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .public-how__feature-grid
+    > :last-child:nth-child(odd),
+  .public-how__feature-grid--compact
+    > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .public-how__feature-card {
+    min-height: 0;
+  }
+
+  .public-how__callout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .public-how__callout-link {
+    width: 100%;
+  }
+}
+
+/* CELULARES */
+
+@media (width <= 480px) {
+  .public-how__main {
+    padding:
+      42px
+      16px
+      58px;
+  }
+
+  .public-how__header {
+    margin-bottom: 30px;
+  }
+
+  .public-how__eyebrow {
+    margin-bottom: 14px;
+
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+  }
+
+  .public-how__title {
+    font-size: 2.25rem;
+  }
+
+  .public-how__description {
+    margin-top: 18px;
+    font-size: 0.94rem;
+    line-height: 1.65;
+  }
+
+  .public-how__section {
+    margin-bottom: 20px;
+    padding: 22px 18px;
+    border-radius: 12px;
+  }
+
+  .public-how__section-heading {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .public-how__section-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+  }
+
+  .public-how__section-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .public-how__section-copy h2 {
+    font-size: 1.25rem;
+  }
+
+  .public-how__section-description {
+    margin:
+      18px
+      0
+      22px;
+    font-size: 0.91rem;
+    line-height: 1.65;
+  }
+
+  .public-how__feature-card {
+    padding: 20px;
+    border-radius: 9px;
+  }
+
+  .public-how__feature-card p {
+    font-size: 0.88rem;
+  }
+
+  .public-how__group {
+    padding: 18px;
+    border-radius: 10px;
+  }
+
+  .public-how__group-heading {
+    margin-bottom: 16px;
+  }
+
+  .public-how__group-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .public-how__callout {
+    gap: 22px;
+    margin-top: 26px;
+    padding: 26px 22px;
+    border-radius: 12px;
+  }
+
+  .public-how__callout-copy h2 {
+    font-size: 1.2rem;
+  }
+
+  .public-how__callout-copy p {
+    font-size: 0.9rem;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+
+@media (prefers-reduced-motion: reduce) {
+  .public-how__feature-card,
+  .public-how__callout-link {
+    transition: none;
+  }
+}

@@ -1,18 +1,11 @@
 import {
   CalendarDays,
   Clock3,
-  ImagePlus,
   MapPin,
   Plus,
-  TreePine,
   UsersRound,
-  X,
 } from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useState } from 'react'
 import {
   Link,
   useNavigate,
@@ -28,14 +21,6 @@ import {
   crearActividad,
 } from '../services/adminActividadesService.js'
 import '../styles/AdminPrincipalCreateActivity.css'
-
-const TAMANO_MAXIMO_IMAGEN =
-  5 * 1024 * 1024
-
-const TIPOS_IMAGEN_PERMITIDOS = [
-  'image/jpeg',
-  'image/png',
-]
 
 const FORMULARIO_INICIAL = {
   titulo: '',
@@ -212,9 +197,6 @@ function validarFormulario(
 function AdminPrincipalCreateActivity() {
   const navigate = useNavigate()
 
-  const imagenInputRef =
-    useRef(null)
-
   const [
     formulario,
     setFormulario,
@@ -226,40 +208,15 @@ function AdminPrincipalCreateActivity() {
   ] = useState({})
 
   const [
-    imagenArchivo,
-    setImagenArchivo,
-  ] = useState(null)
-
-  const [
-    imagenVistaPrevia,
-    setImagenVistaPrevia,
-  ] = useState('')
-
-  const [
     publicando,
     setPublicando,
   ] = useState(false)
-
-  /*
-   * Libera la URL temporal de la imagen cuando cambia
-   * o cuando el componente deja de mostrarse.
-   */
-  useEffect(() => {
-    return () => {
-      if (imagenVistaPrevia) {
-        URL.revokeObjectURL(
-          imagenVistaPrevia,
-        )
-      }
-    }
-  }, [imagenVistaPrevia])
 
   const formularioModificado =
     Object.values(formulario).some(
       (valor) =>
         String(valor).trim() !== '',
-    ) ||
-    Boolean(imagenArchivo)
+    )
 
   function actualizarCampo(evento) {
     const {
@@ -280,74 +237,6 @@ function AdminPrincipalCreateActivity() {
         [name]: '',
       }),
     )
-  }
-
-  function seleccionarImagen(evento) {
-    const archivo =
-      evento.target.files?.[0]
-
-    if (!archivo) {
-      return
-    }
-
-    if (
-      !TIPOS_IMAGEN_PERMITIDOS.includes(
-        archivo.type,
-      )
-    ) {
-      setErrores(
-        (erroresActuales) => ({
-          ...erroresActuales,
-          imagen:
-            'Selecciona una imagen JPG o PNG.',
-        }),
-      )
-
-      evento.target.value = ''
-
-      return
-    }
-
-    if (
-      archivo.size >
-      TAMANO_MAXIMO_IMAGEN
-    ) {
-      setErrores(
-        (erroresActuales) => ({
-          ...erroresActuales,
-          imagen:
-            'La imagen no puede superar los 5 MB.',
-        }),
-      )
-
-      evento.target.value = ''
-
-      return
-    }
-
-    const urlTemporal =
-      URL.createObjectURL(archivo)
-
-    setImagenArchivo(archivo)
-    setImagenVistaPrevia(
-      urlTemporal,
-    )
-
-    setErrores(
-      (erroresActuales) => ({
-        ...erroresActuales,
-        imagen: '',
-      }),
-    )
-  }
-
-  function eliminarImagen() {
-    setImagenArchivo(null)
-    setImagenVistaPrevia('')
-
-    if (imagenInputRef.current) {
-      imagenInputRef.current.value = ''
-    }
   }
 
   function regresarAlListado() {
@@ -411,12 +300,6 @@ function AdminPrincipalCreateActivity() {
     try {
       await crearActividad({
         ...formulario,
-
-        /*
-         * La imagen se utiliza como vista previa.
-         * El archivo real se enviará cuando conectemos el backend.
-         */
-        imagen: null,
       })
 
       notificarExito({
@@ -746,58 +629,6 @@ function AdminPrincipalCreateActivity() {
             )}
           </div>
 
-          <div className="admin-create-field admin-create-field--full">
-            <label htmlFor="actividad-imagen">
-              Imagen de la actividad
-              <small>(opcional)</small>
-            </label>
-
-            <div className="admin-create-image-selector">
-              <ImagePlus aria-hidden="true" />
-
-              <div>
-                <label htmlFor="actividad-imagen">
-                  Seleccionar imagen
-                </label>
-
-                <p>
-                  Formatos JPG o PNG. Tamaño
-                  máximo de 5 MB.
-                </p>
-              </div>
-
-              {imagenArchivo && (
-                <button
-                  type="button"
-                  aria-label="Quitar imagen"
-                  onClick={eliminarImagen}
-                >
-                  <X aria-hidden="true" />
-                </button>
-              )}
-
-              <input
-                ref={imagenInputRef}
-                id="actividad-imagen"
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={seleccionarImagen}
-              />
-            </div>
-
-            {imagenArchivo && (
-              <small className="admin-create-image-name">
-                {imagenArchivo.name}
-              </small>
-            )}
-
-            {errores.imagen && (
-              <p className="admin-create-field__error">
-                {errores.imagen}
-              </p>
-            )}
-          </div>
-
           <footer className="admin-create-activity-form__actions">
             <button
               type="button"
@@ -828,18 +659,6 @@ function AdminPrincipalCreateActivity() {
 
             <span>Borrador</span>
           </header>
-
-          {imagenVistaPrevia ? (
-            <img
-              className="admin-create-preview-image"
-              src={imagenVistaPrevia}
-              alt=""
-            />
-          ) : (
-            <div className="admin-create-preview-placeholder">
-              <TreePine aria-hidden="true" />
-            </div>
-          )}
 
           <div className="admin-create-preview-content">
             <h3>

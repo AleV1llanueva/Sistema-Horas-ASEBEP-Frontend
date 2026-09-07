@@ -409,6 +409,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .summary-action:hover {

@@ -239,121 +239,6 @@
   line-height: 1.4;
 }
 
-/* SELECTOR DE IMAGEN */
-.admin-create-image-selector {
-  min-height: 86px;
-  display: flex;
-  align-items: center;
-  position: relative;
-  gap: 14px;
-  padding: 14px 16px;
-  border:
-    1px dashed #afc0ce;
-  border-radius: 9px;
-  background: #fbfcfd;
-  transition:
-    border-color 160ms ease,
-    background 160ms ease;
-}
-
-.admin-create-image-selector:hover {
-  border-color: var(--admin-focus);
-  background: #f5f9fc;
-}
-
-.admin-create-image-selector > svg {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  padding: 9px;
-  color: var(--admin-blue);
-  border:
-    1px solid var(--admin-border);
-  border-radius: 8px;
-  background: var(--admin-white);
-}
-
-.admin-create-image-selector > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.admin-create-image-selector
-  > div
-  > label {
-  color: var(--admin-blue);
-  font-size: 0.75rem;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.admin-create-image-selector
-  > div
-  > label:hover {
-  color: var(--admin-navy);
-  text-decoration: underline;
-}
-
-.admin-create-image-selector
-  > div
-  > p {
-  margin: 5px 0 0;
-  color: var(--admin-muted);
-  font-size: 0.65rem;
-  line-height: 1.4;
-}
-
-.admin-create-image-selector
-  > input[type='file'] {
-  width: 1px;
-  height: 1px;
-  position: absolute;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.admin-create-image-selector > button {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  padding: 0;
-  color: var(--admin-danger);
-  border:
-    1px solid #efcdd1;
-  border-radius: 7px;
-  background: #fff1f2;
-  cursor: pointer;
-  transition:
-    color 150ms ease,
-    background 150ms ease,
-    transform 150ms ease;
-}
-
-.admin-create-image-selector
-  > button:hover {
-  color: var(--admin-danger-hover);
-  background: #fce6e8;
-  transform: translateY(-1px);
-}
-
-.admin-create-image-selector
-  > button
-  svg {
-  width: 16px;
-  height: 16px;
-}
-
-.admin-create-image-name {
-  overflow: hidden;
-  color: var(--admin-text-soft);
-  font-size: 0.65rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* BOTONES DEL FORMULARIO */
 .admin-create-activity-form__actions {
   display: flex;
@@ -481,36 +366,6 @@
   font-weight: 750;
 }
 
-.admin-create-preview-image {
-  width: 100%;
-  height: 190px;
-  display: block;
-  border-bottom:
-    1px solid var(--admin-border);
-  object-fit: cover;
-}
-
-.admin-create-preview-placeholder {
-  height: 130px;
-  display: grid;
-  place-items: center;
-  color: #2d8b59;
-  border-bottom:
-    1px solid var(--admin-border);
-  background:
-    linear-gradient(
-      135deg,
-      #f1f8f4,
-      #e7f3ec
-    );
-}
-
-.admin-create-preview-placeholder svg {
-  width: 50px;
-  height: 50px;
-  opacity: 0.85;
-}
-
 .admin-create-preview-content {
   padding: 20px;
 }
@@ -600,10 +455,6 @@
 /* ACCESIBILIDAD */
 .admin-create-activity-breadcrumb
   a:focus-visible,
-.admin-create-image-selector
-  label:focus-visible,
-.admin-create-image-selector
-  button:focus-visible,
 .admin-create-activity-form__actions
   button:focus-visible {
   outline:
@@ -675,8 +526,6 @@
   .admin-create-field > input,
   .admin-create-field > textarea,
   .admin-create-input-icon,
-  .admin-create-image-selector,
-  .admin-create-image-selector > button,
   .admin-create-activity-form__actions button {
     transition: none;
   }

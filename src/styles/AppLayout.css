@@ -1,106 +1,202 @@
-/*ESTRUCTURA COMPARTIDA
-Dashbaord y Perfil utilizarán este mismo diseño */
+/*
+ * ESTRUCTURA COMPARTIDA DEL PORTAL PERSONAL
+ *
+ * Dashboard, actividades, aportaciones y perfil
+ * utilizan esta misma distribución general.
+ */
 
 .app-layout {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 230px minmax(0, 1fr);
-    color: #10283e;
-    background: #f6f8fb;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns:
+    230px minmax(0, 1fr);
+  color: #10283e;
+  background: #f6f8fb;
+  transition:
+    grid-template-columns
+    220ms ease;
 }
 
-/*Barra lateral para computadoras.*/
+/*
+ * Cuando el usuario oculta el sidebar, su columna
+ * desaparece y el contenido utiliza todo el ancho.
+ */
+.app-layout:has(.app-sidebar--collapsed) {
+  grid-template-columns:
+    76px minmax(0, 1fr);
+}
+
+/* BARRA LATERAL PARA COMPUTADORAS */
 .app-sidebar {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 0;
-    padding: 26px 18px 22px;
-    border-right: 1px solid #dbe2e8;
-    background: #ffffff;
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  padding: 26px 18px 22px;
+  border-right:
+    1px solid #dbe2e8;
+  background: #ffffff;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    padding 220ms ease,
+    border-color 220ms ease,
+    opacity 170ms ease,
+    visibility 0s linear;
 }
 
+/*
+ * El sidebar permanece montado, pero deja de ocupar
+ * espacio y tampoco puede recibir interacción.
+ */
+.app-sidebar--collapsed {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+/* BOTÓN PARA MOSTRAR U OCULTAR EL SIDEBAR */
+.app-sidebar-toggle {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  position: fixed;
+  z-index: 70;
+  top: 12px;
+  left: 213px;
+  padding: 0;
+  color: #31536d;
+  border: 1px solid #cbd8e1;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow:
+    0 6px 16px
+    rgb(10 39 64 / 12%);
+  cursor: pointer;
+  transition:
+    left 220ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.app-sidebar-toggle:hover {
+  color: #002b4f;
+  border-color: #91b5cf;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+.app-sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/*
+ * Cuando el sidebar está oculto, el botón queda
+ * junto a la marca ASEBEP de la barra superior.
+ */
+.app-sidebar-toggle--collapsed {
+  left: 59px;
+}
+
+.app-sidebar-toggle:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
+}
+
+/* IDENTIDAD VISUAL DEL PORTAL */
 .app-brand {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 0 8px 26px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 8px 26px;
 }
 
 .app-brand__icon {
-    width: 38px;
-    height: 38px;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    color: #ffffff;
-    border-radius: 8px;
-    background: #002b4f;
-    box-shadow: 0 7px 16px rgb(0 43 79 / 15%);
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  border-radius: 8px;
+  background: #002b4f;
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 15%);
 }
 
 .app-brand__icon svg {
-    width: 22px;
+  width: 22px;
 }
 
 .app-brand > div:last-child {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-brand strong {
-    color: #002b4f;
-    font-size: 1rem;
+  color: #002b4f;
+  font-size: 1rem;
 }
 
 .app-brand span {
-    margin-top: 2px;
-    color: #778593;
-    font-size: 0.62rem;
+  margin-top: 2px;
+  color: #778593;
+  font-size: 0.62rem;
 }
 
+/* NAVEGACIÓN LATERAL */
 .app-nav {
-    display: grid;
-    gap: 6px;
+  display: grid;
+  gap: 6px;
 }
 
 .app-nav__link,
 .app-sidebar__logout {
-    min-height: 42px;
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 0 12px;
-    color: #526575;
-    border-radius: 7px;
-    font-size: 0.82rem;
-    text-decoration: none;
-    transition:
-        color 160ms ease,
-        background 160ms ease,
-        transform 160ms ease;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  color: #526575;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .app-nav__link svg,
 .app-sidebar__logout svg {
-    width: 18px;
-    height: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .app-nav__link:hover,
 .app-sidebar__logout:hover {
-    color: #002b4f;
-    background: #edf5fb;
-    transform: translateX(2px);
+  color: #002b4f;
+  background: #edf5fb;
+  transform: translateX(2px);
 }
 
 .app-nav__link--active {
-    color: #002b4f;
-    background: #dcecf8;
-    font-weight: 700;
+  color: #002b4f;
+  background: #dcecf8;
+  font-weight: 700;
 }
 
+/* CIERRE DE SESIÓN DEL SIDEBAR */
 .app-sidebar__logout {
   width: 100%;
   margin-top: auto;
@@ -112,102 +208,429 @@ Dashbaord y Perfil utilizarán este mismo diseño */
   cursor: pointer;
 }
 
+/* SIDEBAR COMPACTO */
+.app-sidebar--collapsed .app-brand {
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.app-sidebar--collapsed
+  .app-brand > div:last-child,
+.app-sidebar--collapsed
+  .app-nav__link span,
+.app-sidebar--collapsed
+  .app-sidebar__logout span {
+  display: none;
+}
+
+/* Centra los iconos dentro del espacio disponible. */
+.app-sidebar--collapsed
+  .app-nav__link,
+.app-sidebar--collapsed
+  .app-sidebar__logout {
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/*
+ * Evita que el icono pierda su alineación central
+ * cuando el usuario coloca el cursor encima.
+ */
+.app-sidebar--collapsed
+  .app-nav__link:hover,
+.app-sidebar--collapsed
+  .app-sidebar__logout:hover {
+  transform: none;
+}
+
 .app-sidebar__logout:focus-visible {
-  outline: 3px solid rgb(75 145 196/ 28%);
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
   outline-offset: 2px;
 }
 
-/*Area derecha de la aplicacion */
+/* ÁREA DERECHA DE LA APLICACIÓN */
 .app-content {
-    min-width: 0;
+  min-width: 0;
 }
 
+/* BARRA SUPERIOR COMPARTIDA */
 .app-topbar {
-    height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30px;
-    border-bottom: 1px solid #dbe2e8;
-    background: rgb(255 255 255 / 88%);
-    backdrop-filter: blur(12px);
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  border-bottom:
+    1px solid #dbe2e8;
+  background:
+    rgb(255 255 255 / 88%);
+  backdrop-filter: blur(12px);
 }
 
 .app-topbar__brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #002b4f;
-    font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #002b4f;
+  font-size: 0.8rem;
 }
 
 .app-topbar__brand svg {
-    display: none;
-    width: 20px;
+  display: none;
+  width: 20px;
 }
 
 .app-topbar__section {
-    color: #6c7a88;
-    font-size: 0.75rem;
+  color: #6c7a88;
+  font-size: 0.75rem;
 }
 
-/*Oculto en computadora*/
+/*
+ * MENÚ SUPERIOR DEL PERFIL
+ *
+ * Por defecto permanece completamente oculto.
+ * Solamente se habilita dentro de la adaptación móvil.
+ */
+.user-profile-menu {
+  display: none;
+}
+
+/* BOTÓN QUE ABRE EL MENÚ */
+.user-profile-menu__trigger {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  color: #10283e;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.user-profile-menu__trigger:hover {
+  border-color: #cbd9e3;
+  background: #edf5fb;
+}
+
+.user-profile-menu__trigger:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 30%);
+  outline-offset: 1px;
+}
+
+/* AVATARES DEL BOTÓN Y DEL RESUMEN */
+.user-profile-menu__avatar,
+.user-profile-menu__summary-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      135deg,
+      #002b4f,
+      #1683cc
+    );
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.user-profile-menu__avatar {
+  width: 35px;
+  height: 35px;
+  font-size: 0.69rem;
+}
+
+/*
+ * El nombre está disponible en la estructura,
+ * aunque se ocultará en la barra móvil para
+ * conservar suficiente espacio.
+ */
+.user-profile-menu__trigger-copy {
+  max-width: 160px;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-profile-menu__trigger-copy strong {
+  overflow: hidden;
+  color: #10283e;
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* FLECHA DEL BOTÓN SUPERIOR */
+.user-profile-menu__chevron {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #647383;
+  transition:
+    transform 160ms ease;
+}
+
+.user-profile-menu__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* PANEL DESPLEGABLE */
+.user-profile-menu__dropdown {
+  width:
+    min(
+      310px,
+      calc(100vw - 28px)
+    );
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 7px);
+  right: 0;
+  overflow: hidden;
+  border:
+    1px solid #d3dee6;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 45px
+    rgb(10 39 64 / 18%);
+  transform-origin: top right;
+  animation:
+    user-profile-dropdown-entry
+    160ms ease-out both;
+}
+
+/* RESUMEN DE LA CUENTA */
+.user-profile-menu__summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px;
+  border-bottom:
+    1px solid #dbe2e8;
+  background: #f8fafc;
+}
+
+.user-profile-menu__summary-avatar {
+  width: 43px;
+  height: 43px;
+  font-size: 0.78rem;
+}
+
+.user-profile-menu__summary > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-profile-menu__summary strong,
+.user-profile-menu__summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-profile-menu__summary strong {
+  color: #10283e;
+  font-size: 0.82rem;
+}
+
+.user-profile-menu__summary span {
+  margin-top: 3px;
+  color: #526575;
+  font-size: 0.68rem;
+}
+
+
+/* ACCIONES DEL MENÚ DESPLEGABLE */
+.user-profile-menu__actions {
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+}
+
+.user-profile-menu__action {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 11px;
+  color: #526575;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.user-profile-menu__action svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.user-profile-menu__action:hover {
+  color: #002b4f;
+  background: #edf5fb;
+}
+
+.user-profile-menu__action--logout {
+  color: #9f3641;
+}
+
+.user-profile-menu__action--logout:hover {
+  color: #822833;
+  background: #fff1f2;
+}
+
+.user-profile-menu__action:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: -2px;
+}
+
+/* NAVEGACIÓN INFERIOR OCULTA EN COMPUTADORA */
 .mobile-menu {
-    display: none;
+  display: none;
 }
 
-/*Diseño Movil*/
+/* DISEÑO MÓVIL */
 @media (max-width: 760px) {
   .app-layout {
     display: block;
     min-height: 100vh;
     min-height: 100dvh;
   }
+  
+  .app-sidebar-toggle {
+    display: none;
+  }
 
+  /* El sidebar de escritorio desaparece completamente. */
   .app-sidebar {
     display: none;
   }
 
   /*
-   - Reservamos espacio para que el contenido no quede
-   - escondido detrás de la navegación fija.
+   * Reservamos espacio para que el contenido no quede
+   * escondido detrás de la navegación fija.
    */
   .app-content {
     min-height: 100vh;
     min-height: 100dvh;
     padding-bottom:
-      calc(70px + env(safe-area-inset-bottom));
+      calc(
+        70px +
+        env(safe-area-inset-bottom)
+      );
   }
 
+  /*
+   * La barra permanece visible al desplazarse.
+   * También reserva espacio para el botón de perfil.
+   */
   .app-topbar {
     height: 54px;
-    padding: 0 18px;
+    position: sticky;
+    z-index: 60;
+    top: 0;
+    padding:
+      0 70px 0 18px;
+    background:
+      rgb(255 255 255 / 96%);
   }
 
   .app-topbar__brand svg {
     display: block;
   }
 
+  /*
+   * En móvil el nombre de la sección cede su posición
+   * al menú de perfil solicitado.
+   */
+  .app-topbar__section {
+    display: none;
+  }
+
+  /*
+   * El componente se fija sobre el extremo derecho
+   * de la barra superior compartida.
+   *
+   * Se renderizará desde MobileNavigation para evitar
+   * modificar individualmente todas las páginas.
+   */
+  .user-profile-menu {
+    display: block;
+    position: fixed;
+    z-index: 80;
+    top: 4px;
+    right: 12px;
+  }
+
+  /*
+   * En el botón móvil solamente se muestran
+   * el avatar y la flecha.
+   */
+  .user-profile-menu__trigger-copy {
+    display: none;
+  }
+
+  /* NAVEGACIÓN INFERIOR DE CUATRO OPCIONES */
   .mobile-menu {
     min-height: 70px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      );
     position: fixed;
     z-index: 50;
     right: 0;
     bottom: 0;
     left: 0;
     padding:
-      0 6px env(safe-area-inset-bottom);
-    border-top: 1px solid #dbe2e8;
-    background: rgb(255 255 255 / 96%);
-    box-shadow: 0 -8px 24px rgb(16 40 62 / 8%);
+      0 6px
+      env(safe-area-inset-bottom);
+    border-top:
+      1px solid #dbe2e8;
+    background:
+      rgb(255 255 255 / 96%);
+    box-shadow:
+      0 -8px 24px
+      rgb(16 40 62 / 8%);
     backdrop-filter: blur(14px);
   }
 
   /*
-   - Esta clase funciona tanto para enlaces como
-   - para el botón de cerrar sesión.
+   * Esta clase funciona tanto para enlaces como
+   * para el botón de cerrar sesión.
    */
   .mobile-menu__link {
     min-width: 0;
@@ -236,9 +659,7 @@ Dashbaord y Perfil utilizarán este mismo diseño */
     height: 20px;
   }
 
-  /*
-   - Indicador superior para la página activa.
-   */
+  /* Indicador superior para la página activa. */
   .mobile-menu__link::before {
     content: '';
     width: 28px;
@@ -246,9 +667,11 @@ Dashbaord y Perfil utilizarán este mismo diseño */
     position: absolute;
     top: 0;
     left: 50%;
-    border-radius: 0 0 999px 999px;
+    border-radius:
+      0 0 999px 999px;
     background: transparent;
-    transform: translateX(-50%);
+    transform:
+      translateX(-50%);
   }
 
   .mobile-menu__link--active {
@@ -262,8 +685,8 @@ Dashbaord y Perfil utilizarán este mismo diseño */
   }
 
   /*
-   - Cerrar sesión se diferencia visualmente
-   - porque es una acción sensible.
+   * Cerrar sesión se diferencia visualmente
+   * porque es una acción sensible.
    */
   .mobile-menu__logout {
     color: #9f3641;
@@ -277,8 +700,75 @@ Dashbaord y Perfil utilizarán este mismo diseño */
 
   .mobile-menu__link:focus-visible {
     z-index: 1;
-    outline: 3px solid rgb(75 145 196 / 28%);
+    outline:
+      3px solid
+      rgb(75 145 196 / 28%);
     outline-offset: -3px;
   }
 }
 
+/* TELÉFONOS PEQUEÑOS */
+@media (max-width: 380px) {
+  .app-topbar {
+    padding:
+      0 64px 0 13px;
+  }
+
+  .user-profile-menu {
+    right: 8px;
+  }
+
+  .user-profile-menu__dropdown {
+    width:
+      calc(100vw - 16px);
+  }
+
+  .mobile-menu__link {
+    padding-right: 2px;
+    padding-left: 2px;
+    font-size: 0.62rem;
+  }
+
+  .mobile-menu__link svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+@media (
+  prefers-reduced-motion: reduce
+) {
+  .app-layout,
+  .app-sidebar,
+  .app-sidebar-toggle,
+  .app-nav__link,
+  .app-sidebar__logout,
+  .user-profile-menu__trigger,
+  .user-profile-menu__chevron,
+  .user-profile-menu__action,
+  .mobile-menu__link {
+    transition: none;
+  }
+
+  .user-profile-menu__dropdown {
+    animation: none;
+  }
+}
+
+/* ENTRADA DEL MENÚ SUPERIOR */
+@keyframes user-profile-dropdown-entry {
+  from {
+    opacity: 0;
+    transform:
+      translateY(-6px)
+      scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}

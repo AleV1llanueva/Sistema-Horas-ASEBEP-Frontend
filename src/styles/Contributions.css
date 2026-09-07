@@ -1,0 +1,1515 @@
+/* CONTENEDOR PRINCIPAL */
+.student-contributions-main {
+  width: min(100%, 1260px);
+  margin: 0 auto;
+  padding: 38px 34px 60px;
+}
+
+/* ENCABEZADO DEL MÓDULO */
+.student-contributions-heading {
+  animation:
+    student-contributions-entry
+    500ms ease-out both;
+}
+
+.student-contributions-heading > p {
+  margin: 0 0 7px;
+  color: #4b91c4;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.student-contributions-heading h1 {
+  margin: 0;
+  color: #10283e;
+  font-size:
+    clamp(1.75rem, 3vw, 2.35rem);
+  letter-spacing: -0.045em;
+}
+
+.student-contributions-heading > span {
+  display: block;
+  max-width: 760px;
+  margin-top: 9px;
+  color: #6c7a88;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+/* RESUMEN DE APORTACIONES PENDIENTES */
+.student-contributions-debt {
+  min-height: 112px;
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+  padding: 20px 24px;
+  border: 1px solid #cfe0ec;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f2f8fc 100%
+    );
+  box-shadow:
+    0 10px 28px
+    rgb(10 39 64 / 5%);
+  animation:
+    student-contributions-entry
+    560ms 60ms ease-out both;
+}
+
+.student-contributions-debt__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #0b5688;
+  border-radius: 12px;
+  background: #dceefa;
+}
+
+.student-contributions-debt__icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.student-contributions-debt__content {
+  min-width: 0;
+}
+
+.student-contributions-debt__content h2 {
+  margin: 0;
+  color: #002b4f;
+  font-size: 0.94rem;
+}
+
+.student-contributions-debt__content p {
+  max-width: 650px;
+  margin: 6px 0 0;
+  color: #647383;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.student-contributions-debt__values {
+  min-width: 190px;
+  display: grid;
+  justify-items: end;
+  padding-left: 24px;
+  border-left: 1px solid #d7e4ed;
+  text-align: right;
+}
+
+.student-contributions-debt__values span {
+  color: #647383;
+  font-size: 0.66rem;
+}
+
+.student-contributions-debt__values strong {
+  margin-top: 3px;
+  color: #002b4f;
+  font-size: 1.42rem;
+  letter-spacing: -0.035em;
+}
+
+.student-contributions-debt__values small {
+  margin-top: 4px;
+  color: #778593;
+  font-size: 0.61rem;
+}
+
+.student-contributions-debt--clear {
+  border-color: #cce5d8;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f0faf5 100%
+    );
+}
+
+.student-contributions-debt--clear
+  .student-contributions-debt__icon {
+  color: #23754b;
+  background: #ddf2e7;
+}
+
+/* PANEL GENERAL */
+.student-contributions-panel {
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid #dbe2e8;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 34px
+    rgb(10 39 64 / 6%);
+  animation:
+    student-contributions-entry
+    600ms 110ms ease-out both;
+}
+
+/* PESTAÑAS INTERNAS */
+.student-contributions-tabs {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  padding: 0 18px;
+  border-bottom: 1px solid #dbe2e8;
+  background: #fbfcfd;
+}
+
+.student-contributions-tab {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  gap: 8px;
+  padding: 10px 14px;
+  color: #6c7a88;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.student-contributions-tab::after {
+  content: '';
+  height: 3px;
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  left: 16px;
+  border-radius:
+    999px 999px 0 0;
+  background: transparent;
+}
+
+.student-contributions-tab:hover {
+  color: #002b4f;
+  background: #f1f7fb;
+}
+
+.student-contributions-tab--active {
+  color: #002b4f;
+}
+
+.student-contributions-tab--active::after {
+  background: #1683cc;
+}
+
+.student-contributions-tab > span {
+  min-width: 24px;
+  padding: 3px 7px;
+  color: #0b5688;
+  border-radius: 999px;
+  background: #e1eff9;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+/* CONTENIDO ANIMADO DE CADA PESTAÑA */
+.student-contributions-view {
+  animation:
+    student-contributions-view-entry
+    260ms ease-out both;
+}
+
+/* FILTROS DEL HISTORIAL */
+.student-contributions-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e7ec;
+  background: #ffffff;
+}
+
+.student-contributions-filters
+  .student-contributions-field {
+  width: min(100%, 270px);
+}
+
+/* BOTÓN PARA RESTABLECER EL HISTORIAL */
+/*
+ * BOTÓN PARA RESTABLECER EL HISTORIAL
+ */
+.student-contributions-clear {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  padding: 0 15px;
+  color: #0b5688;
+  border: 1px solid #aac2d3;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.student-contributions-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.student-contributions-clear:hover:not(:disabled) {
+  color: #002b4f;
+  border-color: #4b91c4;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+.student-contributions-clear:disabled {
+  color: #8b98a3;
+  border-color: #dbe2e8;
+  background: #f5f7f9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* CAMPOS COMPARTIDOS */
+.student-contributions-field {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.student-contributions-field label {
+  color: #526575;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.student-contributions-field input,
+.student-contributions-field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 13px;
+  color: #10283e;
+  border: 1px solid #cfd9e1;
+  border-radius: 8px;
+  outline: 0;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.75rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.student-contributions-field input:hover,
+.student-contributions-field select:hover {
+  border-color: #afc2d0;
+}
+
+.student-contributions-field input:focus,
+.student-contributions-field select:focus {
+  border-color: #4b91c4;
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.student-contributions-field
+  input::placeholder {
+  color: #8b98a3;
+}
+
+.student-contributions-field
+  input[readonly] {
+  color: #314c61;
+  border-color: #d4dde4;
+  background: #f3f6f8;
+  cursor: not-allowed;
+}
+
+.student-contributions-field
+  input:disabled,
+.student-contributions-field
+  select:disabled {
+  color: #82909c;
+  border-color: #dde4e9;
+  background: #f3f6f8;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.student-contributions-field--invalid
+  input,
+.student-contributions-field--invalid
+  select {
+  border-color: #c96570;
+}
+
+.student-contributions-field--invalid
+  input:focus,
+.student-contributions-field--invalid
+  select:focus {
+  box-shadow:
+    0 0 0 3px
+    rgb(187 45 59 / 13%);
+}
+
+.student-contributions-field__help {
+  margin: 0;
+  color: #778593;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.student-contributions-field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: #aa3643;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.student-contributions-field__error svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* SELECT PERSONALIZADO */
+.student-contributions-select {
+  position: relative;
+}
+
+.student-contributions-select select {
+  padding-right: 42px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.student-contributions-select > svg {
+  width: 17px;
+  height: 17px;
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  color: #526575;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* MONTO BLOQUEADO */
+.student-contributions-money {
+  display: grid;
+  grid-template-columns:
+    44px minmax(0, 1fr);
+}
+
+.student-contributions-money > span {
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  color: #526575;
+  border: 1px solid #d4dde4;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: #edf2f5;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.student-contributions-money input {
+  border-radius: 0 8px 8px 0;
+}
+
+/* HISTORIAL */
+.student-contributions-history {
+  padding: 18px 16px 16px;
+}
+
+.student-contributions-history__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 6px 15px;
+}
+
+.student-contributions-history__heading h2 {
+  margin: 0;
+  color: #10283e;
+  font-size: 0.96rem;
+}
+
+.student-contributions-history__heading p {
+  margin: 5px 0 0;
+  color: #778593;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.student-contributions-history__count {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  color: #0b5688;
+  border-radius: 999px;
+  background: #eaf4fb;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.student-contributions-list {
+  display: grid;
+  gap: 9px;
+}
+
+/* REGISTRO INDIVIDUAL DEL HISTORIAL */
+.student-contribution-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    66px
+    minmax(210px, 1.15fr)
+    minmax(100px, 0.46fr)
+    minmax(150px, 0.68fr)
+    minmax(170px, 0.72fr)
+    42px;
+  align-items: center;
+  gap: 15px;
+  padding: 11px 14px;
+  border: 1px solid #dbe2e8;
+  border-radius: 9px;
+  background: #ffffff;
+  transition:
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease;
+}
+
+.student-contribution-card:hover {
+  border-color: #bdccd7;
+  box-shadow:
+    0 9px 22px
+    rgb(10 39 64 / 7%);
+  transform: translateY(-1px);
+}
+
+/*
+ * El distintivo muestra el mes y año en que
+ * se envió el comprobante.
+ */
+.student-contribution-date {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid #d5dee5;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.student-contribution-date strong {
+  color: #002b4f;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.student-contribution-date span {
+  margin-top: 5px;
+  color: #0b5688;
+  font-size: 0.63rem;
+  font-weight: 800;
+}
+
+/* FECHA Y HORA DEL ENVÍO */
+.student-contribution-upload {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #526575;
+}
+
+.student-contribution-upload svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #5f7f98;
+}
+
+.student-contribution-upload span {
+  overflow-wrap: anywhere;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+/* MONTO REGISTRADO */
+.student-contribution-amount {
+  color: #10283e;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* NÚMERO DE REFERENCIA */
+.student-contribution-reference {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding-left: 15px;
+  border-left: 1px solid #e2e7eb;
+}
+
+.student-contribution-reference small {
+  color: #82909c;
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.student-contribution-reference strong {
+  overflow: hidden;
+  color: #314c61;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ESTADOS DEL COMPROBANTE */
+.student-contribution-status {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 0.63rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.student-contribution-status svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.student-contribution-status--pending {
+  color: #aa6100;
+  background: #fff2d8;
+}
+
+.student-contribution-status--approved {
+  color: #1f7148;
+  background: #dff1e7;
+}
+
+.student-contribution-status--correction {
+  color: #b02f3d;
+  background: #fde3e5;
+}
+
+/* BOTÓN PARA ABRIR EL DETALLE */
+.student-contribution-view-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #002b4f;
+  border: 1px solid #cfdae2;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.student-contribution-view-button:hover {
+  color: #0b5688;
+  border-color: #91b5cf;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+.student-contribution-view-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* FORMULARIOS DE COMPROBANTES */
+.student-contributions-form-view {
+  padding: 18px;
+}
+
+.student-contributions-form-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.45fr)
+    minmax(270px, 0.75fr);
+  gap: 26px;
+}
+
+.student-contributions-form-column {
+  min-width: 0;
+}
+
+.student-contributions-form-heading {
+  margin-bottom: 15px;
+}
+
+.student-contributions-form-heading h2 {
+  margin: 0;
+  color: #10283e;
+  font-size: 0.96rem;
+}
+
+.student-contributions-form-heading p {
+  margin: 5px 0 0;
+  color: #778593;
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+
+.student-contributions-form {
+  display: grid;
+  gap: 15px;
+}
+
+.student-contributions-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 15px 18px;
+}
+
+.student-contributions-field--full {
+  grid-column: 1 / -1;
+}
+
+/*
+ * Campo que aparece cuando el estudiante
+ * selecciona "Más de 12 meses".
+ */
+.student-contributions-custom-months {
+  animation:
+    student-contributions-view-entry
+    220ms ease-out both;
+}
+
+/* ÁREA PARA SELECCIONAR LA IMAGEN */
+.student-contributions-upload-field {
+  display: grid;
+  gap: 8px;
+}
+
+.student-contributions-upload-field > label {
+  color: #526575;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.student-contributions-dropzone {
+  min-height: 164px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  position: relative;
+  padding: 24px 20px;
+  color: #526575;
+  border: 1px dashed #1683cc;
+  border-radius: 9px;
+  background: #fbfdff;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.student-contributions-dropzone:hover,
+.student-contributions-dropzone--dragging {
+  border-color: #0b5688;
+  background: #f0f8fd;
+  box-shadow:
+    inset 0 0 0 1px
+    rgb(11 86 136 / 8%);
+}
+
+.student-contributions-dropzone--invalid {
+  border-color: #bb3e4c;
+  background: #fff8f8;
+}
+
+.student-contributions-dropzone > svg {
+  width: 36px;
+  height: 36px;
+  color: #1683cc;
+}
+
+.student-contributions-dropzone strong {
+  color: #002b4f;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.student-contributions-dropzone span {
+  color: #778593;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.student-contributions-dropzone
+  .student-contributions-select-file {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 3px 0 1px;
+  padding: 0 16px;
+  color: #0b5688;
+  border: 1px solid #1683cc;
+  border-radius: 7px;
+  background: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.student-contributions-file-input {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* VISTA PREVIA DEL ARCHIVO */
+.student-contributions-file-preview {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    74px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #dbe2e8;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.student-contributions-file-thumbnail {
+  width: 74px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #5f7f98;
+  border-radius: 6px;
+  background: #edf2f5;
+}
+
+.student-contributions-file-thumbnail img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.student-contributions-file-thumbnail svg {
+  width: 25px;
+  height: 25px;
+}
+
+.student-contributions-file-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.student-contributions-file-copy strong {
+  overflow: hidden;
+  color: #002b4f;
+  font-size: 0.69rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-contributions-file-copy span {
+  color: #647383;
+  font-size: 0.62rem;
+}
+
+.student-contributions-file-copy small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #218455;
+  font-size: 0.61rem;
+  font-weight: 700;
+}
+
+.student-contributions-file-copy
+  small svg {
+  width: 13px;
+  height: 13px;
+}
+
+.student-contributions-remove-file {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #31536d;
+  border: 1px solid #d1dbe3;
+  border-radius: 7px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.student-contributions-remove-file:hover {
+  color: #a72f3c;
+  border-color: #e2b7bc;
+  background: #fff1f2;
+}
+
+.student-contributions-remove-file svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* INFORMACIÓN LATERAL DEL FORMULARIO */
+.student-contributions-form-aside {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.student-contributions-checklist,
+.student-contributions-account-note {
+  border: 1px solid #d7e2ea;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.student-contributions-checklist {
+  padding: 20px;
+  border-color: #cce0ee;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #f1f8fd 100%
+    );
+}
+
+.student-contributions-checklist h3 {
+  margin: 0;
+  color: #10283e;
+  font-size: 0.82rem;
+}
+
+.student-contributions-checklist ul {
+  display: grid;
+  gap: 13px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-contributions-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #526575;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.student-contributions-checklist li svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #1683cc;
+  fill: #1683cc;
+  stroke: #ffffff;
+}
+
+.student-contributions-account-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 17px 18px;
+  color: #526575;
+  font-size: 0.66rem;
+  line-height: 1.55;
+}
+
+.student-contributions-account-note svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  color: #1683cc;
+}
+
+/* ERROR GENERAL DEL FORMULARIO */
+.student-contributions-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 14px;
+  color: #a52f3c;
+  border: 1px solid #efc8cc;
+  border-radius: 8px;
+  background: #fff4f5;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.student-contributions-form-error svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+/* ACCIONES DEL FORMULARIO */
+.student-contributions-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 3px;
+  padding-top: 14px;
+  border-top: 1px solid #e1e7ec;
+}
+
+.student-contributions-button {
+  min-height: 39px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.69rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.student-contributions-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.student-contributions-button--primary {
+  min-width: 178px;
+  color: #ffffff;
+  border: 1px solid #002b4f;
+  background: #002b4f;
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 14%);
+}
+
+.student-contributions-button--primary:hover {
+  border-color: #063d68;
+  background: #063d68;
+  transform: translateY(-1px);
+}
+
+.student-contributions-button--secondary {
+  color: #0b5688;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.student-contributions-button--secondary:hover {
+  border-color: #d2e2ed;
+  background: #edf5fb;
+}
+
+.student-contributions-button:disabled {
+  color: #82909c;
+  border-color: #d8e0e6;
+  background: #edf1f4;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* NOTA INFERIOR DEL ENVÍO */
+.student-contributions-submit-note {
+  margin: -5px 0 0;
+  color: #82909c;
+  font-size: 0.61rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+/* ESTADOS DE CARGA, ERROR Y LISTA VACÍA */
+.student-contributions-state {
+  min-height: 245px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 30px;
+  color: #647383;
+  border: 1px dashed #cbd6de;
+  border-radius: 10px;
+  background: #fbfcfd;
+  text-align: center;
+}
+
+.student-contributions-state > svg {
+  width: 38px;
+  height: 38px;
+  color: #6d97b5;
+}
+
+.student-contributions-state h3 {
+  margin: 14px 0 0;
+  color: #10283e;
+  font-size: 0.9rem;
+}
+
+.student-contributions-state p {
+  max-width: 450px;
+  margin: 7px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.student-contributions-state button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding: 0 14px;
+  color: #ffffff;
+  border: 1px solid #002b4f;
+  border-radius: 7px;
+  background: #002b4f;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-contributions-state button:hover {
+  background: #063d68;
+}
+
+.student-contributions-state
+  button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.student-contributions-state--error
+  > svg {
+  color: #aa4450;
+}
+
+/* TEXTO EXCLUSIVO PARA LECTORES DE PANTALLA */
+.student-contributions-sr-only {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ACCESIBILIDAD POR TECLADO */
+.student-contributions-tab:focus-visible,
+.student-contributions-clear:focus-visible,
+.student-contribution-view-button:focus-visible,
+.student-contributions-dropzone:focus-within,
+.student-contributions-remove-file:focus-visible,
+.student-contributions-button:focus-visible,
+.student-contributions-state
+  button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
+}
+
+/* ANIMACIONES */
+@keyframes student-contributions-entry {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes student-contributions-view-entry {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* COMPUTADORAS MEDIANAS */
+@media (max-width: 1160px) {
+  .student-contribution-card {
+    grid-template-columns:
+      66px
+      minmax(200px, 1fr)
+      minmax(90px, 0.45fr)
+      minmax(150px, 0.7fr)
+      42px;
+  }
+
+  .student-contribution-status {
+    grid-column: 2 / 5;
+    margin-top: -3px;
+  }
+
+  .student-contribution-view-button {
+    grid-column: 5;
+    grid-row: 1 / 3;
+  }
+}
+
+/* TABLETAS Y COMPUTADORAS PEQUEÑAS */
+@media (max-width: 980px) {
+  .student-contributions-debt {
+    grid-template-columns:
+      auto minmax(0, 1fr);
+  }
+
+  .student-contributions-debt__values {
+    grid-column: 2;
+    justify-items: start;
+    padding: 12px 0 0;
+    border-top: 1px solid #d7e4ed;
+    border-left: 0;
+    text-align: left;
+  }
+
+  .student-contributions-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .student-contributions-form-aside {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .student-contribution-card {
+    grid-template-columns:
+      66px minmax(0, 1fr) 42px;
+    align-items: start;
+  }
+
+  .student-contribution-upload {
+    padding-top: 9px;
+  }
+
+  .student-contribution-amount {
+    grid-column: 2;
+    padding-top: 11px;
+    border-top: 1px solid #e2e7eb;
+  }
+
+  .student-contribution-reference {
+    grid-column: 2;
+    padding: 0;
+    border-left: 0;
+  }
+
+  .student-contribution-status {
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .student-contribution-view-button {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
+/* DISPOSITIVOS MÓVILES */
+@media (max-width: 760px) {
+  .student-contributions-main {
+    padding: 24px 14px 30px;
+  }
+
+  .student-contributions-heading > p {
+    display: none;
+  }
+
+  .student-contributions-heading h1 {
+    font-size: 1.5rem;
+  }
+
+  .student-contributions-heading > span {
+    font-size: 0.75rem;
+  }
+
+  .student-contributions-debt {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 19px;
+    padding: 17px;
+  }
+
+  .student-contributions-debt__icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .student-contributions-debt__values {
+    grid-column: auto;
+    min-width: 0;
+    padding-top: 12px;
+  }
+
+  .student-contributions-panel {
+    margin-top: 20px;
+    border-radius: 10px;
+  }
+
+  .student-contributions-tabs {
+    overflow-x: auto;
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(160px, 1fr)
+      );
+    padding: 0 8px;
+  }
+
+  .student-contributions-tab {
+    min-height: 54px;
+    padding: 8px 10px;
+    font-size: 0.69rem;
+  }
+
+  .student-contributions-filters {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .student-contributions-filters
+    .student-contributions-field {
+    width: 100%;
+  }
+
+  .student-contributions-clear {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .student-contributions-history {
+    padding: 16px 10px 10px;
+  }
+
+  .student-contributions-history__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .student-contribution-card {
+    grid-template-columns:
+      60px minmax(0, 1fr) 38px;
+    gap: 11px;
+    padding: 12px;
+  }
+
+  .student-contribution-date {
+    min-height: 57px;
+  }
+
+  .student-contribution-upload {
+    align-self: center;
+    padding: 0;
+  }
+
+  .student-contribution-upload span {
+    font-size: 0.65rem;
+  }
+
+  .student-contribution-amount,
+  .student-contribution-reference,
+  .student-contribution-status {
+    grid-column: 1 / 4;
+  }
+
+  .student-contribution-amount {
+    padding-top: 11px;
+  }
+
+  .student-contribution-reference {
+    padding-top: 10px;
+    border-top: 1px solid #e2e7eb;
+  }
+
+  .student-contribution-reference strong {
+    white-space: normal;
+  }
+
+  .student-contribution-view-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .student-contributions-form-view {
+    padding: 16px 12px 12px;
+  }
+
+  .student-contributions-form-layout {
+    gap: 20px;
+  }
+
+  .student-contributions-form-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .student-contributions-field--full {
+    grid-column: auto;
+  }
+
+  .student-contributions-form-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .student-contributions-dropzone {
+    min-height: 152px;
+    padding: 18px 14px;
+  }
+
+  .student-contributions-form-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .student-contributions-button {
+    width: 100%;
+  }
+
+  .student-contributions-submit-note {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .student-contributions-state {
+    min-height: 220px;
+    padding: 24px 18px;
+  }
+}
+
+/* CELULARES PEQUEÑOS */
+@media (max-width: 430px) {
+  .student-contributions-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .student-contributions-file-preview {
+    grid-template-columns:
+      58px minmax(0, 1fr) 34px;
+    gap: 9px;
+  }
+
+  .student-contributions-file-thumbnail {
+    width: 58px;
+    height: 49px;
+  }
+
+  .student-contributions-checklist {
+    padding: 17px;
+  }
+
+  .student-contribution-status {
+    width: 100%;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+@media (prefers-reduced-motion: reduce) {
+  .student-contributions-heading,
+  .student-contributions-debt,
+  .student-contributions-panel,
+  .student-contributions-view,
+  .student-contributions-custom-months {
+    animation: none;
+  }
+
+  .student-contributions-tab,
+  .student-contributions-clear,
+  .student-contribution-card,
+  .student-contribution-view-button,
+  .student-contributions-dropzone,
+  .student-contributions-remove-file,
+  .student-contributions-button {
+    transition: none;
+  }
+}

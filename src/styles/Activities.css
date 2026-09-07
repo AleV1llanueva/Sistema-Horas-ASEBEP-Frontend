@@ -1,0 +1,777 @@
+/* CONTENEDOR PRINCIPAL */
+.student-activities-main {
+  width: min(100%, 1220px);
+  margin: 0 auto;
+  padding: 38px 34px 60px;
+}
+
+/* ENCABEZADO */
+.student-activities-heading {
+  animation:
+    student-activities-entry
+    500ms ease-out both;
+}
+
+.student-activities-heading > p {
+  margin: 0 0 7px;
+  color: #4b91c4;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.student-activities-heading h1 {
+  margin: 0;
+  color: #10283e;
+  font-size:
+    clamp(1.75rem, 3vw, 2.35rem);
+  letter-spacing: -0.045em;
+}
+
+.student-activities-heading > span {
+  display: block;
+  max-width: 760px;
+  margin-top: 9px;
+  color: #6c7a88;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+/* PANEL GENERAL */
+.student-activities-panel {
+  margin-top: 28px;
+  overflow: hidden;
+  border: 1px solid #dbe2e8;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 34px
+    rgb(10 39 64 / 6%);
+  animation:
+    student-activities-entry
+    580ms 80ms ease-out both;
+}
+
+/* PESTAÑAS INTERNAS */
+.student-activities-tabs {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  padding: 0 18px;
+  border-bottom:
+    1px solid #dbe2e8;
+  background: #fbfcfd;
+}
+
+.student-activities-tab {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  gap: 8px;
+  padding: 10px 14px;
+  color: #6c7a88;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.student-activities-tab::after {
+  content: '';
+  height: 3px;
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  left: 16px;
+  border-radius:
+    999px 999px 0 0;
+  background: transparent;
+}
+
+.student-activities-tab:hover {
+  color: #002b4f;
+  background: #f1f7fb;
+}
+
+.student-activities-tab--active {
+  color: #002b4f;
+}
+
+.student-activities-tab--active::after {
+  background: #4b91c4;
+}
+
+.student-activities-tab > span {
+  min-width: 24px;
+  padding: 3px 7px;
+  color: #0b5688;
+  border-radius: 999px;
+  background: #e1eff9;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+/* BUSCADOR */
+.student-activities-search {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom:
+    1px solid #e4e9ee;
+}
+
+/*
+ * Contenedor independiente para mantener el icono
+ * correctamente posicionado dentro del campo.
+ */
+.student-activities-search__field {
+  width: min(100%, 520px);
+  min-width: 0;
+  position: relative;
+}
+
+.student-activities-search__field > svg {
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  color: #778593;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.student-activities-search input {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 15px 0 44px;
+  color: #10283e;
+  border: 1px solid #cfd9e1;
+  border-radius: 8px;
+  outline: 0;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.76rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.student-activities-search input::placeholder {
+  color: #8b98a3;
+}
+
+.student-activities-search input:focus {
+  border-color: #4b91c4;
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+/* Botón secundario para restablecer la búsqueda. */
+.student-activities-clear {
+  min-height: 43px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  padding: 0 15px;
+  color: #0b5688;
+  border: 1px solid #aac2d3;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.student-activities-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.student-activities-clear:hover:not(:disabled) {
+  color: #002b4f;
+  border-color: #4b91c4;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+.student-activities-clear:disabled {
+  color: #8b98a3;
+  border-color: #dbe2e8;
+  background: #f5f7f9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* TEXTO SOLO PARA LECTORES DE PANTALLA */
+.student-activities-search .sr-only {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* RESULTADOS */
+.student-activities-results {
+  padding: 20px 16px 16px;
+  animation:
+    student-activities-entry
+    280ms ease-out both;
+}
+
+.student-activities-results__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 6px 17px;
+}
+
+.student-activities-results__heading h2 {
+  margin: 0;
+  color: #10283e;
+  font-size: 0.96rem;
+}
+
+.student-activities-results__heading p {
+  margin: 5px 0 0;
+  color: #778593;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.student-activities-results__heading
+  > span {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  color: #0b5688;
+  border-radius: 999px;
+  background: #eaf4fb;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.student-activities-list {
+  display: grid;
+  gap: 10px;
+}
+
+/* TARJETA DE ACTIVIDAD */
+.student-activity-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    70px
+    minmax(210px, 1.35fr)
+    minmax(190px, 1fr)
+    minmax(150px, 0.72fr)
+    44px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid #dbe2e8;
+  border-radius: 10px;
+  background: #ffffff;
+  transition:
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease;
+}
+
+.student-activity-card:hover {
+  border-color: #bdccd7;
+  box-shadow:
+    0 10px 24px
+    rgb(10 39 64 / 7%);
+  transform: translateY(-1px);
+}
+
+/* FECHA */
+.student-activity-date {
+  min-height: 67px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid #d5dee5;
+  border-radius: 9px;
+  background: #fbfcfd;
+  text-decoration: none;
+}
+
+.student-activity-date strong {
+  color: #002b4f;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.student-activity-date span {
+  margin-top: 5px;
+  color: #0b5688;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+/* INFORMACIÓN PRINCIPAL */
+.student-activity-card__content {
+  min-width: 0;
+}
+
+.student-activity-card__content h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #002b4f;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.student-activity-card__content p {
+  display: -webkit-box;
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: #647383;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* HORARIO Y LUGAR */
+.student-activity-card__schedule {
+  min-width: 0;
+  display: grid;
+  align-self: stretch;
+  align-content: center;
+  gap: 10px;
+  padding-left: 16px;
+  border-left:
+    1px solid #e2e7eb;
+}
+
+.student-activity-card__schedule span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #526575;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.student-activity-card__schedule svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #5f7f98;
+}
+
+/* HORAS Y CUPOS */
+.student-activity-card__summary {
+  min-width: 0;
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+  flex-direction: column;
+  padding-left: 16px;
+  border-left:
+    1px solid #e2e7eb;
+}
+
+.student-activity-card__summary
+  > strong {
+  align-self: flex-start;
+  padding: 6px 10px;
+  color: #0b5688;
+  border-radius: 7px;
+  background: #e3f0f9;
+  font-size: 0.7rem;
+}
+
+.student-activity-card__summary
+  > span:not(
+    .student-activity-attendance
+  ) {
+  margin-top: 8px;
+  color: #647383;
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.student-activity-capacity {
+  height: 5px;
+  overflow: hidden;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: #dce8f1;
+}
+
+.student-activity-capacity > span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: #4b91c4;
+  transition: width 300ms ease;
+}
+
+/* ASISTENCIA DEL HISTORIAL */
+.student-activity-attendance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  color: #24734b;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.student-activity-attendance::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #2da96a;
+  box-shadow:
+    0 0 0 3px
+    rgb(45 169 106 / 13%);
+}
+
+/* BOTÓN VER ACTIVIDAD */
+.student-activity-card__view {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #002b4f;
+  border: 1px solid #cfdae2;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.student-activity-card__view:hover {
+  color: #0b5688;
+  border-color: #91b5cf;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+.student-activity-card__view svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* ESTADOS DE CARGA, ERROR Y LISTA VACÍA */
+.student-activities-state {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 30px;
+  color: #647383;
+  border: 1px dashed #cbd6de;
+  border-radius: 10px;
+  background: #fbfcfd;
+  text-align: center;
+}
+
+.student-activities-state > svg {
+  width: 38px;
+  height: 38px;
+  color: #6d97b5;
+}
+
+.student-activities-state h3 {
+  margin: 14px 0 0;
+  color: #10283e;
+  font-size: 0.9rem;
+}
+
+.student-activities-state p {
+  max-width: 450px;
+  margin: 7px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.student-activities-state button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding: 0 14px;
+  color: #ffffff;
+  border: 1px solid #002b4f;
+  border-radius: 7px;
+  background: #002b4f;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-activities-state button:hover {
+  background: #063d68;
+}
+
+.student-activities-state button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.student-activities-state--error
+  > svg {
+  color: #aa4450;
+}
+
+/* ACCESIBILIDAD */
+.student-activities-tab:focus-visible,
+.student-activities-clear:focus-visible,
+.student-activity-card__view:focus-visible,
+.student-activities-state
+  button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
+}
+
+/* ANIMACIONES */
+@keyframes student-activities-entry {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* TABLETAS Y COMPUTADORAS PEQUEÑAS */
+@media (max-width: 1080px) {
+  .student-activity-card {
+    grid-template-columns:
+      70px
+      minmax(200px, 1fr)
+      minmax(180px, 0.9fr)
+      44px;
+  }
+
+  .student-activity-card__summary {
+    grid-column: 2 / 4;
+    min-height: 58px;
+    display: grid;
+    grid-template-columns:
+      auto minmax(130px, 1fr);
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px 0 0;
+    border-top:
+      1px solid #e2e7eb;
+    border-left: 0;
+  }
+
+  .student-activity-card__summary
+    > strong {
+    grid-row: 1 / 3;
+  }
+
+  .student-activity-card__summary
+    > span {
+    margin-top: 0;
+  }
+
+  .student-activity-capacity {
+    margin-top: 0;
+  }
+
+  .student-activity-card__view {
+    grid-column: 4;
+    grid-row: 1 / 3;
+  }
+}
+
+/* DISPOSITIVOS MÓVILES */
+@media (max-width: 760px) {
+  .student-activities-main {
+    padding: 24px 14px 30px;
+  }
+
+  .student-activities-heading > p {
+    display: none;
+  }
+
+  .student-activities-heading h1 {
+    font-size: 1.5rem;
+  }
+
+  .student-activities-heading > span {
+    font-size: 0.75rem;
+  }
+
+  .student-activities-panel {
+    margin-top: 20px;
+    border-radius: 10px;
+  }
+
+  .student-activities-tabs {
+    overflow-x: auto;
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(155px, 1fr)
+      );
+    padding: 0 8px;
+  }
+
+  .student-activities-tab {
+    min-height: 54px;
+    padding: 8px 10px;
+    font-size: 0.7rem;
+  }
+
+  .student-activities-search {
+    min-height: 70px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .student-activities-search__field,
+  .student-activities-clear {
+    width: 100%;
+  }
+
+  .student-activities-results {
+    padding: 16px 10px 10px;
+  }
+
+  .student-activities-results__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .student-activity-card {
+    grid-template-columns:
+      62px minmax(0, 1fr) 40px;
+    align-items: start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .student-activity-date {
+    min-height: 62px;
+  }
+
+  .student-activity-date strong {
+    font-size: 1.35rem;
+  }
+
+  .student-activity-card__schedule {
+    grid-column: 2 / 4;
+    align-self: auto;
+    padding: 12px 0 0;
+    border-top:
+      1px solid #e2e7eb;
+    border-left: 0;
+  }
+
+  .student-activity-card__summary {
+    grid-column: 1 / 4;
+    min-height: auto;
+    display: grid;
+    grid-template-columns:
+      auto minmax(0, 1fr);
+    padding-top: 12px;
+  }
+
+  .student-activity-card__view {
+    width: 40px;
+    height: 40px;
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .student-activities-state {
+    min-height: 220px;
+    padding: 24px 18px;
+  }
+}
+
+/* CELULARES PEQUEÑOS */
+@media (max-width: 430px) {
+  .student-activity-card__summary {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .student-activity-card__summary
+    > strong {
+    align-self: flex-start;
+  }
+
+  .student-activity-card__summary
+    > span {
+    margin-top: 8px;
+  }
+
+  .student-activity-capacity {
+    margin-top: 8px;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+@media (prefers-reduced-motion: reduce) {
+  .student-activities-heading,
+  .student-activities-panel,
+  .student-activities-results {
+    animation: none;
+  }
+
+  .student-activities-tab,
+  .student-activities-clear,
+  .student-activity-card,
+  .student-activity-capacity > span,
+  .student-activity-card__view {
+    transition: none;
+  }
+}

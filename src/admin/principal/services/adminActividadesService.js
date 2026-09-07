@@ -313,13 +313,6 @@ function normalizarActividadInicial(
           )
         : 0,
 
-    /*
-     * La imagen es opcional.
-     * Cuando no exista utilizaremos null.
-     */
-    imagen:
-      actividad.imagen ?? null,
-
     estado:
       prepararTexto(
         actividad.estado,
@@ -606,13 +599,6 @@ function prepararDatosActividad(
     lugar,
     cuposDisponibles,
     horasAcreditables,
-
-    /*
-     * La imagen es opcional y se definirá con mayor detalle
-     * cuando construyamos el selector de archivos.
-     */
-    imagen:
-      datos.imagen ?? null,
 
     estado: validarEstado(
       datos.estado ??

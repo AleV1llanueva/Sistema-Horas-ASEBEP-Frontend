@@ -1,5 +1,5 @@
 // Roles reconocidos por ASEBEP.
-export const ROL_BECARIO = 'becario'
+export const ROL_BECARIO = 'Becario'
 
 export const ROL_ADMIN_GENERAL = 'Admin General'
 
