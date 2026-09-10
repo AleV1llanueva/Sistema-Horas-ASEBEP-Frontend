@@ -317,6 +317,8 @@ function Login() {
               : 'Credenciales incorrectas'
             : 'No fue posible iniciar sesión'
 
+      console.log(error);
+
       notificarError({
         id: ID_NOTIFICACION_LOGIN,
         titulo: tituloError,

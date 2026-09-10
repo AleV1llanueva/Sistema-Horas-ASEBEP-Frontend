@@ -1,59 +1,42 @@
 import {
-    Navigate,
-    Route,
-    Routes,
+  Route,
+  Routes,
 } from 'react-router'
-
+import ProtectedRoute from '../../components/ProtectedRoute.jsx'
+import { ROL_ADMIN_GENERAL } from '../../config/rutasPorRol.js'
+import { useUsuario } from '../../hooks/useUsuario.js'
 import AdminLayout from '../shared/components/AdminLayout.jsx'
-import {
-    administradorPrincipalMock,
-} from './mocks/adminPrincipalMock.js'
 import AdminPrincipalDashboard from './pages/AdminPrincipalDashboard.jsx'
-// Imports pestaña actividades
 import AdminPrincipalActivities from './pages/AdminPrincipalActivities.jsx'
 import AdminPrincipalCreateActivity from './pages/AdminPrincipalCreateActivity.jsx'
-
-// Imports pestaña estudiantes
 import AdminPrincipalStudents from './pages/AdminPrincipalStudents.jsx'
 import AdminPrincipalStudentDetail from './pages/AdminPrincipalStudentDetail.jsx'
+import { Navigate } from 'react-router'
 
-const usarDatosAdminSimulados =
-    import.meta.env.DEV && import.meta.env.VITE_USAR_DATOS_ADMIN_SIMULADOS === 'true'
+function AdminPrincipalLayoutConectado() {
+  // El usuario real (ya autenticado) reemplaza al mock.
+  const { usuario } = useUsuario()
+
+  return <AdminLayout administrador={usuario} />
+}
 
 function AdminPrincipalRoutes() {
-  /*
-   * Mientras no exista integración con el backend,
-   * el módulo administrativo solamente estará
-   * disponible mediante los datos simulados.
-   */
-  if (!usarDatosAdminSimulados) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    )
-  }
-
   return (
     <Routes>
-      <Route element={<AdminLayout administrador={administradorPrincipalMock}/> }>
-        <Route index element={<Navigate to="/admin-principal/dashboard" replace /> } />
+      <Route
+        element={
+          <ProtectedRoute rolesPermitidos={[ROL_ADMIN_GENERAL]}>
+            <AdminPrincipalLayoutConectado />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/admin-principal/dashboard" replace />} />
         <Route path="dashboard" element={<AdminPrincipalDashboard />} />
-        {/* Rutas para pestañas de actividades */}
         <Route path="actividades" element={<AdminPrincipalActivities />} />
         <Route path="actividades/crear" element={<AdminPrincipalCreateActivity />} />
-
-        {/* Rutas para pestañas de estudiantes */}
         <Route path="estudiantes" element={<AdminPrincipalStudents />} />
         <Route path="estudiantes/:numeroCuenta" element={<AdminPrincipalStudentDetail />} />
-
-        {/*
-         * Mientras las demás páginas no estén
-         * construidas, cualquier ruta administrativa
-         * desconocida regresará al dashboard.
-         */}
-        <Route path="*" element={<Navigate to="/admin-principal/dashboard"  replace />} />
+        <Route path="*" element={<Navigate to="/admin-principal/dashboard" replace />} />
       </Route>
     </Routes>
   )

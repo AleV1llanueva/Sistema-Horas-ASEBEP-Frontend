@@ -1,3 +1,5 @@
+import { apiFetch, ApiError } from '../../../services/api.js'
+
 /*
  * Servicio simulado del módulo administrativo de estudiantes.
  *
@@ -31,13 +33,6 @@ export class EstudianteAdminError extends Error {
  * Evita que los datos simulados se utilicen accidentalmente
  * fuera del entorno de desarrollo configurado.
  */
-function comprobarModoSimulado() {
-  if (!usarDatosAdminSimulados) {
-    throw new EstudianteAdminError(
-      'Los datos administrativos simulados están desactivados.',
-    )
-  }
-}
 
 function obtenerAlmacenamiento() {
   if (typeof window === 'undefined') {
@@ -194,7 +189,7 @@ function normalizarAportacion(
     ),
     monto: prepararNumeroNoNegativo(
       aportacion.monto ??
-        CUOTA_MENSUAL_APORTACION,
+      CUOTA_MENSUAL_APORTACION,
       'El monto de la aportación',
     ),
     fechaPago:
@@ -228,17 +223,17 @@ function normalizarEstudiante(
       : {}
 
   const datosPersonales =
-    esObjeto(estudiante.datosPersonales)
-      ? estudiante.datosPersonales
+    esObjeto(estudiante.datos_personales)
+      ? estudiante.datos_personales
       : {}
 
   const datosBecario =
-    esObjeto(estudiante.datosBecario)
-      ? estudiante.datosBecario
+    esObjeto(estudiante.datos_becario)
+      ? estudiante.datos_becario
       : {}
 
   const numeroCuenta = prepararTexto(
-    datosPersonales.numeroCuenta,
+    datosPersonales.num_cuenta,
   )
 
   if (!numeroCuenta) {
@@ -248,19 +243,19 @@ function normalizarEstudiante(
   }
 
   const primerNombre = prepararTexto(
-    datosPersonales.primerNombre,
+    datosPersonales.p_nombre,
   )
 
   const segundoNombre = prepararTexto(
-    datosPersonales.segundoNombre,
+    datosPersonales.s_nombre,
   )
 
   const primerApellido = prepararTexto(
-    datosPersonales.primerApellido,
+    datosPersonales.p_apellido,
   )
 
   const segundoApellido = prepararTexto(
-    datosPersonales.segundoApellido,
+    datosPersonales.s_apellido,
   )
 
   const nombreCompleto =
@@ -291,11 +286,12 @@ function normalizarEstudiante(
    */
   const activo =
     !eliminado &&
-    credenciales.activo !== false
+    credenciales.active !== false
+
 
   const mesesSinPagar =
     prepararEnteroNoNegativo(
-      datosBecario.mesesSinPagar ?? 0,
+      datosBecario.meses_sin_pagar ?? 0,
       'Los meses sin pagar',
     )
 
@@ -304,20 +300,20 @@ function normalizarEstudiante(
       estudiante.actividadesRecientes,
     )
       ? estudiante.actividadesRecientes
-          .map(normalizarActividadReciente)
-          .sort(
-            (actividadA, actividadB) =>
-              actividadB.fecha.localeCompare(
-                actividadA.fecha,
-              ),
-          )
+        .map(normalizarActividadReciente)
+        .sort(
+          (actividadA, actividadB) =>
+            actividadB.fecha.localeCompare(
+              actividadA.fecha,
+            ),
+        )
       : []
 
   const aportaciones =
     Array.isArray(estudiante.aportaciones)
       ? estudiante.aportaciones.map(
-          normalizarAportacion,
-        )
+        normalizarAportacion,
+      )
       : []
 
   return {
@@ -364,35 +360,36 @@ function normalizarEstudiante(
 
     datosBecario: {
       periodoInicio: prepararTexto(
-        datosBecario.periodoInicio,
+        datosBecario.periodo_inicio,
       ),
       anioInicio:
         prepararEnteroOpcional(
-          datosBecario.anioInicio,
+          datosBecario.anio_inicio,
           'El año de inicio',
         ),
       horasAcumuladas:
         prepararNumeroNoNegativo(
           datosBecario
-            .horasAcumuladas ?? 0,
+            .horas_acumuladas ?? 0,
           'Las horas acumuladas',
         ),
       horasFaltantes:
         prepararNumeroNoNegativo(
           datosBecario
-            .horasFaltantes ?? 0,
+            .horas_faltantes ?? 0,
           'Las horas faltantes',
         ),
-      mesesSinPagar,
+      mesesSinPagar:
+        datosBecario.meses_sin_pagar,
       estadoBeca:
         eliminado
           ? 'inactivo'
           : prepararTexto(
-              datosBecario.estadoBeca,
-            ).toLowerCase() ||
-            (activo
-              ? 'activo'
-              : 'inactivo'),
+            datosBecario.estadoBeca,
+          ).toLowerCase() ||
+          (activo
+            ? 'activo'
+            : 'inactivo'),
     },
 
     actividadesRecientes,
@@ -559,44 +556,31 @@ function buscarIndiceEstudiante(
 }
 
 export async function listarEstudiantes() {
-  comprobarModoSimulado()
 
-  const estudiantes =
-    leerEstudiantes().filter(
-      (estudiante) =>
-        estudiante.eliminado !== true,
-    )
+  const estudiantes = await apiFetch('/usuarios')
+  console.log(estudiantes)
 
-  return clonarDatos(
-    ordenarEstudiantes(estudiantes),
-  )
+  if (Array.isArray(estudiantes)) {
+    return estudiantes.map(normalizarEstudiante)
+  } else {
+    console.log(estudiantes)
+    return []
+  }
 }
 
 export async function obtenerEstudiante(
   identificador,
 ) {
-  comprobarModoSimulado()
+  try {
+    const estudiante = await apiFetch(`/usuario/${identificador}`)
+    return normalizarEstudiante(estudiante)
+  } catch (error) {
 
-  const estudiantes =
-    leerEstudiantes()
-
-  const indiceEstudiante =
-    buscarIndiceEstudiante(
-      estudiantes,
-      identificador,
-    )
-
-  if (
-    indiceEstudiante === -1 ||
-    estudiantes[indiceEstudiante]
-      .eliminado === true
-  ) {
-    return null
+    if (error instanceof ApiError) {
+      throw new EstudianteAdminError(error.message)
+    }
+    throw new EstudianteAdminError('No se pudo conectar con el servidor backend.')
   }
-
-  return clonarDatos(
-    estudiantes[indiceEstudiante],
-  )
 }
 
 /*
@@ -676,7 +660,7 @@ export async function actualizarEstudiante(
       )
         ? cambios.actividadesRecientes
         : estudianteActual
-            .actividadesRecientes,
+          .actividadesRecientes,
 
     aportaciones:
       Array.isArray(cambios.aportaciones)
@@ -706,9 +690,9 @@ export async function actualizarEstudiante(
         estudiante.eliminado !== true &&
         estudiante.datosPersonales
           .numeroCuenta ===
-          estudianteActualizado
-            .datosPersonales
-            .numeroCuenta,
+        estudianteActualizado
+          .datosPersonales
+          .numeroCuenta,
     )
 
   if (cuentaDuplicada) {
