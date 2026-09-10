@@ -2,7 +2,6 @@
  * Vista administrativa de actividades.
  * Utiliza las variables compartidas de AdminLayout.css.
  */
-
 .admin-activities-page {
   width: min(100%, 1420px);
   margin: 0 auto;
@@ -41,7 +40,9 @@
   line-height: 1.12;
 }
 
-.admin-activities-heading > div:first-child > p:last-child {
+.admin-activities-heading
+  > div:first-child
+  > p:last-child {
   max-width: 680px;
   margin: 9px 0 0;
   color: var(--admin-text-soft);
@@ -188,7 +189,8 @@
   font-size: 0.78rem;
 }
 
-.admin-activities-search__control input::placeholder {
+.admin-activities-search__control
+  input::placeholder {
   color: #8b98a4;
 }
 
@@ -366,7 +368,10 @@
   font-weight: 750;
 }
 
-/* La tabla puede desplazarse horizontalmente en computadoras pequeñas. */
+/*
+ * La tabla mantiene todos sus controles accesibles
+ * mediante desplazamiento horizontal en pantallas pequeñas.
+ */
 .admin-activities-management-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -374,7 +379,7 @@
 
 .admin-activities-management-table {
   width: 100%;
-  min-width: 1080px;
+  min-width: 1360px;
   border-collapse: collapse;
 }
 
@@ -421,12 +426,20 @@
     background 150ms ease;
 }
 
-.admin-activities-management-table tbody tr:hover {
+.admin-activities-management-table
+  tbody
+  tr:hover {
   background: #f9fbfc;
 }
 
-.admin-activities-management-table tbody tr:last-child th,
-.admin-activities-management-table tbody tr:last-child td {
+.admin-activities-management-table
+  tbody
+  tr:last-child
+  th,
+.admin-activities-management-table
+  tbody
+  tr:last-child
+  td {
   border-bottom: 0;
 }
 
@@ -522,7 +535,118 @@
   background: #f3e8eb;
 }
 
-/* BOTONES DEL FUTURO CRUD */
+/* CONTROLES DE ASISTENCIA */
+.admin-activity-attendance-actions {
+  min-width: 268px;
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(126px, 1fr));
+  gap: 7px;
+}
+
+.admin-activity-attendance-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  border:
+    1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.63rem;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-activity-attendance-button svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.admin-activity-attendance-button--entry {
+  color: #0b5688;
+  border-color: #c7dfef;
+  background: #eff7fc;
+}
+
+.admin-activity-attendance-button--entry:hover:not(
+    :disabled
+  ) {
+  color: #07456e;
+  border-color: #9fc8e2;
+  background: #e2f0fa;
+  box-shadow:
+    0 5px 12px
+    rgb(11 86 136 / 12%);
+  transform: translateY(-1px);
+}
+
+.admin-activity-attendance-button--exit {
+  color: #76571a;
+  border-color: #ead59d;
+  background: #fff9e9;
+}
+
+.admin-activity-attendance-button--exit:hover:not(
+    :disabled
+  ) {
+  color: #604511;
+  border-color: #d8bd75;
+  background: #fff3cf;
+  box-shadow:
+    0 5px 12px
+    rgb(118 87 26 / 12%);
+  transform: translateY(-1px);
+}
+
+/*
+ * Un botón activo indica que ya existe un QR vigente.
+ * Al seleccionarlo se genera un token nuevo.
+ */
+.admin-activity-attendance-button--active {
+  color: #28734e;
+  border-color: #acd8bf;
+  background: #e2f4ea;
+  box-shadow:
+    inset 0 0 0 1px
+    rgb(40 115 78 / 5%);
+}
+
+.admin-activity-attendance-button--active:hover:not(
+    :disabled
+  ) {
+  color: #1f6040;
+  border-color: #87c5a2;
+  background: #d5eedf;
+}
+
+.admin-activity-attendance-button:disabled {
+  color: #87939e;
+  border-color: #dce3e8;
+  background: #f3f5f7;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.admin-activity-attendance-button__loader {
+  animation:
+    admin-activities-loader-spin
+    850ms linear infinite;
+}
+
+/* ACCIONES DEL FUTURO CRUD */
 .admin-activity-actions {
   display: flex;
   align-items: center;
@@ -604,7 +728,7 @@
   font-size: 0.75rem;
 }
 
-/* AVISO DEL SIGUIENTE AVANCE */
+/* AVISO DE FUNCIONES PENDIENTES */
 .admin-activities-future-note {
   display: flex;
   align-items: flex-start;
@@ -634,12 +758,356 @@
   line-height: 1.5;
 }
 
+/* DIÁLOGO DEL CÓDIGO QR */
+.admin-qr-dialog__overlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  background:
+    rgb(4 22 36 / 68%);
+  backdrop-filter: blur(3px);
+}
+
+.admin-qr-dialog__overlay[
+  data-state='open'
+] {
+  animation:
+    admin-qr-overlay-open
+    180ms ease-out both;
+}
+
+.admin-qr-dialog__overlay[
+  data-state='closed'
+] {
+  animation:
+    admin-qr-overlay-close
+    150ms ease-in both;
+}
+
+.admin-qr-dialog__content {
+  --admin-navy: #002b4f;
+  --admin-navy-hover: #0b406a;
+  --admin-blue: #0b5688;
+  --admin-focus: #4b91c4;
+  --admin-text: #10283e;
+  --admin-text-soft: #526575;
+  --admin-muted: #778593;
+  --admin-border: #c9dce9;
+  --admin-hover: #e6f1f8;
+  --admin-white: #ffffff;
+  width: min(calc(100vw - 32px), 470px);
+  max-height: calc(100vh - 32px);
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  overflow-y: auto;
+  padding: 30px;
+  color: var(--admin-text);
+  border:
+    1px solid #91bad6;
+  border-radius: 15px;
+  outline: 0;
+  background:
+    linear-gradient(
+      180deg,
+      #dceef9 0%,
+      #eef7fc 24%,
+      #ffffff 68%
+    );
+
+  box-shadow:
+    0 30px 75px
+    rgb(0 25 45 / 42%),
+    inset 0 1px 0
+    rgb(255 255 255 / 75%);
+  text-align: center;
+  transform:
+    translate(-50%, -50%);
+}
+
+.admin-qr-dialog__content[
+  data-state='open'
+] {
+  animation:
+    admin-qr-content-open
+    210ms ease-out both;
+}
+
+.admin-qr-dialog__content[
+  data-state='closed'
+] {
+  animation:
+    admin-qr-content-close
+    160ms ease-in both;
+}
+
+.admin-qr-dialog__close {
+  width: 34px;
+  height: 34px;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--admin-text-soft);
+  border:
+    1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.admin-qr-dialog__close:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-navy);
+  border-color: var(--admin-border);
+  background: var(--admin-hover);
+}
+
+.admin-qr-dialog__close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-qr-dialog__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-qr-dialog__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 13px;
+  color: var(--admin-blue);
+  border-radius: 12px;
+  background: #e2f0fa;
+}
+
+.admin-qr-dialog__icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.admin-qr-dialog__title {
+  margin: 0;
+  color: var(--admin-navy);
+  font-size: 1.28rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.admin-qr-dialog__description {
+  max-width: 370px;
+  margin: 9px auto 0;
+  color: var(--admin-text-soft);
+  font-size: 0.77rem;
+  line-height: 1.55;
+}
+
+.admin-qr-dialog__activity {
+  max-width: 380px;
+  margin: 13px auto 17px;
+  overflow: hidden;
+  color: var(--admin-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-qr-dialog__code {
+  width: min(100%, 280px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  padding: 15px;
+  overflow: hidden;
+  border:
+    1px solid #cbdce8;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow:
+    0 12px 28px
+    rgb(0 43 79 / 10%);
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+
+.admin-qr-dialog__code svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.admin-qr-dialog__code--expired svg {
+  opacity: 0.22;
+  filter: blur(2px);
+}
+
+.admin-qr-dialog__code--expired::after {
+  min-height: 40px;
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: #7c2832;
+  border:
+    1px solid #e7b7bd;
+  border-radius: 999px;
+  background:
+    rgb(255 241 242 / 96%);
+  box-shadow:
+    0 8px 20px
+    rgb(90 25 34 / 12%);
+  content: 'QR vencido';
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transform:
+    translate(-50%, -50%);
+}
+
+.admin-qr-dialog__timer {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 15px auto 0;
+  padding: 8px 13px;
+  color: #28734e;
+  border:
+    1px solid #c9e5d5;
+  border-radius: 9px;
+  background: #edf8f2;
+}
+
+.admin-qr-dialog__timer svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.admin-qr-dialog__timer p {
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.admin-qr-dialog__timer strong {
+  font-variant-numeric:
+    tabular-nums;
+  font-size: 0.78rem;
+}
+
+.admin-qr-dialog__timer--expired {
+  color: #8a3340;
+  border-color: #edc9ce;
+  background: #fff3f4;
+}
+
+.admin-qr-dialog__notice {
+  margin: 12px 0 0;
+  color: var(--admin-muted);
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+.admin-qr-dialog__actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.admin-qr-dialog__secondary,
+.admin-qr-dialog__primary {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-qr-dialog__secondary {
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-qr-dialog__secondary:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-navy);
+  border-color: #bdcedb;
+  background: var(--admin-hover);
+}
+
+.admin-qr-dialog__primary {
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
+  background: var(--admin-navy);
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 17%);
+}
+
+.admin-qr-dialog__primary:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-white);
+  background: var(--admin-navy-hover);
+  transform: translateY(-1px);
+}
+
+.admin-qr-dialog__secondary:disabled,
+.admin-qr-dialog__primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.admin-qr-dialog__secondary svg,
+.admin-qr-dialog__primary svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ACCESIBILIDAD */
 .admin-activities-history-button:focus-visible,
 .admin-activities-create-button:focus-visible,
 .admin-activities-state a:focus-visible,
 .admin-activities-state button:focus-visible,
-.admin-activity-actions button:focus-visible {
+.admin-activity-attendance-button:focus-visible,
+.admin-activity-actions button:focus-visible,
+.admin-qr-dialog__close:focus-visible,
+.admin-qr-dialog__secondary:focus-visible,
+.admin-qr-dialog__primary:focus-visible {
   outline:
     3px solid
     rgb(75 145 196 / 30%);
@@ -662,6 +1130,58 @@
 @keyframes admin-activities-loader-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes admin-qr-overlay-open {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes admin-qr-overlay-close {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes admin-qr-content-open {
+  from {
+    opacity: 0;
+    transform:
+      translate(-50%, -47%)
+      scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+}
+
+@keyframes admin-qr-content-close {
+  from {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform:
+      translate(-50%, -48%)
+      scale(0.98);
   }
 }
 
@@ -696,6 +1216,69 @@
   }
 }
 
+/* TELÉFONOS */
+@media (max-width: 680px) {
+  .admin-activities-heading {
+    gap: 19px;
+    margin-bottom: 19px;
+  }
+
+  .admin-activities-heading__actions {
+    flex-direction: column;
+  }
+
+  .admin-activities-history-button,
+  .admin-activities-create-button {
+    width: 100%;
+  }
+
+  .admin-activities-toolbar {
+    grid-template-columns: 1fr;
+    padding: 15px;
+  }
+
+  .admin-activities-search {
+    grid-column: auto;
+  }
+
+  .admin-activities-list__header {
+    align-items: flex-start;
+    padding: 14px 16px;
+  }
+
+  .admin-qr-dialog__content {
+    width:
+      min(calc(100vw - 22px), 470px);
+    max-height:
+      calc(100vh - 22px);
+    padding: 27px 18px 20px;
+    border-radius: 13px;
+  }
+
+  .admin-qr-dialog__close {
+    top: 10px;
+    right: 10px;
+  }
+
+  .admin-qr-dialog__activity {
+    max-width: 100%;
+  }
+
+  .admin-qr-dialog__code {
+    width: min(100%, 260px);
+    padding: 12px;
+  }
+
+  .admin-qr-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-qr-dialog__secondary,
+  .admin-qr-dialog__primary {
+    width: 100%;
+  }
+}
+
 /* RESPETA LA CONFIGURACIÓN DE MOVIMIENTO DEL USUARIO */
 @media (prefers-reduced-motion: reduce) {
   .admin-activities-heading,
@@ -703,7 +1286,10 @@
   .admin-activities-state,
   .admin-activities-list,
   .admin-activities-future-note,
-  .admin-activities-state__loader {
+  .admin-activities-state__loader,
+  .admin-activity-attendance-button__loader,
+  .admin-qr-dialog__overlay,
+  .admin-qr-dialog__content {
     animation: none;
   }
 
@@ -713,8 +1299,15 @@
   .admin-activities-filter select,
   .admin-activities-state a,
   .admin-activities-state button,
-  .admin-activities-management-table tbody tr,
-  .admin-activity-actions button {
+  .admin-activities-management-table
+    tbody
+    tr,
+  .admin-activity-attendance-button,
+  .admin-activity-actions button,
+  .admin-qr-dialog__close,
+  .admin-qr-dialog__code,
+  .admin-qr-dialog__secondary,
+  .admin-qr-dialog__primary {
     transition: none;
   }
 }

@@ -29,6 +29,31 @@ const ESTADOS_PERMITIDOS = [
 ]
 
 /*
+ * Tipos de marcación admitidos por el flujo de asistencia.
+ * Usar constantes evita errores al comparar cadenas en las
+ * funciones que generan y habilitan cada código QR.
+ */
+const TIPOS_MARCACION = Object.freeze({
+  entrada: 'entrada',
+  salida: 'salida',
+})
+
+// Entrada y salida conservan la vigencia de 10 minutos.
+const DURACION_QR_MINUTOS = Object.freeze({
+  [TIPOS_MARCACION.entrada]: 10,
+  [TIPOS_MARCACION.salida]: 10,
+})
+
+const PREFIJO_TOKEN_QR_SIMULADO =
+  'asebep-mock.'
+
+/*
+ * Cada tipo dispone de una habilitación inicial
+ * y una sola reactivación.
+ */
+const MAXIMO_GENERACIONES_QR = 2
+
+/*
  * Los datos administrativos simulados solo funcionan cuando:
  *
  * 1. La aplicación se ejecuta en desarrollo.
@@ -188,10 +213,8 @@ function validarFecha(fecha) {
   return fecha
 }
 
-/*
- * Comprueba que las horas utilicen el formato de 24 horas:
- * HH:mm
-*/
+// Comprueba que las horas utilicen el formato de 24 horas: HH:mm
+
 function validarHora(
   hora,
   nombreCampo,
@@ -205,6 +228,86 @@ function validarHora(
   }
 
   return hora
+}
+
+/*
+ * Construye una fecha local a partir de los valores que usa
+ * el formulario. No utilizamos Date.parse para evitar que el
+ * navegador interprete la fecha en una zona horaria distinta.
+ */
+function crearFechaHoraLocalActividad(
+  fecha,
+  hora,
+) {
+  const fechaPreparada =
+    prepararTexto(fecha)
+
+  const horaPreparada =
+    prepararTexto(hora)
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      fechaPreparada,
+    ) ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+      horaPreparada,
+    )
+  ) {
+    return null
+  }
+
+  const [anio, mes, dia] =
+    fechaPreparada
+      .split('-')
+      .map(Number)
+
+  const [horas, minutos] =
+    horaPreparada
+      .split(':')
+      .map(Number)
+
+  const fechaHora = new Date(
+    anio,
+    mes - 1,
+    dia,
+    horas,
+    minutos,
+    0,
+    0,
+  )
+
+  const fechaHoraValida =
+    fechaHora.getFullYear() === anio &&
+    fechaHora.getMonth() === mes - 1 &&
+    fechaHora.getDate() === dia &&
+    fechaHora.getHours() === horas &&
+    fechaHora.getMinutes() === minutos
+
+  return fechaHoraValida
+    ? fechaHora
+    : null
+}
+
+/*
+ * Centraliza el horario utilizado para decidir si una
+ * marcación puede habilitarse en el momento actual.
+ */
+function obtenerHorarioActividad(
+  actividad,
+) {
+  return {
+    inicio:
+      crearFechaHoraLocalActividad(
+        actividad?.fecha,
+        actividad?.horaInicio,
+      ),
+
+    finalizacion:
+      crearFechaHoraLocalActividad(
+        actividad?.fecha,
+        actividad?.horaFinalizacion,
+      ),
+  }
 }
 
 // Normaliza y comprueba el estado de una actividad.
@@ -242,6 +345,250 @@ function crearIdentificador() {
   )
 }
 
+/*
+ * Cada habilitación genera un valor nuevo. De esta forma,
+ * volver a habilitar una marcación invalida el token anterior
+ * cuando posteriormente se compare con el almacenado.
+ */
+function crearIdentificadorTokenQr() {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID ===
+      'function'
+  ) {
+    return crypto.randomUUID()
+  }
+
+  return (
+    `${Date.now()}-` +
+    Math.random().toString(16).slice(2)
+  )
+}
+
+/*
+ * Convierte el contenido del token a Base64 URL.
+ * El prefijo permite reconocer claramente que se trata
+ * de un código local de prueba y no de un token del backend.
+ */
+function codificarTokenQrSimulado(
+  contenido,
+) {
+  if (
+    typeof TextEncoder === 'undefined' ||
+    typeof btoa !== 'function'
+  ) {
+    throw new ActividadAdminError(
+      'El navegador no permite generar el código QR simulado.',
+    )
+  }
+
+  const bytes = new TextEncoder().encode(
+    JSON.stringify(contenido),
+  )
+
+  let contenidoBinario = ''
+
+  for (const byte of bytes) {
+    contenidoBinario +=
+      String.fromCharCode(byte)
+  }
+
+  const base64Url = btoa(
+    contenidoBinario,
+  )
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '')
+
+  return (
+    PREFIJO_TOKEN_QR_SIMULADO +
+    base64Url
+  )
+}
+
+/*
+ * Construye el enlace que abrirá la futura ruta
+ * de registro de asistencia del estudiante.
+ */
+function crearUrlAsistenciaSimulada(
+  tipo,
+  token,
+) {
+  if (
+    typeof window === 'undefined' ||
+    !window.location?.origin
+  ) {
+    throw new ActividadAdminError(
+      'No fue posible construir el enlace del código QR.',
+    )
+  }
+
+  const url = new URL(
+    `/asistencia/${tipo}`,
+    window.location.origin,
+  )
+
+  url.searchParams.set(
+    'token',
+    token,
+  )
+
+  return url.toString()
+}
+
+/*
+ * Crea un nuevo token QR simulado.
+ *
+ * La generación queda incluida dentro del token
+ * para distinguir la habilitación inicial de
+ * su única reactivación.
+ */
+function crearQrSimulado({
+  actividadId,
+  tipo,
+  ahora,
+  generacion,
+}) {
+  const duracionMinutos =
+    DURACION_QR_MINUTOS[tipo]
+
+  if (!duracionMinutos) {
+    throw new ActividadAdminError(
+      'El tipo de marcación solicitado no es válido.',
+    )
+  }
+
+  if (
+    !Number.isInteger(generacion) ||
+    generacion < 1 ||
+    generacion >
+      MAXIMO_GENERACIONES_QR
+  ) {
+    throw new ActividadAdminError(
+      'La generación del código QR no es válida.',
+    )
+  }
+
+  const habilitadaEn =
+    ahora.toISOString()
+
+  const expiraEn = new Date(
+    ahora.getTime() +
+      duracionMinutos * 60 * 1000,
+  ).toISOString()
+
+  const token = codificarTokenQrSimulado({
+    version: 1,
+    actividadId,
+    tipo,
+    generacion,
+    habilitadaEn,
+    expiraEn,
+    nonce:
+      crearIdentificadorTokenQr(),
+  })
+
+  return {
+    tipo,
+    token,
+
+    url:
+      crearUrlAsistenciaSimulada(
+        tipo,
+        token,
+      ),
+
+    habilitadaEn,
+    expiraEn,
+    duracionMinutos,
+    generacion,
+  }
+}
+
+/*
+ * Recupera el último QR cuando todavía se encuentra
+ * dentro de su tiempo de vigencia.
+ *
+ * Esta función no genera un token nuevo. Por eso,
+ * cerrar y volver a abrir el diálogo conserva tanto
+ * el código como el tiempo restante.
+ */
+function obtenerQrVigenteSimulado(
+  actividad,
+  tipo,
+  ahora,
+) {
+  const esEntrada =
+    tipo === TIPOS_MARCACION.entrada
+
+  const habilitada = esEntrada
+    ? actividad.entradaHabilitada ===
+      true
+    : actividad.salidaHabilitada ===
+      true
+
+  const habilitadaEn = prepararTexto(
+    esEntrada
+      ? actividad.entradaHabilitadaEn
+      : actividad.salidaHabilitadaEn,
+  )
+
+  const expiraEn = prepararTexto(
+    esEntrada
+      ? actividad.entradaHabilitadaHasta
+      : actividad.salidaHabilitadaHasta,
+  )
+
+  const token = prepararTexto(
+    esEntrada
+      ? actividad.tokenEntradaSimulado
+      : actividad.tokenSalidaSimulado,
+  )
+
+  const generacion = Number(
+    esEntrada
+      ? actividad.generacionesQrEntrada
+      : actividad.generacionesQrSalida,
+  )
+
+  const fechaExpiracion =
+    Date.parse(expiraEn)
+
+  const qrVigente =
+    habilitada &&
+    Boolean(token) &&
+    Number.isFinite(fechaExpiracion) &&
+    fechaExpiracion > ahora.getTime()
+
+  if (!qrVigente) {
+    return null
+  }
+
+  return {
+    tipo,
+    token,
+
+    url:
+      crearUrlAsistenciaSimulada(
+        tipo,
+        token,
+      ),
+
+    habilitadaEn:
+      habilitadaEn || null,
+
+    expiraEn,
+
+    duracionMinutos:
+      DURACION_QR_MINUTOS[tipo],
+
+    generacion:
+      Number.isInteger(generacion)
+        ? generacion
+        : 1,
+  }
+}
+
 // Crea una copia independiente de los datos.
 function clonarDatos(datos) {
   return JSON.parse(
@@ -249,17 +596,39 @@ function clonarDatos(datos) {
   )
 }
 
+// Normaliza los contadores almacenados.
+function normalizarCantidadGeneracionesQr(
+  valor,
+  tieneQrGuardado,
+) {
+  const cantidad = Number(valor)
+
+  if (
+    Number.isInteger(cantidad) &&
+    cantidad >= 0
+  ) {
+    return Math.min(
+      cantidad,
+      MAXIMO_GENERACIONES_QR,
+    )
+  }
+
+  return tieneQrGuardado
+    ? 1
+    : 0
+}
+
 /*
- * Convierte las actividades antiguas del dashboard al nuevo
- * formato completo utilizado por el módulo de actividades.
-*/
+ * Convierte las actividades antiguas del dashboard
+ * al formato completo utilizado por el módulo.
+ */
 function normalizarActividadInicial(
   actividad,
 ) {
   return {
     /*
-     - Conservamos el identificador existente.
-     - Si no existe, generamos uno nuevo.
+     * Conservamos el identificador existente.
+     * Si no existe, generamos uno nuevo.
      */
     id:
       prepararTexto(actividad.id) ||
@@ -313,27 +682,126 @@ function normalizarActividadInicial(
           )
         : 0,
 
+    /*
+     * Unificamos estados como "En curso"
+     * y "en-curso" bajo el mismo formato.
+     */
     estado:
       prepararTexto(
         actividad.estado,
-      ).toLowerCase() || 'programada',
+      )
+        .toLowerCase()
+        .replace(/\s+/g, '-') ||
+      'programada',
 
-      activa: actividad.activa !== false,
+    activa:
+      actividad.activa !== false,
 
-      eliminada: actividad.eliminada === true,
+    eliminada:
+      actividad.eliminada === true,
 
-      desactivadaEn: prepararTexto(
+    /*
+     * Configuración simulada del QR de entrada.
+     *
+     * El token permite comprobar posteriormente que
+     * el QR leído corresponde a la última habilitación.
+     */
+    entradaHabilitada:
+      actividad.entradaHabilitada ===
+      true,
+
+    entradaHabilitadaEn:
+      prepararTexto(
+        actividad.entradaHabilitadaEn,
+      ) || null,
+
+    entradaHabilitadaHasta:
+      prepararTexto(
+        actividad.entradaHabilitadaHasta,
+      ) || null,
+
+    tokenEntradaSimulado:
+      prepararTexto(
+        actividad.tokenEntradaSimulado,
+      ) || null,
+
+    // Conserva cuantos QR de entrada han sido generados.
+    generacionesQrEntrada:
+      normalizarCantidadGeneracionesQr(
+        actividad.generacionesQrEntrada,
+
+        Boolean(
+          actividad.entradaHabilitada ===
+            true ||
+          prepararTexto(
+            actividad.tokenEntradaSimulado,
+          ) ||
+          prepararTexto(
+            actividad.entradaHabilitadaEn,
+          ) ||
+          prepararTexto(
+            actividad.entradaHabilitadaHasta,
+          ),
+        ),
+      ),
+
+    /*
+    * Configuración simulada del QR de salida.
+    *
+    * La salida tendrá una vigencia de 10 minutos,
+    * igual que el QR utilizado por el backend.
+    */
+    salidaHabilitada:
+      actividad.salidaHabilitada ===
+      true,
+
+    salidaHabilitadaEn:
+      prepararTexto(
+        actividad.salidaHabilitadaEn,
+      ) || null,
+
+    salidaHabilitadaHasta:
+      prepararTexto(
+        actividad.salidaHabilitadaHasta,
+      ) || null,
+
+    tokenSalidaSimulado:
+      prepararTexto(
+        actividad.tokenSalidaSimulado,
+      ) || null,
+
+    // Conserva cuántos QR de salida han sido generados.
+    generacionesQrSalida:
+      normalizarCantidadGeneracionesQr(
+        actividad.generacionesQrSalida,
+
+        Boolean(
+          actividad.salidaHabilitada ===
+            true ||
+          prepararTexto(
+            actividad.tokenSalidaSimulado,
+          ) ||
+          prepararTexto(
+            actividad.salidaHabilitadaEn,
+          ) ||
+          prepararTexto(
+            actividad.salidaHabilitadaHasta,
+          ),
+        ),
+      ),
+
+    // Información de desactivación y eliminación lógica.
+    desactivadaEn:
+      prepararTexto(
         actividad.desactivadaEn,
       ) || null,
 
-      eliminadaEn: prepararTexto(
+    eliminadaEn:
+      prepararTexto(
         actividad.eliminadaEn,
       ) || null,
 
-    /*
-     - Estas fechas permiten conocer cuándo se creó
-     - y cuándo se modificó una actividad.
-    */
+    // Estas fechas permiten conocer cuándo se creó y cuándo se modificó la actividad.
     creadaEn:
       prepararTexto(
         actividad.creadaEn,
@@ -678,6 +1146,281 @@ export async function obtenerActividad(
 }
 
 /*
+ * Muestra el QR vigente o genera uno nuevo cuando
+ * el anterior ya terminó.
+ *
+ * Cada tipo dispone de dos generaciones independientes:
+ * una habilitación inicial y una reactivación.
+ */
+async function habilitarMarcacionActividad(
+  identificador,
+  tipoSolicitado,
+) {
+  comprobarModoSimulado()
+
+  const id = prepararTexto(
+    identificador,
+  )
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  const tipo = prepararTexto(
+    tipoSolicitado,
+  ).toLowerCase()
+
+  if (
+    !Object.values(
+      TIPOS_MARCACION,
+    ).includes(tipo)
+  ) {
+    throw new ActividadAdminError(
+      'El tipo de marcación solicitado no es válido.',
+    )
+  }
+
+  const actividades =
+    leerActividades()
+
+  const indiceActividad =
+    actividades.findIndex(
+      (actividad) =>
+        actividad.id === id &&
+        actividad.eliminada !== true,
+    )
+
+  if (indiceActividad === -1) {
+    throw new ActividadAdminError(
+      'La actividad que deseas habilitar no existe.',
+    )
+  }
+
+  const actividadActual =
+    actividades[indiceActividad]
+
+  if (actividadActual.activa === false) {
+    throw new ActividadAdminError(
+      'No puedes habilitar la asistencia de una actividad desactivada.',
+    )
+  }
+
+  const estadoActual =
+    prepararTexto(
+      actividadActual.estado,
+    )
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+
+  if (estadoActual === 'cancelada') {
+    throw new ActividadAdminError(
+      'No puedes habilitar la asistencia de una actividad cancelada.',
+    )
+  }
+
+  if (estadoActual === 'finalizada') {
+    throw new ActividadAdminError(
+      'No puedes habilitar la asistencia de una actividad finalizada.',
+    )
+  }
+
+  const ahora = new Date()
+
+  /*
+   * Antes de generar otro token comprobamos si existe
+   * uno vigente. Si existe, devolvemos exactamente el
+   * mismo QR y su fecha de expiración original.
+   */
+  const qrVigente =
+    obtenerQrVigenteSimulado(
+      actividadActual,
+      tipo,
+      ahora,
+    )
+
+  const generacionesActuales =
+    tipo === TIPOS_MARCACION.entrada
+      ? actividadActual
+          .generacionesQrEntrada
+      : actividadActual
+          .generacionesQrSalida
+
+  if (qrVigente) {
+    return clonarDatos({
+      actividad:
+        actividadActual,
+
+      qr: qrVigente,
+
+      reutilizado: true,
+
+      generacionesRestantes:
+        Math.max(
+          0,
+          MAXIMO_GENERACIONES_QR -
+            generacionesActuales,
+        ),
+    })
+  }
+
+  const {
+    inicio,
+    finalizacion,
+  } = obtenerHorarioActividad(
+    actividadActual,
+  )
+
+  if (!inicio || !finalizacion) {
+    throw new ActividadAdminError(
+      'No fue posible comprobar el horario de la actividad.',
+    )
+  }
+
+  if (
+    ahora.getTime() <
+    inicio.getTime()
+  ) {
+    throw new ActividadAdminError(
+      tipo === TIPOS_MARCACION.entrada
+        ? 'La entrada podrá habilitarse cuando comience la actividad.'
+        : 'La salida no puede habilitarse antes de que comience la actividad.',
+    )
+  }
+
+  if (
+    tipo === TIPOS_MARCACION.entrada &&
+    ahora.getTime() >=
+      finalizacion.getTime()
+  ) {
+    throw new ActividadAdminError(
+      'La entrada no puede habilitarse porque la actividad ya terminó.',
+    )
+  }
+
+/*
+ * Si ya se utilizaron las dos oportunidades,
+ * impedimos generar codigos extra.
+*/
+  if (
+    generacionesActuales >=
+    MAXIMO_GENERACIONES_QR
+  ) {
+    throw new ActividadAdminError(
+      tipo === TIPOS_MARCACION.entrada
+        ? 'La entrada ya utilizó su generación inicial y su única reactivación.'
+        : 'La salida ya utilizó su generación inicial y su única reactivación.',
+    )
+  }
+
+  const nuevaGeneracion =
+    generacionesActuales + 1
+
+  const qr = crearQrSimulado({
+    actividadId: id,
+    tipo,
+    ahora,
+    generacion:
+      nuevaGeneracion,
+  })
+
+  const camposMarcacion =
+    tipo === TIPOS_MARCACION.entrada
+      ? {
+          entradaHabilitada: true,
+
+          entradaHabilitadaEn:
+            qr.habilitadaEn,
+
+          entradaHabilitadaHasta:
+            qr.expiraEn,
+
+          tokenEntradaSimulado:
+            qr.token,
+
+          generacionesQrEntrada:
+            nuevaGeneracion,
+        }
+      : {
+          salidaHabilitada: true,
+
+          salidaHabilitadaEn:
+            qr.habilitadaEn,
+
+          salidaHabilitadaHasta:
+            qr.expiraEn,
+
+          tokenSalidaSimulado:
+            qr.token,
+
+          generacionesQrSalida:
+            nuevaGeneracion,
+        }
+
+  const actividadActualizada = {
+    ...actividadActual,
+    ...camposMarcacion,
+
+    /*
+     * La primera habilitación confirma que la
+     * actividad se encuentra operativamente en curso.
+     */
+    estado:
+      estadoActual === 'programada'
+        ? 'en-curso'
+        : estadoActual,
+
+    actualizadaEn:
+      ahora.toISOString(),
+  }
+
+  actividades[indiceActividad] =
+    actividadActualizada
+
+  guardarActividades(
+    actividades,
+  )
+
+  return clonarDatos({
+    actividad:
+      actividadActualizada,
+
+    qr,
+
+    reutilizado: false,
+
+    generacionesRestantes:
+      MAXIMO_GENERACIONES_QR -
+      nuevaGeneracion,
+  })
+}
+
+/*
+ * Abre el QR de entrada durante 10 minutos.
+ */
+export async function habilitarEntradaActividad(
+  identificador,
+) {
+  return habilitarMarcacionActividad(
+    identificador,
+    TIPOS_MARCACION.entrada,
+  )
+}
+
+/*
+ * Abre el QR de salida durante los 10 minutos acordados.
+ */
+export async function habilitarSalidaActividad(
+  identificador,
+) {
+  return habilitarMarcacionActividad(
+    identificador,
+    TIPOS_MARCACION.salida,
+  )
+}
+
+/*
  * Crea y publica una nueva actividad.
 */
 export async function crearActividad(
@@ -700,11 +1443,34 @@ export async function crearActividad(
   const nuevaActividad = {
     id: crearIdentificador(),
     ...datosPreparados,
+
     estado: 'programada',
     activa: true,
     eliminada: false,
+
+    /*
+     * Una actividad recién creada todavía no tiene
+     * habilitada ninguna marcación de asistencia.
+     */
+    entradaHabilitada: false,
+    entradaHabilitadaEn: null,
+    entradaHabilitadaHasta: null,
+    tokenEntradaSimulado: null,
+    generacionesQrEntrada: 0,
+
+    salidaHabilitada: false,
+    salidaHabilitadaEn: null,
+    salidaHabilitadaHasta: null,
+    tokenSalidaSimulado: null,
+    generacionesQrSalida: 0,
+
+    /*
+     * Estos valores se completarán si la actividad
+     * se desactiva o se elimina posteriormente.
+     */
     desactivadaEn: null,
     eliminadaEn: null,
+
     creadaEn: fechaActual,
     actualizadaEn: fechaActual,
   }

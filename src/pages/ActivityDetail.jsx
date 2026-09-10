@@ -29,6 +29,7 @@ import {
     cancelarInscripcionActividad,
     inscribirEstudianteEnActividad,
     obtenerActividadEstudiante,
+    obtenerRestriccionCancelacionActividad,
 } from '../services/estudianteActividadesService.js'
 import {
     notificarError,
@@ -243,52 +244,76 @@ function obtenerPorcentajeCupos(
   )
 }
 
-// Define el texto y el color del estado mostrado junto al titulo de la actividad.
+// Define el texto y el color del estado mostrado junto al título.
 function obtenerPresentacionEstado({
-    esHistorial,
-    estaInscrito,
-    puedeInscribirse,
-    actividad,
+  esHistorial,
+  esAsistenciaIncompleta,
+  estaInscrito,
+  puedeInscribirse,
+  actividad,
 }) {
-    if (esHistorial) {
-        return {
-            texto: 'Actividad completada',
-            clase: 'activity-detail-status--completed',
-        }
-    }
-
-    if (estaInscrito) {
-        return {
-            texto: 'Inscripción confirmada',
-            clase: 'activity-detail-status--registered',
-        }
-    }
-
-    if (puedeInscribirse) {
-        return {
-            texto: 'Inscripciones abiertas',
-            clase: 'activity-detail-status--open',
-        }
-    }
-
-    if (actividad.cuposDisponibles === 0) {
-        return {
-            texto: 'Cupos agotados',
-            clase: 'activity-detail-status--closed',
-        }
-    }
-
-    if (actividad.fecha && actividad.fecha < obtenerFechaHoy()) {
-        return {
-            texto: 'Actividad finalizada',
-            clase: 'activity-detail-status--closed',
-        }
-    }
-
+  if (esHistorial) {
     return {
-        texto: 'Inscripción no disponible',
-        clase: 'activity-detail-status--closed',
+      texto: 'Actividad completada',
+      clase:
+        'activity-detail-status--completed',
     }
+  }
+
+  /*
+   * Esta situación tiene prioridad sobre el estado
+   * general de la inscripción.
+   */
+  if (esAsistenciaIncompleta) {
+    return {
+      texto: 'Asistencia incompleta',
+      clase:
+        'activity-detail-status--closed',
+    }
+  }
+
+  if (estaInscrito) {
+    return {
+      texto: 'Inscripción confirmada',
+      clase:
+        'activity-detail-status--registered',
+    }
+  }
+
+  if (puedeInscribirse) {
+    return {
+      texto: 'Inscripciones abiertas',
+      clase:
+        'activity-detail-status--open',
+    }
+  }
+
+  if (
+    actividad.cuposDisponibles === 0
+  ) {
+    return {
+      texto: 'Cupos agotados',
+      clase:
+        'activity-detail-status--closed',
+    }
+  }
+
+  if (
+    actividad.fecha &&
+    actividad.fecha < obtenerFechaHoy()
+  ) {
+    return {
+      texto: 'Actividad finalizada',
+      clase:
+        'activity-detail-status--closed',
+    }
+  }
+
+  return {
+    texto: 'Inscripción no disponible',
+    clase:
+      'activity-detail-status--closed',
+  }
 }
 
 // Estado reutilizable para carga, error o actividad inexistente.
@@ -369,6 +394,14 @@ function ActivityDetail() {
     setIntentoCarga,
   ] = useState(0)
 
+  // Conserva la hora actual utilizada para evaluar el limite de cancelacion en la interfaz.
+  const [
+    instanteActual,
+    setInstanteActual,
+  ] = useState(
+    () => new Date(),
+  )
+
   /*
   * La visibilidad se controla por separado de la accion.
    */
@@ -438,6 +471,101 @@ function ActivityDetail() {
     actividadId,
     intentoCarga,
   ])
+
+  // Mientras exista una inscripcion pendiente, actualizamos el reloj de la pantalla cada segundo.
+  useEffect(() => {
+    const asistenciaConfirmada =
+      normalizarEstado(
+        actividad?.estadoAsistencia,
+      ) === 'asistió'
+
+      if (
+        !actividad ||
+        actividad.inscrito !== true ||
+        asistenciaConfirmada
+      ) {
+        return undefined
+      }
+
+      let intervaloHorario = null
+
+      function actualizarHorario() {
+        const ahora = new Date()
+
+        setInstanteActual(ahora)
+
+        // Cuando la cancelacion ya esta restringida
+        const restriccion =
+          obtenerRestriccionCancelacionActividad(
+            actividad,
+            ahora,
+          )
+
+        if (
+          restriccion &&
+          intervaloHorario !== null
+        ) {
+          window.clearInterval(
+            intervaloHorario,
+          )
+
+          intervaloHorario = null
+        }
+      }
+
+      // Actualizamos inmediatamente porque la actividad pudo tardar algunos segundos en cargar.
+      actualizarHorario()
+
+      if (
+        !obtenerRestriccionCancelacionActividad(
+          actividad,
+          new Date(),
+        )
+      ) {
+        intervaloHorario =
+          window.setInterval(
+            actualizarHorario,
+            1000,
+          )
+      }
+
+      // Los navegadores pueden pasar pausar intervalos cuando la pestaña permanece en segundo plano.
+      function actualizarAlRegresar() {
+        if (
+          document.visibilityState === 'visible'
+        ) {
+          actualizarHorario()
+        }
+      }
+
+      window.addEventListener(
+        'focus',
+        actualizarHorario,
+      )
+
+      document.addEventListener(
+        'visibilitychange',
+        actualizarAlRegresar,
+      )
+
+      return() => {
+        if (intervaloHorario !== null) {
+          window.clearInterval(
+            intervaloHorario,
+          )
+        }
+
+        window.removeEventListener(
+          'focus',
+          actualizarHorario,
+        )
+
+        document.removeEventListener(
+          'visibilitychange',
+          actualizarAlRegresar,
+        )
+      }
+  }, [actividad])
 
   function reintentarCarga() {
     setIntentoCarga(
@@ -538,10 +666,17 @@ function ActivityDetail() {
     }
   }
 
+  // La situacion se calcula en el servicio utilizado las marcaciones individuales en entrada y salida.
+  const situacionAsistencia =
+    actividad?.situacionAsistencia ??
+    'sin-inscripcion'
+  
+  // Una actividad pertenece al historial solamente cuando se registraron entrada y salida.
   const esHistorial =
-    normalizarEstado(
-      actividad?.estadoAsistencia,
-    ) === 'asistió'
+    situacionAsistencia === 'asistio'
+  
+  const esAsistenciaIncompleta =
+    situacionAsistencia === 'incompleta'
 
   const estaInscrito =
     actividad?.inscrito === true
@@ -593,14 +728,34 @@ function ActivityDetail() {
     estadoPermitido &&
     cuposDisponibles > 0
 
-  /*
-   * Una inscripción activa puede cancelarse mientras
-   * todavía no forme parte del historial confirmado.
-   */
-  const puedeCancelar =
+    /*
+    * Una asistencia incompleta ya no puede cancelarse.
+    * Debe permanecer disponible para la revision posterior del administrador.
+    */
+  const restriccionCancelacion =
     Boolean(actividad) &&
     estaInscrito &&
-    !esHistorial
+    !esHistorial &&
+    !esAsistenciaIncompleta
+      ? obtenerRestriccionCancelacionActividad(
+        actividad,
+        instanteActual,
+      )
+    : ''
+
+  const puedeCancelar =
+      Boolean(actividad) &&
+      estaInscrito &&
+      !esHistorial &&
+      !esAsistenciaIncompleta &&
+      !restriccionCancelacion
+
+  const cancelacionBloqueada =
+      Boolean(actividad) &&
+      estaInscrito &&
+      !esHistorial &&
+      !esAsistenciaIncompleta &&
+      Boolean(restriccionCancelacion)
 
   const informacionFecha =
     obtenerInformacionFecha(
@@ -626,6 +781,7 @@ function ActivityDetail() {
     actividad
       ? obtenerPresentacionEstado({
           esHistorial,
+          esAsistenciaIncompleta,
           estaInscrito,
           puedeInscribirse,
           actividad,
@@ -986,7 +1142,11 @@ function ActivityDetail() {
                               type="button"
                               disabled
                             >
-                              Inscripción no disponible
+                              {esAsistenciaIncompleta
+                                ? 'Asistencia incompleta'
+                                : cancelacionBloqueada
+                                  ? 'Cancelación no disponible'
+                                  : 'Inscripción no disponible'}
                             </button>
                           )}
 
@@ -994,14 +1154,25 @@ function ActivityDetail() {
                           <Info aria-hidden="true" />
 
                           <p>
-                            {puedeInscribirse &&
+                            {esAsistenciaIncompleta &&
+                              'No se confirmó tu estadía completa porque registraste la entrada, pero no la salida. Debes entregar un comprobante de tu participación por WhatsApp, correo o personalmente para que el administrador revise y confirme tu asistencia.'}
+
+                            {!esAsistenciaIncompleta &&
+                              puedeInscribirse &&
                               'Al inscribirte, la actividad aparecerá en la pestaña Mis próximas actividades.'}
 
-                            {puedeCancelar &&
-                              'Puedes cancelar tu inscripción si ya no podrás participar en la actividad.'}
+                            {!esAsistenciaIncompleta &&
+                              puedeCancelar &&
+                              'Puedes cancelar tu inscripción hasta 2 horas antes del inicio de la actividad.'}
 
-                            {!puedeInscribirse &&
+                            {!esAsistenciaIncompleta &&
+                              cancelacionBloqueada &&
+                              restriccionCancelacion}
+
+                            {!esAsistenciaIncompleta &&
+                              !puedeInscribirse &&
                               !puedeCancelar &&
+                              !cancelacionBloqueada &&
                               'En este momento no es posible inscribirse en esta actividad.'}
                           </p>
                         </div>
