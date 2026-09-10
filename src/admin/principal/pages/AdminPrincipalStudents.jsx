@@ -1,198 +1,200 @@
 import {
-    Eye,
-    GraduationCap,
-    LoaderCircle,
-    Pencil,
-    Plus,
-    Power,
-    Search,
-    Trash2,
-    TriangleAlert,
-    UsersRound,
+  Eye,
+  GraduationCap,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Power,
+  Search,
+  Trash2,
+  TriangleAlert,
+  UsersRound,
 } from 'lucide-react'
 
 import {
-    useEffect,
-    useMemo,
-    useState,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react'
 
 import { Link } from 'react-router'
 
 import {
-    cambiarEstadoEstudiante,
-    listarEstudiantes,
+  cambiarEstadoEstudiante,
+  listarEstudiantes,
 } from '../services/adminEstudiantesService.js'
 
 import {
-    limpiarNotificaciones,
-    notificarError,
-    notificarExito,
-    notificarInformacion,
-    solicitarConfirmacion,
+  limpiarNotificaciones,
+  notificarError,
+  notificarExito,
+  notificarInformacion,
+  solicitarConfirmacion,
 } from '../../../services/notificationService.js'
 
 import '../styles/AdminPrincipalStudents.css'
 
 function normalizarBusqueda(valor) {
-    return String(valor ?? '')
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
+  return String(valor ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
 }
 
 function obtenerIniciales(nombreCompleto) {
-    const palabras = normalizarBusqueda(
-        nombreCompleto,
-    )
-        .split(/\s+/)
-        .filter(Boolean)
+  const palabras = normalizarBusqueda(
+    nombreCompleto,
+  )
+    .split(/\s+/)
+    .filter(Boolean)
 
-    if (palabras.length === 0) {
-        return 'ES'
-    }
+  if (palabras.length === 0) {
+    return 'ES'
+  }
 
-    return palabras
-        .slice(0, 2)
-        .map((palabra) =>
-            palabra.charAt(0).toUpperCase(),
+  return palabras
+    .slice(0, 2)
+    .map((palabra) =>
+      palabra.charAt(0).toUpperCase(),
     )
     .join('')
 }
 
 function formatearLempiras(valor) {
-    const numero = Number(valor)
+  const numero = Number(valor)
 
-    if (!Number.isFinite(numero) || numero < 0) {
-        return 'L 0.00'
-    }
+  if (!Number.isFinite(numero) || numero < 0) {
+    return 'L 0.00'
+  }
 
-    return `L ${new Intl.NumberFormat(
-        'es-HN',
-        {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        },
-    ).format(numero)}`
+  return `L ${new Intl.NumberFormat(
+    'es-HN',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  ).format(numero)}`
 }
 
 function prepararCantidad(valor) {
-    const numero = Number(valor)
+  const numero = Number(valor)
 
-    if (!Number.isFinite(numero) || numero < 0) {
-        return 0
-    }
+  if (!Number.isFinite(numero) || numero < 0) {
+    return 0
+  }
 
-    return numero
+  return numero
 }
 
 function describirMesesPendientes(
-    mesesSinPagar,
+  mesesSinPagar,
 ) {
-    const meses = prepararCantidad(
-        mesesSinPagar,
-    )
+  const meses = prepararCantidad(
+    mesesSinPagar,
+  )
 
-    if (meses === 0) {
-        return 'Sin meses pendientes'
-    }
+  if (meses === 0) {
+    return 'Sin meses pendientes'
+  }
 
-    return meses === 1
-        ? '1 mes pendiente'
-        : `${meses} meses pendientes`
+  return meses === 1
+    ? '1 mes pendiente'
+    : `${meses} meses pendientes`
 }
 
 function AdminPrincipalStudents() {
-    const [
-        estudiantes,
-        setEstudiantes,
-    ] = useState([])
+  const [
+    estudiantes,
+    setEstudiantes,
+  ] = useState([])
 
-    const [
-        cargando,
-        setCargando,
-    ] = useState(true)
+  const [
+    cargando,
+    setCargando,
+  ] = useState(true)
 
-    const [
-        error,
-        setError,
-    ] = useState('')
+  const [
+    error,
+    setError,
+  ] = useState('')
 
-    const [
-        recarga,
-        setRecarga,
-    ] = useState(0)
+  const [
+    recarga,
+    setRecarga,
+  ] = useState(0)
 
-    const [
-        busqueda,
-        setBusqueda,
-    ] = useState('')
+  const [
+    busqueda,
+    setBusqueda,
+  ] = useState('')
 
-    const [
-        estadoSeleccionado,
-        setEstadoSeleccionado,
-    ] = useState('todos')
+  const [
+    estadoSeleccionado,
+    setEstadoSeleccionado,
+  ] = useState('todos')
 
-    /*
-    * Guarda el estudiante que esta siendo actualizado.
-    * Esto impide repetir una operacion mientras el servicio
-    * esta operando todavia procesando la solicitud anterior.
-    */
-   const [
+  /*
+  * Guarda el estudiante que esta siendo actualizado.
+  * Esto impide repetir una operacion mientras el servicio
+  * esta operando todavia procesando la solicitud anterior.
+  */
+  const [
     estudianteProcesando,
     setEstudianteProcesando,
-   ] = useState('')
+  ] = useState('')
 
-   /*
-   * La vista consume unicamente las funciones publicas del servicio.
-   * Con la API, la pagina no necesita saber el origen real de los datos.
-   */
+  /*
+  * La vista consume unicamente las funciones publicas del servicio.
+  * Con la API, la pagina no necesita saber el origen real de los datos.
+  */
   useEffect(() => {
     let componenteMontado = true
 
     async function cargarEstudiantes() {
-        setCargando(true)
-        setError('')
+      setCargando(true)
+      setError('')
 
-        try {
-            const estudiantesObtenidos = 
-                await listarEstudiantes()
-            
-            if (!componenteMontado) {
-                return
-            }
-            
-            setEstudiantes(
-                Array.isArray(
-                    estudiantesObtenidos,
-                )
-                    ? estudiantesObtenidos
-                    : [],
-            )
-        } catch (errorCarga) {
-            if (!componenteMontado) {
-                return
-            }
+      try {
+        const estudiantesObtenidos =
+          await listarEstudiantes()
 
-            setEstudiantes([])
-
-            setError(
-                errorCarga instanceof Error
-                    ? errorCarga.message
-                    : 'No fue posible cargar los estudiantes.',
-            )
-        } finally {
-            if (componenteMontado) {
-                setCargando(false)
-            }
+        if (!componenteMontado) {
+          return
         }
+
+        setEstudiantes(
+          Array.isArray(
+            estudiantesObtenidos,
+          )
+            ? estudiantesObtenidos
+            : [],
+        )
+      } catch (errorCarga) {
+        if (!componenteMontado) {
+          return
+        }
+
+        console.log('Error de estudiantes: ', errorCarga)
+
+        setEstudiantes([])
+
+        setError(
+          errorCarga instanceof Error
+            ? errorCarga.message
+            : 'No fue posible cargar los estudiantes.',
+        )
+      } finally {
+        if (componenteMontado) {
+          setCargando(false)
+        }
+      }
     }
 
     cargarEstudiantes()
 
     return () => {
-        componenteMontado = false
+      componenteMontado = false
     }
   }, [recarga])
 
@@ -205,40 +207,40 @@ function AdminPrincipalStudents() {
     const textoBuscado = normalizarBusqueda(busqueda)
 
     return estudiantes.filter(
-        (estudiante) => {
-            if (estudiante.eliminado === true) {
-                return false
-            }
+      (estudiante) => {
+        if (estudiante.eliminado === true) {
+          return false
+        }
 
-            const datosPersonales = estudiante.datosPersonales ?? {}
+        const datosPersonales = estudiante.datosPersonales ?? {}
 
-            const activo = estudiante.credenciales ?.activo !== false
+        const activo = estudiante.credenciales?.activo !== false
 
-            const coincideBusqueda = !textoBuscado ||
-            [
-                datosPersonales.nombreCompleto,
-                datosPersonales.numeroCuenta,
-                datosPersonales.carrera,
-                datosPersonales.correoPersonal,
-                datosPersonales.correoInstitucional,
-            ].some((campo) =>
-                normalizarBusqueda(
-                    campo,
-                ).includes(textoBuscado),
-            )
+        const coincideBusqueda = !textoBuscado ||
+          [
+            datosPersonales.nombreCompleto,
+            datosPersonales.numeroCuenta,
+            datosPersonales.carrera,
+            datosPersonales.correoPersonal,
+            datosPersonales.correoInstitucional,
+          ].some((campo) =>
+            normalizarBusqueda(
+              campo,
+            ).includes(textoBuscado),
+          )
 
-            const coincideEstado = estadoSeleccionado === 'todos' ||
-            (
-                estadoSeleccionado === 'activos' && activo
-            ) ||
-            (
-                estadoSeleccionado === 'inactivos' && !activo
-            )
+        const coincideEstado = estadoSeleccionado === 'todos' ||
+          (
+            estadoSeleccionado === 'activos' && activo
+          ) ||
+          (
+            estadoSeleccionado === 'inactivos' && !activo
+          )
 
-            return (
-                coincideBusqueda && coincideEstado
-            )
-        },
+        return (
+          coincideBusqueda && coincideEstado
+        )
+      },
     )
   }, [
     estudiantes,
@@ -251,16 +253,16 @@ function AdminPrincipalStudents() {
 
   function reintentarCarga() {
     setRecarga(
-        (valorActual) =>
-            valorActual + 1,
+      (valorActual) =>
+        valorActual + 1,
     )
   }
 
   function mostrarRegistroPendiente() {
     notificarInformacion({
-        id: 'registrar-estudiante-pendiente',
-        titulo: 'Registro disponible próximamente',
-        descripcion: 'La función para añadir nuevos estudiantes estará disponible proximamente.',
+      id: 'registrar-estudiante-pendiente',
+      titulo: 'Registro disponible próximamente',
+      descripcion: 'La función para añadir nuevos estudiantes estará disponible proximamente.',
     })
   }
 
@@ -268,12 +270,12 @@ function AdminPrincipalStudents() {
     estudiante,
   ) {
     const nombre = estudiante.datosPersonales
-        ?.nombreCompleto || 'este estudiante'
-    
+      ?.nombreCompleto || 'este estudiante'
+
     notificarInformacion({
-        id: 'editar-estudiante-pendiente',
-        titulo: 'Edición disponible próximamente',
-        descripcion: `La información de ${nombre} podrá editarse en los avances venideros.`,
+      id: 'editar-estudiante-pendiente',
+      titulo: 'Edición disponible próximamente',
+      descripcion: `La información de ${nombre} podrá editarse en los avances venideros.`,
     })
   }
 
@@ -283,84 +285,84 @@ function AdminPrincipalStudents() {
     idConfirmacion,
   ) {
     limpiarNotificaciones(
-        idConfirmacion,
+      idConfirmacion,
     )
 
     setEstudianteProcesando(
-        estudiante.id,
+      estudiante.id,
     )
 
     try {
-        const estudianteActualizado =
-            await cambiarEstadoEstudiante(
-                estudiante.id,
-                nuevoEstado,
-            )
+      const estudianteActualizado =
+        await cambiarEstadoEstudiante(
+          estudiante.id,
+          nuevoEstado,
+        )
 
-            /*
-            * Sustituimos unicamente el registro actualizado.
-            * No es necesario volver a consultar todo el listado.
-            */
-           setEstudiantes(
-            (estudiantesActuales) =>
-                estudiantesActuales.map(
-                    (estudianteActual) =>
-                        estudianteActual.id === estudianteActualizado.id
-                        ? estudianteActualizado
-                        : estudianteActual,
-                ),
-           )
+      /*
+      * Sustituimos unicamente el registro actualizado.
+      * No es necesario volver a consultar todo el listado.
+      */
+      setEstudiantes(
+        (estudiantesActuales) =>
+          estudiantesActuales.map(
+            (estudianteActual) =>
+              estudianteActual.id === estudianteActualizado.id
+                ? estudianteActualizado
+                : estudianteActual,
+          ),
+      )
 
-           notificarExito({
-            id: `estado-estudiante-${estudiante.id}`,
-            titulo: nuevoEstado
-                ? 'Estudiante activado'
-                : 'Estudiante desactivado',
-            descripcion: nuevoEstado
-                ? 'El estudiante vuelve a estar activo dentro del sistema.'
-                : 'El estudiante fue desactivado correctamente.',
-           })
+      notificarExito({
+        id: `estado-estudiante-${estudiante.id}`,
+        titulo: nuevoEstado
+          ? 'Estudiante activado'
+          : 'Estudiante desactivado',
+        descripcion: nuevoEstado
+          ? 'El estudiante vuelve a estar activo dentro del sistema.'
+          : 'El estudiante fue desactivado correctamente.',
+      })
     } catch (errorActualizacion) {
-        notificarError({
-            id: `error-estado-estudiante-${estudiante.id}`,
-            titulo: 'No fue posible cambiar el estado',
-            descripcion: errorActualizacion instanceof Error
-                ? errorActualizacion.message
-                : 'Ocurrió un error inesperado.',
-        })
+      notificarError({
+        id: `error-estado-estudiante-${estudiante.id}`,
+        titulo: 'No fue posible cambiar el estado',
+        descripcion: errorActualizacion instanceof Error
+          ? errorActualizacion.message
+          : 'Ocurrió un error inesperado.',
+      })
     } finally {
-        setEstudianteProcesando('')
+      setEstudianteProcesando('')
     }
   }
 
   function solicitarCambioEstado(
     estudiante,
   ) {
-    const activo = estudiante.credenciales ?.activo !== false
-    const nombre = estudiante.datosPersonales ?.nombreCompleto || 'el estudiante seleccionado'
+    const activo = estudiante.credenciales?.activo !== false
+    const nombre = estudiante.datosPersonales?.nombreCompleto || 'el estudiante seleccionado'
     const idConfirmacion = `confirmar-estado-estudiante-${estudiante.id}`
 
     limpiarNotificaciones(
-        idConfirmacion,
+      idConfirmacion,
     )
 
     solicitarConfirmacion({
-        id: idConfirmacion,
-        titulo: activo
-            ? 'Desactivar estudiante'
-            : 'Activar estudiante',
-        descripcion: activo
-            ? `${nombre} quedará marcado como estudiante inactivo.`
-            : `${nombre} volverá a estar activo dentro del sistema.`,
-        textoConfirmar: activo
-            ? 'Desactivar'
-            : 'Activar',
-        textoCancelar: 'Cancelar',
-        alConfirmar: () => procesarCambioEstado(
-            estudiante,
-            !activo,
-            idConfirmacion,
-        ),
+      id: idConfirmacion,
+      titulo: activo
+        ? 'Desactivar estudiante'
+        : 'Activar estudiante',
+      descripcion: activo
+        ? `${nombre} quedará marcado como estudiante inactivo.`
+        : `${nombre} volverá a estar activo dentro del sistema.`,
+      textoConfirmar: activo
+        ? 'Desactivar'
+        : 'Activar',
+      textoCancelar: 'Cancelar',
+      alConfirmar: () => procesarCambioEstado(
+        estudiante,
+        !activo,
+        idConfirmacion,
+      ),
     })
   }
 
@@ -368,12 +370,12 @@ function AdminPrincipalStudents() {
     estudiante,
   ) {
     const nombre = estudiante.datosPersonales
-        ?.nombreCompleto || 'el estudiante seleccionado'
+      ?.nombreCompleto || 'el estudiante seleccionado'
 
     notificarInformacion({
-        id: `eliminar-estudiante-pendiente-${estudiante.id}`,
-        titulo: 'Eliminación disponible próximamente',
-        descripcion: `La opción para eliminar a ${nombre} estará disponible en un próximo avance.`,
+      id: `eliminar-estudiante-pendiente-${estudiante.id}`,
+      titulo: 'Eliminación disponible próximamente',
+      descripcion: `La opción para eliminar a ${nombre} estará disponible en un próximo avance.`,
     })
   }
 
@@ -395,26 +397,26 @@ function AdminPrincipalStudents() {
         </div>
 
         <div className="admin-students-heading__actions">
-            <div className="admin-students-heading__summary">
-                <UsersRound aria-hidden="true" />
+          <div className="admin-students-heading__summary">
+            <UsersRound aria-hidden="true" />
 
-                <div>
-                    <strong>
-                        {estudiantes.length}
-                    </strong>
+            <div>
+              <strong>
+                {estudiantes.length}
+              </strong>
 
-                    <span>
-                        {estudiantes.length === 1
-                            ? 'estudiante registrado'
-                            : 'estudiantes registrados'}
-                    </span>
-                </div>
+              <span>
+                {estudiantes.length === 1
+                  ? 'estudiante registrado'
+                  : 'estudiantes registrados'}
+              </span>
             </div>
+          </div>
 
-            <button className="admin-students-add-button" type="button" onClick={mostrarRegistroPendiente}>
-                <Plus aria-hidden="true" />
-                Añadir estudiante
-            </button>
+          <button className="admin-students-add-button" type="button" onClick={mostrarRegistroPendiente}>
+            <Plus aria-hidden="true" />
+            Añadir estudiante
+          </button>
         </div>
       </header>
 
@@ -550,7 +552,7 @@ function AdminPrincipalStudents() {
               <span>
                 {estudiantesFiltrados.length}{' '}
                 {estudiantesFiltrados.length ===
-                1
+                  1
                   ? 'resultado'
                   : 'resultados'}
               </span>

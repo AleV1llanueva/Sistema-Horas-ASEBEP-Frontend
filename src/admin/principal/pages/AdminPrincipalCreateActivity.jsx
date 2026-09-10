@@ -175,7 +175,7 @@ function validarFormulario(
     formulario.horaInicio &&
     formulario.horaFinalizacion &&
     formulario.horaFinalizacion <=
-      formulario.horaInicio
+    formulario.horaInicio
   ) {
     errores.horaFinalizacion =
       'Debe ser posterior a la hora de inicio.'
@@ -434,6 +434,7 @@ function AdminPrincipalCreateActivity() {
         },
       )
     } catch (errorPublicacion) {
+      console.log(errorPublicacion)
       notificarError({
         id: ID_ERROR_PUBLICACION,
         titulo:
@@ -746,57 +747,6 @@ function AdminPrincipalCreateActivity() {
             )}
           </div>
 
-          <div className="admin-create-field admin-create-field--full">
-            <label htmlFor="actividad-imagen">
-              Imagen de la actividad
-              <small>(opcional)</small>
-            </label>
-
-            <div className="admin-create-image-selector">
-              <ImagePlus aria-hidden="true" />
-
-              <div>
-                <label htmlFor="actividad-imagen">
-                  Seleccionar imagen
-                </label>
-
-                <p>
-                  Formatos JPG o PNG. Tamaño
-                  máximo de 5 MB.
-                </p>
-              </div>
-
-              {imagenArchivo && (
-                <button
-                  type="button"
-                  aria-label="Quitar imagen"
-                  onClick={eliminarImagen}
-                >
-                  <X aria-hidden="true" />
-                </button>
-              )}
-
-              <input
-                ref={imagenInputRef}
-                id="actividad-imagen"
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={seleccionarImagen}
-              />
-            </div>
-
-            {imagenArchivo && (
-              <small className="admin-create-image-name">
-                {imagenArchivo.name}
-              </small>
-            )}
-
-            {errores.imagen && (
-              <p className="admin-create-field__error">
-                {errores.imagen}
-              </p>
-            )}
-          </div>
 
           <footer className="admin-create-activity-form__actions">
             <button
@@ -868,12 +818,12 @@ function AdminPrincipalCreateActivity() {
 
                 <span>
                   {formulario.horaInicio &&
-                  formulario.horaFinalizacion
+                    formulario.horaFinalizacion
                     ? `${formatearHora(
-                        formulario.horaInicio,
-                      )} – ${formatearHora(
-                        formulario.horaFinalizacion,
-                      )}`
+                      formulario.horaInicio,
+                    )} – ${formatearHora(
+                      formulario.horaFinalizacion,
+                    )}`
                     : 'Horario pendiente'}
                 </span>
               </li>
