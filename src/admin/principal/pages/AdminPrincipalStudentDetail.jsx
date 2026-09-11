@@ -23,6 +23,7 @@ import {
 
 import {
   Link,
+  useLocation,
   useParams,
 } from 'react-router'
 
@@ -30,14 +31,22 @@ import {
   obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
 
-import {
-  notificarInformacion,
-} from '../../../services/notificationService.js'
-
 import '../styles/AdminPrincipalStudentDetail.css'
 
+// UTILIDADES DE PRESENTACIÓN
+function prepararTexto(valor) {
+  if (
+    valor === null ||
+    valor === undefined
+  ) {
+    return ''
+  }
+
+  return String(valor).trim()
+}
+
 function mostrarDato(valor) {
-  const texto = String(valor ?? '').trim()
+  const texto = prepararTexto(valor)
 
   return texto || 'No disponible'
 }
@@ -46,7 +55,8 @@ function prepararCantidad(valor) {
   const numero = Number(valor)
 
   if (
-    !Number.isFinite(numero) || numero < 0
+    !Number.isFinite(numero) ||
+    numero < 0
   ) {
     return 0
   }
@@ -55,7 +65,8 @@ function prepararCantidad(valor) {
 }
 
 function formatearLempiras(valor) {
-  const numero = prepararCantidad(valor)
+  const numero =
+    prepararCantidad(valor)
 
   return `L ${new Intl.NumberFormat(
     'es-HN',
@@ -68,7 +79,8 @@ function formatearLempiras(valor) {
 
 function formatearFecha(fecha) {
   if (
-    typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
+    typeof fecha !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
   ) {
     return 'Fecha no disponible'
   }
@@ -98,23 +110,24 @@ function formatearFecha(fecha) {
     {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     },
   ).format(fechaLocal)
 }
 
 function formatearEstado(estado) {
-  const texto = String(estado ?? '')
-    .trim()
-    .replace(/-/g, ' ')
-    .toLowerCase()
+  const texto =
+    prepararTexto(estado)
+      .replace(/-/g, ' ')
+      .toLowerCase()
 
   if (!texto) {
     return 'Sin estado'
   }
 
   return (
-    texto.charAt(0).toUpperCase() + texto.slice(1)
+    texto.charAt(0).toUpperCase() +
+    texto.slice(1)
   )
 }
 
@@ -127,8 +140,9 @@ function construirPeriodoInicio(
   ]
     .filter(
       (valor) =>
-        valor !== null && valor !== undefined &&
-        String(valor).trim() !== '',
+        valor !== null &&
+        valor !== undefined &&
+        prepararTexto(valor) !== '',
     )
     .join(' ')
 }
@@ -136,9 +150,10 @@ function construirPeriodoInicio(
 function describirMesesPendientes(
   mesesSinPagar,
 ) {
-  const meses = prepararCantidad(
-    mesesSinPagar,
-  )
+  const meses =
+    prepararCantidad(
+      mesesSinPagar,
+    )
 
   if (meses === 0) {
     return 'Sin meses pendientes'
@@ -149,8 +164,47 @@ function describirMesesPendientes(
     : `${meses} meses pendientes`
 }
 
+// COMPONENTE PRINCIPAL
 function AdminPrincipalStudentDetail() {
   const { numeroCuenta } = useParams()
+  const location = useLocation()
+
+  /*
+   * La vista de actividad enviará este estado al abrir el
+   * detalle del estudiante:
+   *
+   * {
+   *   origen: 'detalle-actividad',
+   *   actividadId: 'actividad-001'
+   * }
+   */
+  const actividadOrigenId =
+    location.state?.origen ===
+      'detalle-actividad'
+      ? prepararTexto(
+          location.state.actividadId,
+        )
+      : ''
+
+  const vieneDesdeActividad =
+    Boolean(actividadOrigenId)
+
+  const rutaRegreso =
+    vieneDesdeActividad
+      ? `/admin-principal/actividades/${encodeURIComponent(
+          actividadOrigenId,
+        )}`
+      : '/admin-principal/estudiantes'
+
+  const etiquetaRegreso =
+    vieneDesdeActividad
+      ? 'Volver a la actividad'
+      : 'Volver a estudiantes'
+
+  const etiquetaBreadcrumb =
+    vieneDesdeActividad
+      ? 'Actividad'
+      : 'Estudiantes'
 
   const [
     estudiante,
@@ -178,10 +232,10 @@ function AdminPrincipalStudentDetail() {
   ] = useState('historial')
 
   /*
-  * El numero de cuenta proviene de la URL.
-  * El servicio puede localizar al estudiante por ese
-  * valor sin que la vista acceda directamente al mock.
-  */
+   * El número de cuenta proviene de la URL.
+   * El servicio localiza al estudiante sin que la vista
+   * necesite acceder directamente al mock o al backend.
+   */
   useEffect(() => {
     let componenteMontado = true
 
@@ -212,7 +266,6 @@ function AdminPrincipalStudentDetail() {
           estudianteObtenido,
         )
       } catch (errorCarga) {
-
         if (!componenteMontado) {
           return
         }
@@ -239,23 +292,28 @@ function AdminPrincipalStudentDetail() {
     recarga,
   ])
 
-  /* El historial muestra todas las aportaciones.
-  - La segunda pestaña conserva unicamente las pendientes.
-  */
+  /*
+   * La pestaña Historial muestra todas las aportaciones.
+   * La pestaña Pendientes conserva solamente las que todavía
+   * no han sido confirmadas.
+   */
   const aportacionesMostradas =
     useMemo(() => {
-      const aportaciones = Array.isArray(
-        estudiante?.aportaciones,
-      )
-        ? estudiante.aportaciones
-        : []
+      const aportaciones =
+        Array.isArray(
+          estudiante?.aportaciones,
+        )
+          ? estudiante.aportaciones
+          : []
 
       if (
-        filtroAportaciones === 'pendientes'
+        filtroAportaciones ===
+        'pendientes'
       ) {
         return aportaciones.filter(
           (aportacion) =>
-            aportacion.estado === 'pendiente',
+            aportacion.estado ===
+            'pendiente',
         )
       }
 
@@ -267,26 +325,24 @@ function AdminPrincipalStudentDetail() {
 
   function reintentarCarga() {
     setRecarga(
-      (valorActual) => valorActual + 1,
+      (valorActual) =>
+        valorActual + 1,
     )
   }
 
-  function mostrarEdicionPendiente() {
-    const nombre = estudiante?.datosPersonales
-      ?.nombreCompleto || 'este estudiante'
-
-    notificarInformacion({
-      id: `editar-detalle-estudiante-${estudiante?.id}`,
-      titulo: 'Edición disponible próximamente',
-      descripcion: `La información de ${nombre} podrá editarse en un siguiente avance.`,
-    })
-  }
-
+  // ESTADO DE CARGA
   if (cargando) {
     return (
       <div className="admin-student-detail-page">
-        <section className="admin-student-detail-state" role="status" aria-live="polite">
-          <LoaderCircle className="admin-student-detail-state__loader" aria-hidden="true" />
+        <section
+          className="admin-student-detail-state"
+          role="status"
+          aria-live="polite"
+        >
+          <LoaderCircle
+            className="admin-student-detail-state__loader"
+            aria-hidden="true"
+          />
 
           <h1>Cargando estudiante</h1>
 
@@ -299,10 +355,14 @@ function AdminPrincipalStudentDetail() {
     )
   }
 
+  // ESTADO DE ERROR
   if (error || !estudiante) {
     return (
       <div className="admin-student-detail-page">
-        <section className="admin-student-detail-state admin-student-detail-state--error" role="alert">
+        <section
+          className="admin-student-detail-state admin-student-detail-state--error"
+          role="alert"
+        >
           <TriangleAlert aria-hidden="true" />
 
           <h1>
@@ -310,17 +370,26 @@ function AdminPrincipalStudentDetail() {
           </h1>
 
           <p>
-            {error || 'La información solicitada no está disponible.'}
+            {error ||
+              'La información solicitada no está disponible.'}
           </p>
 
           <div className="admin-student-detail-state__actions">
-            <button type="button" onClick={reintentarCarga} >
+            <button
+              type="button"
+              onClick={reintentarCarga}
+            >
               Intentar nuevamente
             </button>
 
-            <Link to="/admin-principal/estudiantes">
+            {/*
+             * Incluso si la carga falla, conservamos el origen
+             * para que el administrador pueda volver a la
+             * actividad desde donde abrió al estudiante.
+             */}
+            <Link to={rutaRegreso}>
               <ArrowLeft aria-hidden="true" />
-              Volver a estudiantes
+              {etiquetaRegreso}
             </Link>
           </div>
         </section>
@@ -328,53 +397,76 @@ function AdminPrincipalStudentDetail() {
     )
   }
 
-  const datosPersonales = estudiante.datosPersonales ?? {}
-  const datosBecario = estudiante.datosBecario ?? {}
-  const actividadesRecientes = Array.isArray(
-    estudiante.actividadesRecientes,
-  )
-    ? estudiante.actividadesRecientes
-    : []
+  //  INFORMACIÓN NORMALIZADA DEL ESTUDIANTE
+  const datosPersonales =
+    estudiante.datosPersonales ?? {}
 
-  const activo = estudiante.crendenciales?.activo !== false
-  const nombreCompleto = datosPersonales.nombreCompleto || 'Estudiante sin nombre'
+  const datosBecario =
+    estudiante.datosBecario ?? {}
 
-  const periodoInicio = construirPeriodoInicio(
-    datosBecario,
-  )
-
-  const horasAcumuladas = prepararCantidad(
-    datosBecario.horasAcumuladas,
-  )
-
-  const horasFaltantes = prepararCantidad(
-    datosBecario.horasFaltantes,
-  )
-
-  const mesesSinPagar = prepararCantidad(
-    datosBecario.mesesSinPagar,
-  )
-
-  const saldoPendiente = prepararCantidad(
-    estudiante.saldoAportacionesPendientes,
-  )
+  const actividadesRecientes =
+    Array.isArray(
+      estudiante.actividadesRecientes,
+    )
+      ? estudiante.actividadesRecientes
+      : []
 
   /*
-  * El servicio ordena las actividades desde la mas
-  * reciente, por eso el primer elemento representa la ultima actividad registrada.
-  */
+   * Se corrige el acceso anterior a "crendenciales".
+   * La propiedad correcta del contrato interno es
+   * "credenciales".
+   */
+  const activo =
+    estudiante.credenciales?.activo !==
+    false
 
-  const ultimaActividad = actividadesRecientes[0] ?? null
+  const nombreCompleto =
+    datosPersonales.nombreCompleto ||
+    'Estudiante sin nombre'
+
+  const periodoInicio =
+    construirPeriodoInicio(
+      datosBecario,
+    )
+
+  const horasAcumuladas =
+    prepararCantidad(
+      datosBecario.horasAcumuladas,
+    )
+
+  const horasFaltantes =
+    prepararCantidad(
+      datosBecario.horasFaltantes,
+    )
+
+  const mesesSinPagar =
+    prepararCantidad(
+      datosBecario.mesesSinPagar,
+    )
+
+  const saldoPendiente =
+    prepararCantidad(
+      estudiante
+        .saldoAportacionesPendientes,
+    )
+
+  /*
+   * El servicio ordena las actividades desde la más reciente.
+   * Por eso el primer elemento representa la última actividad.
+   */
+  const ultimaActividad =
+    actividadesRecientes[0] ?? null
 
   return (
     <div className="admin-student-detail-page">
+      {/* NAVEGACIÓN DE REGRESO*/}
       <nav
         className="admin-student-detail-breadcrumb"
         aria-label="Ruta de navegación"
       >
-        <Link to="/admin-principal/estudiantes">
+        <Link to={rutaRegreso}>
           <ArrowLeft aria-hidden="true" />
-          Estudiantes
+          {etiquetaBreadcrumb}
         </Link>
 
         <span aria-hidden="true">/</span>
@@ -386,6 +478,7 @@ function AdminPrincipalStudentDetail() {
         </span>
       </nav>
 
+      {/* ENCABEZADO */}
       <header className="admin-student-detail-heading">
         <div>
           <div className="admin-student-detail-heading__identity">
@@ -412,18 +505,21 @@ function AdminPrincipalStudentDetail() {
           </p>
         </div>
 
-        <button
-          className="admin-student-detail-edit-button"
-          type="button"
-          onClick={mostrarEdicionPendiente}
+        <Link className="admin-student-detail-edit-button"
+        to={`/admin-principal/estudiantes/${encodeURIComponent(
+          numeroCuenta,
+        )}/editar`
+          }
         >
-          <Pencil aria-hidden="true" />
-          Editar información
-        </button>
+        <Pencil aria-hidden="true" />
+        Editar información
+      </Link>
+      
       </header>
 
       <div className="admin-student-detail-layout">
         <div className="admin-student-detail-main">
+          {/* INFORMACIÓN PERSONAL*/}
           <section
             className="admin-student-detail-card admin-student-detail-personal"
             aria-labelledby="student-personal-title"
@@ -484,7 +580,9 @@ function AdminPrincipalStudentDetail() {
                 </dt>
 
                 <dd>
-                  {mostrarDato(periodoInicio)}
+                  {mostrarDato(
+                    periodoInicio,
+                  )}
                 </dd>
               </div>
 
@@ -504,6 +602,7 @@ function AdminPrincipalStudentDetail() {
             </dl>
           </section>
 
+          {/* PROGRESO DE HORAS */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-progress-title"
@@ -559,6 +658,7 @@ function AdminPrincipalStudentDetail() {
             </div>
           </section>
 
+          {/* ACTIVIDADES RECIENTES */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-activities-title"
@@ -611,7 +711,7 @@ function AdminPrincipalStudentDetail() {
                     {actividadesRecientes.map(
                       (actividad) => (
                         <tr key={actividad.id}>
-                          <td>
+                          <td data-label="Fecha">
                             <time
                               dateTime={
                                 actividad.fecha
@@ -623,20 +723,20 @@ function AdminPrincipalStudentDetail() {
                             </time>
                           </td>
 
-                          <td>
+                          <td data-label="Actividad">
                             {mostrarDato(
                               actividad.titulo,
                             )}
                           </td>
 
-                          <td>
+                          <td data-label="Horas">
                             {prepararCantidad(
                               actividad
                                 .horasAcreditadas,
                             )}
                           </td>
 
-                          <td>
+                          <td data-label="Registrado por">
                             {mostrarDato(
                               actividad
                                 .registradoPor,
@@ -651,6 +751,7 @@ function AdminPrincipalStudentDetail() {
             )}
           </section>
 
+          {/* APORTACIONES */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-contributions-title"
@@ -735,7 +836,7 @@ function AdminPrincipalStudentDetail() {
 
                   <p>
                     {filtroAportaciones ===
-                      'pendientes'
+                    'pendientes'
                       ? 'El estudiante no tiene aportaciones pendientes.'
                       : 'No hay aportaciones registradas.'}
                   </p>
@@ -773,28 +874,28 @@ function AdminPrincipalStudentDetail() {
                           <tr
                             key={aportacion.id}
                           >
-                            <td>
+                            <td data-label="Periodo">
                               {mostrarDato(
                                 aportacion.periodo,
                               )}
                             </td>
 
-                            <td>
+                            <td data-label="Monto">
                               {formatearLempiras(
                                 aportacion.monto,
                               )}
                             </td>
 
-                            <td>
+                            <td data-label="Fecha de pago">
                               {aportacion.fechaPago
                                 ? formatearFecha(
-                                  aportacion
-                                    .fechaPago,
-                                )
+                                    aportacion
+                                      .fechaPago,
+                                  )
                                 : 'Pendiente'}
                             </td>
 
-                            <td>
+                            <td data-label="Estado">
                               <span
                                 className={
                                   'admin-student-contribution-status ' +
@@ -817,6 +918,7 @@ function AdminPrincipalStudentDetail() {
           </section>
         </div>
 
+        {/* RESUMEN LATERAL */}
         <aside className="admin-student-detail-sidebar">
           <section
             className="admin-student-detail-card admin-student-summary"
@@ -839,7 +941,9 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Estado de beca</small>
+                <small>
+                  Estado de beca
+                </small>
 
                 <strong
                   className={
@@ -850,9 +954,9 @@ function AdminPrincipalStudentDetail() {
                 >
                   {formatearEstado(
                     datosBecario.estadoBeca ||
-                    (activo
-                      ? 'activo'
-                      : 'inactivo'),
+                      (activo
+                        ? 'activo'
+                        : 'inactivo'),
                   )}
                 </strong>
               </div>
@@ -867,7 +971,9 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Meses sin pagar</small>
+                <small>
+                  Meses sin pagar
+                </small>
 
                 <strong>
                   {mesesSinPagar}
@@ -890,13 +996,15 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Última actividad</small>
+                <small>
+                  Última actividad
+                </small>
 
                 <strong>
                   {ultimaActividad
                     ? formatearFecha(
-                      ultimaActividad.fecha,
-                    )
+                        ultimaActividad.fecha,
+                      )
                     : 'Sin actividad'}
                 </strong>
 

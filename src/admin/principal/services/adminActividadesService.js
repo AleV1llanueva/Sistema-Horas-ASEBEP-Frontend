@@ -3,28 +3,42 @@ import {
   ApiError,
 } from '../../../services/api.js'
 
-/*
- * Servicio de actividades del administrador principal.
- *
- * Sus funciones públicas mantienen un único contrato para
- * los componentes, pero cambian su origen según el entorno:
- *
- * - En modo simulado utilizan localStorage.
- * - En modo API consumen el backend mediante apiFetch.
- */
-
 import {
   adminPrincipalDashboardMock,
+  asistenciasAdminMock,
+  estudiantesAdminMock,
 } from '../mocks/adminPrincipalMock.js'
 
 /*
- * Clave única utilizada para guardar las actividades
- * simuladas dentro de localStorage.
+ * SERVICIO ADMINISTRATIVO DE ACTIVIDADES
+ *
+ * Este servicio expone el mismo contrato a los componentes
+ * independientemente del origen de la información:
+ *
+ * - VITE_USAR_DATOS_ADMIN_SIMULADOS=true:
+ *   utiliza los mocks y conserva los cambios en localStorage.
+ *
+ * - VITE_USAR_DATOS_ADMIN_SIMULADOS=false:
+ *   consume exclusivamente el backend mediante apiFetch.
+ *
+ * La variable no depende de import.meta.env.DEV. Su valor
+ * determina explícitamente cuál origen debe utilizarse.
  */
+
+// Claves utilizadas por el escenario administrativo simulado.
 const CLAVE_ACTIVIDADES =
   'asebep_admin_actividades_simuladas'
 
-// Estados que puede tener una actividad almacenada.
+const CLAVE_ASISTENCIAS =
+  'asebep_admin_asistencias_simuladas'
+
+const CLAVE_ESTUDIANTES =
+  'asebep_admin_estudiantes_simulados'
+
+const CLAVE_INSCRIPCIONES_ESTUDIANTE =
+  'asebep_estudiante_inscripciones_simuladas'
+
+// Estados internos reconocidos por las vistas administrativas.
 const ESTADOS_PERMITIDOS = [
   'programada',
   'en-curso',
@@ -33,16 +47,15 @@ const ESTADOS_PERMITIDOS = [
 ]
 
 /*
- * Tipos de marcación admitidos por el flujo de asistencia.
- * Usar constantes evita errores al comparar cadenas en las
- * funciones que generan y habilitan cada código QR.
+ * Tipos de marcación que puede habilitar el administrador.
+ * Se congelan para impedir modificaciones accidentales.
  */
 const TIPOS_MARCACION = Object.freeze({
   entrada: 'entrada',
   salida: 'salida',
 })
 
-// El backend vigente utiliza 20 minutos para ambos códigos QR.
+// El contrato actual del backend mantiene ambos QR por 20 minutos.
 const DURACION_QR_MINUTOS = Object.freeze({
   [TIPOS_MARCACION.entrada]: 20,
   [TIPOS_MARCACION.salida]: 20,
@@ -51,27 +64,23 @@ const DURACION_QR_MINUTOS = Object.freeze({
 const PREFIJO_TOKEN_QR_SIMULADO =
   'asebep-mock.'
 
-/*
- * Cada tipo dispone de una habilitación inicial
- * y una sola reactivación.
- */
+// Cada QR permite una generación inicial y una reactivación.
 const MAXIMO_GENERACIONES_QR = 2
 
 /*
- * Los datos administrativos simulados solo funcionan cuando:
- *
- * 1. La aplicación se ejecuta en desarrollo.
- * 2. VITE_USAR_DATOS_ADMIN_SIMULADOS contiene "true".
- *
- * En producción import.meta.env.DEV será false,
- * por lo que los mocks quedarán desactivados automáticamente.
+ * true  = localStorage y mocks.
+ * false = API real.
  */
 const usarDatosAdminSimulados =
-  import.meta.env.DEV &&
   import.meta.env
     .VITE_USAR_DATOS_ADMIN_SIMULADOS === 'true'
 
-
+/*
+ * Error propio del módulo.
+ *
+ * Esto permite que los componentes reciban mensajes
+ * comprensibles sin depender directamente de ApiError.
+ */
 export class ActividadAdminError extends Error {
   constructor(mensaje) {
     super(mensaje)
@@ -80,99 +89,61 @@ export class ActividadAdminError extends Error {
   }
 }
 
-/*
- * Convierte los estados del backend y del mock al formato
- * interno que utilizan las vistas administrativas.
- */
-function normalizarEstadoActividad(
-  estado,
-) {
-  const estadoPreparado =
-    prepararTexto(estado)
-      .toLowerCase()
-      .replace(/\s+/g, '-')
+/* UTILIDADES GENERALES */
 
-  const equivalencias = {
-    programada: 'programada',
-    'en-curso': 'en-curso',
-    completada: 'finalizada',
-    finalizada: 'finalizada',
-    cancelada: 'cancelada',
+/*
+ * Convierte cualquier valor válido en texto y elimina
+ * espacios innecesarios de sus extremos.
+ */
+function prepararTexto(valor) {
+  if (
+    valor === null ||
+    valor === undefined
+  ) {
+    return ''
   }
 
-  return (
-    equivalencias[estadoPreparado] ??
-    estadoPreparado
+  return String(valor).trim()
+}
+
+// Crea una copia independiente de objetos y arreglos.
+function clonarDatos(datos) {
+  return JSON.parse(
+    JSON.stringify(datos),
   )
 }
 
 /*
- * FastAPI serializa las horas como HH:mm:ss. La interfaz
- * trabaja con HH:mm, por lo que retiramos únicamente los
- * segundos cuando la respuesta posee un formato válido.
+ * Obtiene localStorage de forma segura.
+ * Durante renderizados sin navegador devolverá null.
  */
-function normalizarHoraBackend(
-  hora,
-) {
-  const horaPreparada =
-    prepararTexto(hora)
-
-  const coincidencia =
-    /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/.exec(
-      horaPreparada,
-    )
-
-  return coincidencia
-    ? `${coincidencia[1]}:${coincidencia[2]}`
-    : horaPreparada
-}
-
-/*
- * Traduce una actividad recibida en snake_case desde FastAPI
- * al formato camelCase utilizado por los componentes de React.
- */
-function normalizarActividadBackend(
-  actividad,
-) {
-  if (
-    !actividad ||
-    typeof actividad !== 'object' ||
-    Array.isArray(actividad)
-  ) {
-    throw new ActividadAdminError(
-      'El servidor devolvió una actividad con un formato inválido.',
-    )
+function obtenerAlmacenamiento() {
+  if (typeof window === 'undefined') {
+    return null
   }
 
-  return normalizarActividadInicial({
-    id: actividad.id,
-    titulo: actividad.titulo,
-    descripcion: actividad.descripcion,
-    lugar: actividad.ubicacion,
-    fecha: actividad.fecha_actividad,
-    horaInicio:
-      normalizarHoraBackend(
-        actividad.hora_inicio,
-      ),
-    horaFinalizacion:
-      normalizarHoraBackend(
-        actividad.hora_final,
-      ),
-    cuposDisponibles:
-      actividad.cupos_disponibles ??
-      actividad.cupos,
-    horasAcreditables:
-      actividad.horas_asignar,
-    imagen: actividad.imagen ?? null,
-    estado: actividad.estado,
-    activa: actividad.activa,
-    eliminada: actividad.eliminada,
-  })
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
 }
 
 /*
- * Centraliza los errores de la API para que las vistas siempre
- * reciban mensajes propios del módulo de actividades.
+ * Impide ejecutar funciones exclusivas del mock cuando
+ * la variable de entorno indica que debe consumirse la API.
+ */
+function comprobarModoSimulado() {
+  if (!usarDatosAdminSimulados) {
+    throw new ActividadAdminError(
+      'Los datos administrativos simulados están desactivados.',
+    )
+  }
+}
+
+/*
+ * Centraliza las solicitudes y transforma ApiError en un
+ * error propio del módulo administrativo de actividades.
  */
 async function peticionApi(
   endpoint,
@@ -197,55 +168,900 @@ async function peticionApi(
 }
 
 /*
- * Impide utilizar este servicio cuando los datos simulados
- * se encuentren desactivados.
+ * Convierte un valor en un entero no negativo.
+ *
+ * Se usa al normalizar respuestas existentes. Las validaciones
+ * estrictas para formularios se realizan más adelante.
  */
-function comprobarModoSimulado() {
-  if (!usarDatosAdminSimulados) {
+function normalizarEnteroNoNegativo(
+  valor,
+  valorPredeterminado = 0,
+) {
+  const numero = Number(valor)
+
+  if (
+    !Number.isInteger(numero) ||
+    numero < 0
+  ) {
+    return valorPredeterminado
+  }
+
+  return numero
+}
+
+/*
+ * Convierte horas registradas en un número no negativo.
+ * El backend podría devolver un entero o un decimal.
+ */
+function normalizarNumeroNoNegativo(
+  valor,
+  valorPredeterminado = 0,
+) {
+  const numero = Number(valor)
+
+  if (
+    !Number.isFinite(numero) ||
+    numero < 0
+  ) {
+    return valorPredeterminado
+  }
+
+  return numero
+}
+
+function normalizarBooleano(valor) {
+  return (
+    valor === true ||
+    valor === 1 ||
+    valor === '1' ||
+    prepararTexto(valor).toLowerCase() ===
+      'true'
+  )
+}
+
+/* NORMALIZACIÓN DE ACTIVIDADES */
+/*
+ * Convierte los estados del backend y del mock al formato
+ * interno utilizado por los componentes.
+ */
+function normalizarEstadoActividad(
+  estado,
+) {
+  const estadoPreparado =
+    prepararTexto(estado)
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+
+  const equivalencias = {
+    programada: 'programada',
+    'en-curso': 'en-curso',
+    completada: 'finalizada',
+    finalizada: 'finalizada',
+    cancelada: 'cancelada',
+  }
+
+  return (
+    equivalencias[estadoPreparado] ??
+    estadoPreparado
+  )
+}
+
+/*
+ * FastAPI serializa las horas como HH:mm:ss.
+ * La interfaz trabaja con HH:mm.
+ */
+function normalizarHoraBackend(hora) {
+  const horaPreparada =
+    prepararTexto(hora)
+
+  const coincidencia =
+    /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/.exec(
+      horaPreparada,
+    )
+
+  return coincidencia
+    ? `${coincidencia[1]}:${coincidencia[2]}`
+    : horaPreparada
+}
+
+/*
+ * Normaliza una actividad proveniente del mock, localStorage
+ * o de una estructura interna ya convertida.
+ */
+function normalizarActividadInicial(
+  actividad,
+) {
+  if (
+    !actividad ||
+    typeof actividad !== 'object' ||
+    Array.isArray(actividad)
+  ) {
     throw new ActividadAdminError(
-      'Los datos administrativos simulados están desactivados.',
+      'La actividad almacenada tiene un formato inválido.',
+    )
+  }
+
+  /*
+   * cuposTotales representa la capacidad publicada.
+   * cuposDisponibles representa los espacios que todavía
+   * pueden ocuparse.
+   *
+   * Math.max evita que una actividad antigua termine con
+   * más cupos disponibles que cupos totales.
+   */
+  const cuposDisponibles =
+    normalizarEnteroNoNegativo(
+      actividad.cuposDisponibles ??
+        actividad.cupos_disponibles ??
+        actividad.cupos,
+    )
+
+  const cuposTotalesLeidos =
+    normalizarEnteroNoNegativo(
+      actividad.cuposTotales ??
+        actividad.cupos ??
+        actividad.cuposDisponibles,
+      cuposDisponibles,
+    )
+
+  const cuposTotales = Math.max(
+    cuposTotalesLeidos,
+    cuposDisponibles,
+  )
+
+  return {
+    /*
+     * Conservamos el identificador existente.
+     * Los identificadores faltantes solo se generan en el mock.
+     */
+    id:
+      prepararTexto(actividad.id) ||
+      crearIdentificador(),
+
+    titulo: prepararTexto(
+      actividad.titulo ??
+        actividad.nombre,
+    ),
+
+    descripcion: prepararTexto(
+      actividad.descripcion,
+    ),
+
+    fecha: prepararTexto(
+      actividad.fecha,
+    ),
+
+    horaInicio: prepararTexto(
+      actividad.horaInicio ??
+        actividad.hora,
+    ),
+
+    horaFinalizacion: prepararTexto(
+      actividad.horaFinalizacion,
+    ),
+
+    lugar: prepararTexto(
+      actividad.lugar,
+    ),
+
+    cuposTotales,
+    cuposDisponibles,
+
+    horasAcreditables:
+      normalizarEnteroNoNegativo(
+        actividad.horasAcreditables,
+      ),
+
+    // Se conserva la imagen cuando el origen la proporciona.
+    imagen:
+      actividad.imagen ?? null,
+
+    estado:
+      normalizarEstadoActividad(
+        actividad.estado,
+      ) ||
+      'programada',
+
+    activa:
+      actividad.activa !== false,
+
+    eliminada:
+      actividad.eliminada === true,
+
+    /*
+     * Información simulada del QR de entrada.
+     */
+    entradaHabilitada:
+      actividad.entradaHabilitada ===
+      true,
+
+    entradaHabilitadaEn:
+      prepararTexto(
+        actividad.entradaHabilitadaEn,
+      ) || null,
+
+    entradaHabilitadaHasta:
+      prepararTexto(
+        actividad.entradaHabilitadaHasta,
+      ) || null,
+
+    tokenEntradaSimulado:
+      prepararTexto(
+        actividad.tokenEntradaSimulado,
+      ) || null,
+
+    generacionesQrEntrada:
+      normalizarCantidadGeneracionesQr(
+        actividad.generacionesQrEntrada,
+
+        Boolean(
+          actividad.entradaHabilitada ===
+            true ||
+          prepararTexto(
+            actividad.tokenEntradaSimulado,
+          ) ||
+          prepararTexto(
+            actividad.entradaHabilitadaEn,
+          ) ||
+          prepararTexto(
+            actividad.entradaHabilitadaHasta,
+          ),
+        ),
+      ),
+
+    /*
+     * Información simulada del QR de salida.
+     */
+    salidaHabilitada:
+      actividad.salidaHabilitada ===
+      true,
+
+    salidaHabilitadaEn:
+      prepararTexto(
+        actividad.salidaHabilitadaEn,
+      ) || null,
+
+    salidaHabilitadaHasta:
+      prepararTexto(
+        actividad.salidaHabilitadaHasta,
+      ) || null,
+
+    tokenSalidaSimulado:
+      prepararTexto(
+        actividad.tokenSalidaSimulado,
+      ) || null,
+
+    generacionesQrSalida:
+      normalizarCantidadGeneracionesQr(
+        actividad.generacionesQrSalida,
+
+        Boolean(
+          actividad.salidaHabilitada ===
+            true ||
+          prepararTexto(
+            actividad.tokenSalidaSimulado,
+          ) ||
+          prepararTexto(
+            actividad.salidaHabilitadaEn,
+          ) ||
+          prepararTexto(
+            actividad.salidaHabilitadaHasta,
+          ),
+        ),
+      ),
+
+    // Información de eliminación lógica del mock.
+    desactivadaEn:
+      prepararTexto(
+        actividad.desactivadaEn,
+      ) || null,
+
+    eliminadaEn:
+      prepararTexto(
+        actividad.eliminadaEn,
+      ) || null,
+
+    creadaEn:
+      prepararTexto(
+        actividad.creadaEn,
+      ) || null,
+
+    actualizadaEn:
+      prepararTexto(
+        actividad.actualizadaEn,
+      ) || null,
+  }
+}
+
+/*
+ * Traduce una actividad en snake_case desde FastAPI al
+ * formato camelCase empleado por React.
+ */
+function normalizarActividadBackend(
+  actividad,
+) {
+  if (
+    !actividad ||
+    typeof actividad !== 'object' ||
+    Array.isArray(actividad)
+  ) {
+    throw new ActividadAdminError(
+      'El servidor devolvió una actividad con un formato inválido.',
+    )
+  }
+
+  return normalizarActividadInicial({
+    id: actividad.id,
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion,
+    lugar: actividad.ubicacion,
+    fecha: actividad.fecha_actividad,
+
+    horaInicio:
+      normalizarHoraBackend(
+        actividad.hora_inicio,
+      ),
+
+    horaFinalizacion:
+      normalizarHoraBackend(
+        actividad.hora_final,
+      ),
+
+    /*
+     * El backend sí diferencia:
+     *
+     * - cupos: capacidad total publicada.
+     * - cupos_disponibles: capacidad restante.
+     */
+    cuposTotales:
+      actividad.cupos,
+
+    cuposDisponibles:
+      actividad.cupos_disponibles ??
+      actividad.cupos,
+
+    horasAcreditables:
+      actividad.horas_asignar,
+
+    imagen:
+      actividad.imagen ?? null,
+
+    estado: actividad.estado,
+    activa: actividad.activa,
+    eliminada: actividad.eliminada,
+  })
+}
+
+/* NORMALIZACIÓN DE ASISTENCIAS */
+/*
+ * Convierte una asistencia proveniente del backend o del mock
+ * al contrato interno utilizado por la vista de detalle.
+ */
+function normalizarAsistencia(
+  asistencia,
+  actividadIdAlternativo = '',
+) {
+  if (
+    !asistencia ||
+    typeof asistencia !== 'object' ||
+    Array.isArray(asistencia)
+  ) {
+    throw new ActividadAdminError(
+      'La asistencia almacenada tiene un formato inválido.',
+    )
+  }
+
+  /*
+   * GET /asistencias/actividades/{actividad_id} no necesita
+   * repetir actividad_id en cada elemento. Por eso la función
+   * acepta como respaldo el identificador usado en la consulta.
+   */
+  const actividadId =
+    prepararTexto(
+      asistencia.actividadId ??
+        asistencia.actividad_id,
+    ) ||
+    prepararTexto(
+      actividadIdAlternativo,
+    )
+
+  const numeroCuenta =
+    prepararTexto(
+      asistencia.numeroCuenta ??
+        asistencia.num_cuenta,
+    )
+
+  if (!actividadId || !numeroCuenta) {
+    throw new ActividadAdminError(
+      'La asistencia no contiene la actividad o el número de cuenta.',
+    )
+  }
+
+  const checkIn =
+    normalizarBooleano(
+      asistencia.checkIn ??
+        asistencia.check_in,
+    )
+
+  const checkOut =
+    normalizarBooleano(
+      asistencia.checkOut ??
+        asistencia.check_out,
+    )
+
+  const horasRegistradas =
+    normalizarNumeroNoNegativo(
+      asistencia.horasRegistradas ??
+        asistencia.horas_registradas,
+    )
+
+  return {
+    id:
+      prepararTexto(asistencia.id) ||
+      `asistencia-${actividadId}-${numeroCuenta}`,
+
+    actividadId,
+    numeroCuenta,
+    checkIn,
+    checkOut,
+    horasRegistradas,
+
+    /*
+     * Conservamos el estado textual del backend.
+     * Si no existe, lo deducimos únicamente para el mock.
+     */
+    estado:
+      prepararTexto(asistencia.estado) ||
+      (checkIn
+        ? 'Asistió'
+        : 'Inscrito'),
+  }
+}
+
+/* PERSISTENCIA SIMULADA DE ACTIVIDADES */
+function crearIdentificador() {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
+    return `actividad-${crypto.randomUUID()}`
+  }
+
+  return (
+    `actividad-${Date.now()}-` +
+    Math.random().toString(16).slice(2)
+  )
+}
+
+function obtenerActividadesIniciales() {
+  const actividades =
+    adminPrincipalDashboardMock
+      .proximasActividades
+
+  if (!Array.isArray(actividades)) {
+    return []
+  }
+
+  return actividades.map(
+    normalizarActividadInicial,
+  )
+}
+
+function guardarActividades(
+  actividades,
+) {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    almacenamiento.setItem(
+      CLAVE_ACTIVIDADES,
+      JSON.stringify(actividades),
+    )
+  } catch {
+    throw new ActividadAdminError(
+      'No fue posible guardar las actividades en el navegador.',
+    )
+  }
+}
+
+function leerActividades() {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    const contenido =
+      almacenamiento.getItem(
+        CLAVE_ACTIVIDADES,
+      )
+
+    /*
+     * La primera lectura inicializa localStorage con el
+     * escenario definido en adminPrincipalMock.js.
+     */
+    if (contenido === null) {
+      const actividadesIniciales =
+        obtenerActividadesIniciales()
+
+      guardarActividades(
+        actividadesIniciales,
+      )
+
+      return actividadesIniciales
+    }
+
+    const actividades =
+      JSON.parse(contenido)
+
+    if (!Array.isArray(actividades)) {
+      throw new Error()
+    }
+
+    return actividades.map(
+      normalizarActividadInicial,
+    )
+  } catch (error) {
+    if (
+      error instanceof ActividadAdminError
+    ) {
+      throw error
+    }
+
+    throw new ActividadAdminError(
+      'Las actividades almacenadas no tienen un formato válido.',
+    )
+  }
+}
+
+/* PERSISTENCIA SIMULADA DE ASISTENCIAS */
+
+function obtenerAsistenciasIniciales() {
+  if (!Array.isArray(asistenciasAdminMock)) {
+    return []
+  }
+
+  return asistenciasAdminMock.map(
+    (asistencia) =>
+      normalizarAsistencia(asistencia),
+  )
+}
+
+function guardarAsistencias(
+  asistencias,
+) {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    almacenamiento.setItem(
+      CLAVE_ASISTENCIAS,
+      JSON.stringify(asistencias),
+    )
+  } catch {
+    throw new ActividadAdminError(
+      'No fue posible guardar las asistencias en el navegador.',
+    )
+  }
+}
+
+function leerAsistencias() {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    const contenido =
+      almacenamiento.getItem(
+        CLAVE_ASISTENCIAS,
+      )
+
+    if (contenido === null) {
+      const asistenciasIniciales =
+        obtenerAsistenciasIniciales()
+
+      guardarAsistencias(
+        asistenciasIniciales,
+      )
+
+      return asistenciasIniciales
+    }
+
+    const asistencias =
+      JSON.parse(contenido)
+
+    if (!Array.isArray(asistencias)) {
+      throw new Error()
+    }
+
+    return asistencias.map(
+      (asistencia) =>
+        normalizarAsistencia(asistencia),
+    )
+  } catch (error) {
+    if (
+      error instanceof ActividadAdminError
+    ) {
+      throw error
+    }
+
+    throw new ActividadAdminError(
+      'Las asistencias almacenadas no tienen un formato válido.',
+    )
+  }
+}
+
+// Lee las inscripciones creadas desde el portal del estudiante
+function leerInscripcionesEstudianteSimuladas() {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    const contenido =
+      almacenamiento.getItem(
+        CLAVE_INSCRIPCIONES_ESTUDIANTE,
+      )
+
+      // Si el estudiante todavia no ha utilizado el modulo, no existe una coleccion que necesitemos limpiar.
+      if (contenido === null) {
+        return null
+      }
+
+      const inscripciones =
+        JSON.parse(contenido)
+
+      if (!Array.isArray(inscripciones)) {
+        throw new Error()
+      }
+
+      return inscripciones
+  } catch {
+    throw new ActividadAdminError(
+      'Las inscripciones almacenadas no tienen un formato válido.',
     )
   }
 }
 
 /*
- * Obtiene localStorage de manera segura.
- */
-function obtenerAlmacenamiento() {
-  if (typeof window === 'undefined') {
-    return null
+* Guarda unicamente las inscripcinoes del estudiante.
+* Esta funcion nunca modifica la coleccion de cuentas (Por si tenian la duda).
+*/
+function guardarInscripcionesEstudianteSimuladas(
+  inscripciones,
+) {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
   }
 
   try {
-    return window.localStorage
+    almacenamiento.setItem(
+      CLAVE_INSCRIPCIONES_ESTUDIANTE,
+      JSON.stringify(
+        inscripciones,
+      ),
+    )
   } catch {
-    return null
+    throw new ActividadAdminError(
+      'No fue posible guardar las inscripciones en el navegador.',
+    )
+  }
+}
+
+/* ACREDITACIÓN SIMULADA EN EL PERFIL DEL ESTUDIANTE */
+function leerEstudiantesSimulados() {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    const contenido =
+      almacenamiento.getItem(
+        CLAVE_ESTUDIANTES,
+      )
+
+    if (contenido === null) {
+      return clonarDatos(
+        estudiantesAdminMock,
+      )
+    }
+
+    const estudiantes =
+      JSON.parse(contenido)
+
+    if (!Array.isArray(estudiantes)) {
+      throw new Error()
+    }
+
+    return estudiantes
+  } catch {
+    throw new ActividadAdminError(
+      'Los estudiantes almacenados no tienen un formato válido.',
+    )
+  }
+}
+
+function guardarEstudiantesSimulados(
+  estudiantes,
+) {
+  const almacenamiento =
+    obtenerAlmacenamiento()
+
+  if (!almacenamiento) {
+    throw new ActividadAdminError(
+      'El almacenamiento local no está disponible.',
+    )
+  }
+
+  try {
+    almacenamiento.setItem(
+      CLAVE_ESTUDIANTES,
+      JSON.stringify(estudiantes),
+    )
+  } catch {
+    throw new ActividadAdminError(
+      'No fue posible actualizar las horas del estudiante.',
+    )
   }
 }
 
 /*
- - Convierte cualquier valor textual válido en una cadena
- - sin espacios innecesarios al inicio o al final.
+ * Agrega las horas acreditadas y registra la actividad en el
+ * historial local del estudiante.
+ *
+ * El identificador estable impide acreditar dos veces la misma
+ * actividad si localStorage llegara a conservar datos parciales.
  */
-function prepararTexto(valor) {
-  if (
-    valor === null ||
-    valor === undefined
-  ) {
-    return ''
+function acreditarHorasEstudianteSimulado({
+  numeroCuenta,
+  actividad,
+}) {
+  const estudiantes =
+    leerEstudiantesSimulados()
+
+  const indiceEstudiante =
+    estudiantes.findIndex(
+      (estudiante) =>
+        prepararTexto(
+          estudiante?.datosPersonales
+            ?.numeroCuenta ??
+            estudiante?.datosPersonales
+              ?.num_cuenta ??
+            estudiante?.num_cuenta,
+        ) === numeroCuenta,
+    )
+
+  if (indiceEstudiante === -1) {
+    throw new ActividadAdminError(
+      'No se encontró el estudiante inscrito para acreditar sus horas.',
+    )
   }
 
-  return String(valor).trim()
+  const estudiante =
+    estudiantes[indiceEstudiante]
+
+  const datosBecario = {
+    ...(estudiante.datosBecario ?? {}),
+  }
+
+  const actividadesRecientes =
+    Array.isArray(
+      estudiante.actividadesRecientes,
+    )
+      ? [...estudiante.actividadesRecientes]
+      : []
+
+  const idRegistro =
+    `registro-asistencia-${actividad.id}`
+
+  /*
+   * Si el historial ya posee este identificador, no volvemos
+   * a sumar las horas.
+   */
+  const actividadYaAcreditada =
+    actividadesRecientes.some(
+      (registro) =>
+        prepararTexto(registro.id) ===
+        idRegistro,
+    )
+
+  if (actividadYaAcreditada) {
+    return estudiantes
+  }
+
+  const horasAcreditadas =
+    normalizarNumeroNoNegativo(
+      actividad.horasAcreditables,
+    )
+
+  const horasAcumuladasActuales =
+    normalizarNumeroNoNegativo(
+      datosBecario.horasAcumuladas ??
+        datosBecario.horas_acumuladas,
+    )
+
+  const horasFaltantesActuales =
+    normalizarNumeroNoNegativo(
+      datosBecario.horasFaltantes ??
+        datosBecario.horas_faltantes,
+    )
+
+  estudiantes[indiceEstudiante] = {
+    ...estudiante,
+
+    datosBecario: {
+      ...datosBecario,
+
+      horasAcumuladas:
+        horasAcumuladasActuales +
+        horasAcreditadas,
+
+      horasFaltantes:
+        Math.max(
+          0,
+          horasFaltantesActuales -
+            horasAcreditadas,
+        ),
+    },
+
+    actividadesRecientes: [
+      {
+        id: idRegistro,
+        fecha: actividad.fecha,
+        titulo: actividad.titulo,
+        horasAcreditadas,
+        registradoPor:
+          'Panel administrativo',
+      },
+
+      ...actividadesRecientes,
+    ],
+
+    actualizadoEn:
+      new Date().toISOString(),
+  }
+
+  return estudiantes
 }
 
-/*
- * Convierte y valida valores que obligatoriamente deben
- * ser números enteros.
- * 
- * Se utilizará para:
- * - Cupos disponibles.
- * - Horas acreditables.
- */
+/*VALIDACIÓN DE FORMULARIOS DE ACTIVIDAD */
 function prepararEntero(
   valor,
   nombreCampo,
@@ -266,10 +1082,6 @@ function prepararEntero(
     )
   }
 
-  /*
-   * Algunos campos no tienen un valor máximo.
-   * Por eso solamente comprobamos el máximo cuando exista.
-   */
   if (
     maximo !== null &&
     numero > maximo
@@ -283,10 +1095,9 @@ function prepararEntero(
 }
 
 /*
- * Comprueba que una fecha tenga el formato predefinido
- * y que la fecha realmente exista:
- * YYYY-MM-DD
-*/
+ * Comprueba el formato YYYY-MM-DD, la existencia real de la
+ * fecha y que no sea anterior al día actual.
+ */
 function validarFecha(fecha) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
     throw new ActividadAdminError(
@@ -300,10 +1111,6 @@ function validarFecha(fecha) {
     dia,
   ] = fecha.split('-').map(Number)
 
-  /*
-   * Creamos la fecha utilizando valores locales para evitar
-   * cambios accidentales provocados por zonas horarias.
-   */
   const fechaLocal = new Date(
     anio,
     mes - 1,
@@ -322,19 +1129,18 @@ function validarFecha(fecha) {
   }
 
   const fechaActual = new Date()
-  fechaActual.setHours(0, 0, 0, 0,)
+  fechaActual.setHours(0, 0, 0, 0)
 
   if (fechaLocal < fechaActual) {
     throw new ActividadAdminError(
-      'La fecha no puede ser anterior al dia de hoy.',
+      'La fecha no puede ser anterior al día de hoy.',
     )
   }
 
   return fecha
 }
 
-// Comprueba que las horas utilicen el formato de 24 horas: HH:mm
-
+// Comprueba que la hora utilice el formato de 24 horas HH:mm.
 function validarHora(
   hora,
   nombreCampo,
@@ -350,10 +1156,1158 @@ function validarHora(
   return hora
 }
 
+function validarEstado(estado) {
+  const estadoNormalizado =
+    normalizarEstadoActividad(estado)
+
+  if (
+    !ESTADOS_PERMITIDOS.includes(
+      estadoNormalizado,
+    )
+  ) {
+    throw new ActividadAdminError(
+      'El estado de la actividad no es válido.',
+    )
+  }
+
+  return estadoNormalizado
+}
+
 /*
- * Construye una fecha local a partir de los valores que usa
- * el formulario. No utilizamos Date.parse para evitar que el
- * navegador interprete la fecha en una zona horaria distinta.
+ * Valida y normaliza todos los datos necesarios para crear
+ * o actualizar una actividad.
+ */
+function prepararDatosActividad(
+  datos,
+  estadoPredeterminado = 'programada',
+) {
+  if (
+    !datos ||
+    typeof datos !== 'object' ||
+    Array.isArray(datos)
+  ) {
+    throw new ActividadAdminError(
+      'La información de la actividad no es válida.',
+    )
+  }
+
+  const titulo =
+    prepararTexto(datos.titulo)
+
+  const descripcion =
+    prepararTexto(datos.descripcion)
+
+  const lugar =
+    prepararTexto(datos.lugar)
+
+  if (!titulo) {
+    throw new ActividadAdminError(
+      'El título de la actividad es obligatorio.',
+    )
+  }
+
+  if (titulo.length > 120) {
+    throw new ActividadAdminError(
+      'El título no puede superar los 120 caracteres.',
+    )
+  }
+
+  if (!descripcion) {
+    throw new ActividadAdminError(
+      'La descripción de la actividad es obligatoria.',
+    )
+  }
+
+  if (descripcion.length > 500) {
+    throw new ActividadAdminError(
+      'La descripción no puede superar los 500 caracteres.',
+    )
+  }
+
+  if (!lugar) {
+    throw new ActividadAdminError(
+      'El lugar de la actividad es obligatorio.',
+    )
+  }
+
+  const fecha =
+    validarFecha(
+      prepararTexto(datos.fecha),
+    )
+
+  const horaInicio =
+    validarHora(
+      prepararTexto(
+        datos.horaInicio,
+      ),
+      'La hora de inicio',
+    )
+
+  const horaFinalizacion =
+    validarHora(
+      prepararTexto(
+        datos.horaFinalizacion,
+      ),
+      'La hora de finalización',
+    )
+
+  if (
+    horaFinalizacion <= horaInicio
+  ) {
+    throw new ActividadAdminError(
+      'La hora de finalización debe ser posterior a la hora de inicio.',
+    )
+  }
+
+  /*
+   * Compatibilidad con el formulario actual:
+   *
+   * Mientras el formulario siga enviando cuposDisponibles,
+   * ese valor se interpreta también como capacidad total al
+   * crear una actividad.
+   */
+  const cuposTotales =
+    prepararEntero(
+      datos.cuposTotales ??
+        datos.cuposDisponibles,
+      'Los cupos totales',
+      1,
+    )
+
+  const cuposDisponibles =
+    prepararEntero(
+      datos.cuposDisponibles ??
+        cuposTotales,
+      'Los cupos disponibles',
+      0,
+    )
+
+  if (
+    cuposDisponibles >
+    cuposTotales
+  ) {
+    throw new ActividadAdminError(
+      'Los cupos disponibles no pueden superar los cupos totales.',
+    )
+  }
+
+  const horasAcreditables =
+    prepararEntero(
+      datos.horasAcreditables,
+      'Las horas acreditables',
+      1,
+      100,
+    )
+
+  return {
+    titulo,
+    descripcion,
+    fecha,
+    horaInicio,
+    horaFinalizacion,
+    lugar,
+    cuposTotales,
+    cuposDisponibles,
+    horasAcreditables,
+
+    estado:
+      validarEstado(
+        datos.estado ??
+          estadoPredeterminado,
+      ),
+  }
+}
+
+/*
+ * Mantiene compatibilidad con el formulario anterior, donde
+ * cuposDisponibles representaba realmente la capacidad total.
+ */
+function prepararCambiosCompatibles(
+  cambios,
+) {
+  if (
+    !cambios ||
+    typeof cambios !== 'object' ||
+    Array.isArray(cambios)
+  ) {
+    return cambios
+  }
+
+  const cambiosPreparados = {
+    ...cambios,
+  }
+
+  const contieneCuposDisponibles =
+    Object.prototype.hasOwnProperty.call(
+      cambios,
+      'cuposDisponibles',
+    )
+
+  const contieneCuposTotales =
+    Object.prototype.hasOwnProperty.call(
+      cambios,
+      'cuposTotales',
+    )
+
+  if (
+    contieneCuposDisponibles &&
+    !contieneCuposTotales
+  ) {
+    cambiosPreparados.cuposTotales =
+      cambios.cuposDisponibles
+  }
+
+  return cambiosPreparados
+}
+
+/*
+ * CrearActividadInput y la actualización del backend reciben
+ * la capacidad total mediante la propiedad cupos.
+ */
+function convertirActividadParaBackend(
+  actividad,
+) {
+  return {
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion,
+    ubicacion: actividad.lugar,
+    fecha_actividad: actividad.fecha,
+
+    horas_asignar:
+      actividad.horasAcreditables,
+
+    hora_inicio:
+      actividad.horaInicio,
+
+    hora_final:
+      actividad.horaFinalizacion,
+
+    cupos:
+      actividad.cuposTotales,
+  }
+}
+
+function ordenarActividades(
+  actividades,
+) {
+  return [...actividades].sort(
+    (actividadA, actividadB) => {
+      const fechaHoraA =
+        `${actividadA.fecha}T` +
+        `${actividadA.horaInicio}`
+
+      const fechaHoraB =
+        `${actividadB.fecha}T` +
+        `${actividadB.horaInicio}`
+
+      return fechaHoraA.localeCompare(
+        fechaHoraB,
+      )
+    },
+  )
+}
+
+/* FUNCIONES PÚBLICAS DE CONSULTA */
+export async function listarActividades() {
+  if (usarDatosAdminSimulados) {
+    const actividades =
+      leerActividades().filter(
+        (actividad) =>
+          actividad.eliminada !== true,
+      )
+
+    return clonarDatos(
+      ordenarActividades(
+        actividades,
+      ),
+    )
+  }
+
+  const respuesta =
+    await peticionApi(
+      '/actividades',
+    )
+
+  if (!Array.isArray(respuesta)) {
+    throw new ActividadAdminError(
+      'El servidor no devolvió una lista válida de actividades.',
+    )
+  }
+
+  return ordenarActividades(
+    respuesta.map(
+      normalizarActividadBackend,
+    ),
+  )
+}
+
+/*
+ * El backend actual no expone GET /actividades/{id}.
+ * En modo API buscamos el registro dentro de GET /actividades
+ */
+export async function obtenerActividad(
+  identificador,
+) {
+  const id =
+    prepararTexto(identificador)
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    const actividades =
+      await listarActividades()
+
+    return (
+      actividades.find(
+        (actividad) =>
+          prepararTexto(
+            actividad.id,
+          ) === id,
+      ) ?? null
+    )
+  }
+
+  const actividad =
+    leerActividades().find(
+      (elemento) =>
+        elemento.id === id &&
+        elemento.eliminada !== true,
+    )
+
+  return actividad
+    ? clonarDatos(actividad)
+    : null
+}
+
+/*
+ * Obtiene las inscripciones y marcaciones de una actividad.
+ *
+ * API:
+ * GET /asistencias/actividades/{actividad_id}
+ *
+ * Mock:
+ * colección persistida en localStorage.
+ */
+export async function listarAsistenciasActividad(
+  identificador,
+) {
+  const actividadId =
+    prepararTexto(identificador)
+
+  if (!actividadId) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (usarDatosAdminSimulados) {
+    const asistencias =
+      leerAsistencias().filter(
+        (asistencia) =>
+          asistencia.actividadId ===
+          actividadId,
+      )
+
+    return clonarDatos(
+      asistencias,
+    )
+  }
+
+  const respuesta =
+    await peticionApi(
+      `/asistencias/actividades/${encodeURIComponent(
+        actividadId,
+      )}`,
+    )
+
+  if (!Array.isArray(respuesta)) {
+    throw new ActividadAdminError(
+      'El servidor no devolvió una lista válida de asistencias.',
+    )
+  }
+
+  return respuesta.map(
+    (asistencia) =>
+      normalizarAsistencia(
+        asistencia,
+        actividadId,
+      ),
+  )
+}
+
+/* CREACIÓN, ACTUALIZACIÓN Y ELIMINACIÓN */
+export async function crearActividad(
+  datos,
+) {
+  const datosPreparados =
+    prepararDatosActividad(
+      {
+        ...datos,
+        estado: 'programada',
+      },
+      'programada',
+    )
+
+  if (!usarDatosAdminSimulados) {
+    const actividadCreada =
+      await peticionApi(
+        '/actividades',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            convertirActividadParaBackend(
+              datosPreparados,
+            ),
+          ),
+        },
+      )
+
+    return normalizarActividadBackend(
+      actividadCreada,
+    )
+  }
+
+  const fechaActual =
+    new Date().toISOString()
+
+  const nuevaActividad = {
+    id: crearIdentificador(),
+    ...datosPreparados,
+
+    estado: 'programada',
+    activa: true,
+    eliminada: false,
+
+    entradaHabilitada: false,
+    entradaHabilitadaEn: null,
+    entradaHabilitadaHasta: null,
+    tokenEntradaSimulado: null,
+    generacionesQrEntrada: 0,
+
+    salidaHabilitada: false,
+    salidaHabilitadaEn: null,
+    salidaHabilitadaHasta: null,
+    tokenSalidaSimulado: null,
+    generacionesQrSalida: 0,
+
+    desactivadaEn: null,
+    eliminadaEn: null,
+
+    creadaEn: fechaActual,
+    actualizadaEn: fechaActual,
+  }
+
+  const actividades =
+    leerActividades()
+
+  actividades.push(
+    nuevaActividad,
+  )
+
+  guardarActividades(
+    actividades,
+  )
+
+  return clonarDatos(
+    nuevaActividad,
+  )
+}
+
+export async function actualizarActividad(
+  identificador,
+  cambios,
+) {
+  const id =
+    prepararTexto(identificador)
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  const cambiosPreparados =
+    prepararCambiosCompatibles(
+      cambios,
+    )
+
+  if (!usarDatosAdminSimulados) {
+    /*
+     * El PUT del backend requiere el objeto completo.
+     * Primero recuperamos la actividad y después aplicamos
+     * únicamente los cambios recibidos.
+     */
+    const actividadActual =
+      await obtenerActividad(id)
+
+    if (!actividadActual) {
+      throw new ActividadAdminError(
+        'La actividad que deseas actualizar no existe.',
+      )
+    }
+
+    const datosPreparados =
+      prepararDatosActividad({
+        ...actividadActual,
+        ...cambiosPreparados,
+      })
+
+    const inscritosActuales =
+      Math.max(
+        0,
+        actividadActual.cuposTotales -
+          actividadActual.cuposDisponibles,
+      )
+
+    if (
+      datosPreparados.cuposTotales <
+      inscritosActuales
+    ) {
+      throw new ActividadAdminError(
+        'Los cupos totales no pueden ser menores que la cantidad de estudiantes inscritos.',
+      )
+    }
+
+    const actividadActualizada =
+      await peticionApi(
+        `/actividades/${encodeURIComponent(
+          id,
+        )}`,
+        {
+          method: 'PUT',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            convertirActividadParaBackend(
+              datosPreparados,
+            ),
+          ),
+        },
+      )
+
+    return normalizarActividadBackend(
+      actividadActualizada,
+    )
+  }
+
+  const actividades =
+    leerActividades()
+
+  const indiceActividad =
+    actividades.findIndex(
+      (actividad) =>
+        actividad.id === id &&
+        actividad.eliminada !== true,
+    )
+
+  if (indiceActividad === -1) {
+    throw new ActividadAdminError(
+      'La actividad que deseas actualizar no existe.',
+    )
+  }
+
+  const actividadActual =
+    actividades[indiceActividad]
+
+  const datosPreparados =
+    prepararDatosActividad({
+      ...actividadActual,
+      ...cambiosPreparados,
+    })
+
+  /*
+   * En el mock calculamos nuevamente los espacios restantes
+   * usando las inscripciones almacenadas.
+   */
+  const estudiantesInscritos =
+    leerAsistencias().filter(
+      (asistencia) =>
+        asistencia.actividadId === id,
+    ).length
+
+  if (
+    datosPreparados.cuposTotales <
+    estudiantesInscritos
+  ) {
+    throw new ActividadAdminError(
+      'Los cupos totales no pueden ser menores que la cantidad de estudiantes inscritos.',
+    )
+  }
+
+  const actividadActualizada = {
+    ...actividadActual,
+    ...datosPreparados,
+
+    cuposDisponibles:
+      datosPreparados.cuposTotales -
+      estudiantesInscritos,
+
+    id: actividadActual.id,
+
+    creadaEn:
+      actividadActual.creadaEn,
+
+    actualizadaEn:
+      new Date().toISOString(),
+  }
+
+  actividades[indiceActividad] =
+    actividadActualizada
+
+  guardarActividades(
+    actividades,
+  )
+
+  return clonarDatos(
+    actividadActualizada,
+  )
+}
+
+/*
+* Cambia la visibilidad de una actividad programada.
+* 1. Desactivar conserva la actividad y todas sus inscripciones.
+* 2. Reactivar permite que vuelva a mostrarse al estudiante.
+*/
+export async function cambiarVisibilidadActividad(
+  identificador,
+  activa,
+) {
+  const id =
+    prepararTexto(identificador)
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (typeof activa !== 'boolean') {
+    throw new ActividadAdminError(
+      'La visibilidad solicitada no es válida.',
+    )
+  }
+
+  /*
+  * El backend todavia no posee el campo ni el endpoint.
+  * Esta rama queda identificada para conectarla más adelante.
+  */
+ if (!usarDatosAdminSimulados) {
+  throw new ActividadAdminError(
+    'El backend actual todavía no permite activar o desactivar actividades.',
+  )
+ }
+
+ const actividades = leerActividades()
+
+ const indiceActividad =
+  actividades.findIndex(
+    (actividad) =>
+      actividad.id === id &&
+      actividad.eliminada !== true,
+  )
+
+  if (indiceActividad === -1) {
+    throw new ActividadAdminError(
+      'La actividad que deseas actualizar no existe.',
+    )
+  }
+
+  const actividadActual = actividades[indiceActividad]
+  if (
+    normalizarEstadoActividad(
+      actividadActual.estado,
+    ) !== 'programada'
+  ) {
+    throw new ActividadAdminError(
+      'Solamente puedes activar o desactivar actividades programadas.',
+    )
+  }
+
+  /*
+  * Si la actividad ya posee el valor solicitado,
+  * evitamos realizar una escritura innecesaria.
+  */
+ if (
+  actividadActual.activa ===
+  activa
+ ) {
+  return clonarDatos(
+    actividadActual,
+  )
+ }
+
+ const fechaActual =
+  new Date().toISOString()
+
+const actividadActualizada = {
+  ...actividadActual,
+  activa,
+  desactivadaEn:
+    activa
+      ? null
+      : fechaActual,
+  actualizadaEn: fechaActual,
+}
+
+actividades[indiceActividad] = actividadActualizada
+guardarActividades(
+  actividades,
+)
+
+return clonarDatos(
+  actividadActualizada,
+)
+}
+
+/*
+* Elimina permanentemente una actividad.
+* En modo simulado tambien elimina sus inscripciones y asistencias.
+* Las cuentas de estudiantes no se modifican.
+* En modo API utiliza DELETE /actividades/{id}.
+*/
+export async function eliminarActividad(
+  identificador,
+) {
+  const id =
+    prepararTexto(identificador)
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  /*
+   * En API verificamos primero que la actividad todavía
+   * pertenezca al grupo de actividades programadas.
+   */
+  if (!usarDatosAdminSimulados) {
+    const actividadActual =
+      await obtenerActividad(id)
+
+    if (!actividadActual) {
+      throw new ActividadAdminError(
+        'La actividad que deseas eliminar no existe.',
+      )
+    }
+
+    if (
+      normalizarEstadoActividad(
+        actividadActual.estado,
+      ) !== 'programada'
+    ) {
+      throw new ActividadAdminError(
+        'Solamente puedes eliminar actividades programadas.',
+      )
+    }
+
+    /*
+     * El backend se encargará posteriormente de eliminar
+     * también las relaciones asociadas a la actividad.
+     */
+    return peticionApi(
+      `/actividades/${encodeURIComponent(
+        id,
+      )}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
+  const actividades =
+    leerActividades()
+
+  const indiceActividad =
+    actividades.findIndex(
+      (actividad) =>
+        actividad.id === id &&
+        actividad.eliminada !== true,
+    )
+
+  if (indiceActividad === -1) {
+    throw new ActividadAdminError(
+      'La actividad que deseas eliminar no existe.',
+    )
+  }
+
+  const actividadEliminada =
+    actividades[indiceActividad]
+
+  if (
+    normalizarEstadoActividad(
+      actividadEliminada.estado,
+    ) !== 'programada'
+  ) {
+    throw new ActividadAdminError(
+      'Solamente puedes eliminar actividades programadas.',
+    )
+  }
+
+  /*
+   * Eliminamos físicamente la actividad de la colección
+   * administrativa del modo simulado.
+   */
+  const actividadesRestantes =
+    actividades.filter(
+      (actividad) =>
+        actividad.id !== id,
+    )
+
+  /*
+   * Las asistencias administrativas pertenecientes a la
+   * actividad también dejan de existir.
+   */
+  const asistenciasRestantes =
+    leerAsistencias().filter(
+      (asistencia) =>
+        prepararTexto(
+          asistencia.actividadId,
+        ) !== id,
+    )
+
+  const inscripcionesEstudiante =
+    leerInscripcionesEstudianteSimuladas()
+
+  /*
+   * Una inscripción puede utilizar camelCase, snake_case
+   * o conservar una copia interna de la actividad.
+   */
+  const inscripcionesRestantes =
+    inscripcionesEstudiante?.filter(
+      (inscripcion) => {
+        const actividadInscripcion =
+          prepararTexto(
+            inscripcion.actividadId ??
+              inscripcion.actividad_id ??
+              inscripcion.actividad?.id,
+          )
+
+        return (
+          actividadInscripcion !== id
+        )
+      },
+    ) ?? null
+
+  guardarActividades(
+    actividadesRestantes,
+  )
+
+  guardarAsistencias(
+    asistenciasRestantes,
+  )
+
+  if (
+    inscripcionesRestantes !== null
+  ) {
+    guardarInscripcionesEstudianteSimuladas(
+      inscripcionesRestantes,
+    )
+  }
+
+  /*
+   * No llamamos a guardarEstudiantesSimulados.
+   * Las cuentas permanecen completamente intactas.
+   */
+  return clonarDatos({
+    ...actividadEliminada,
+
+    activa: false,
+    eliminada: true,
+
+    eliminadaEn:
+      new Date().toISOString(),
+  })
+}
+
+/* ENTRADA Y SALIDA MANUAL DE ESTUDIANTES */
+/*
+ * Recupera en una sola operación los elementos necesarios
+ * para una marcación manual simulada.
+ */
+function obtenerContextoMarcacionSimulada({
+  actividadId,
+  numeroCuenta,
+}) {
+  const actividades =
+    leerActividades()
+
+  const actividad =
+    actividades.find(
+      (elemento) =>
+        elemento.id === actividadId &&
+        elemento.eliminada !== true,
+    )
+
+  if (!actividad) {
+    throw new ActividadAdminError(
+      'La actividad seleccionada no existe.',
+    )
+  }
+
+  const asistencias =
+    leerAsistencias()
+
+  const indiceAsistencia =
+    asistencias.findIndex(
+      (asistencia) =>
+        asistencia.actividadId ===
+          actividadId &&
+        asistencia.numeroCuenta ===
+          numeroCuenta,
+    )
+
+  if (indiceAsistencia === -1) {
+    throw new ActividadAdminError(
+      'El estudiante no está inscrito en esta actividad.',
+    )
+  }
+
+  return {
+    actividad,
+    asistencias,
+    indiceAsistencia,
+    asistencia:
+      asistencias[indiceAsistencia],
+  }
+}
+
+/*
+ * Registra la entrada manual.
+ *
+ * API:
+ * POST /asistencias/entrada/actividades/{actividad_id}/becario/{num_cuenta}
+ */
+export async function registrarEntradaManualActividad(
+  identificador,
+  numeroCuentaSolicitado,
+) {
+  const actividadId =
+    prepararTexto(identificador)
+
+  const numeroCuenta =
+    prepararTexto(
+      numeroCuentaSolicitado,
+    )
+
+  if (!actividadId) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!numeroCuenta) {
+    throw new ActividadAdminError(
+      'El número de cuenta del estudiante es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    const respuesta =
+      await peticionApi(
+        `/asistencias/entrada/actividades/${encodeURIComponent(
+          actividadId,
+        )}/becario/${encodeURIComponent(
+          numeroCuenta,
+        )}`,
+        {
+          method: 'POST',
+        },
+      )
+
+    return {
+      mensaje:
+        prepararTexto(
+          respuesta?.mensaje,
+        ) ||
+        'La entrada fue registrada correctamente.',
+
+      /*
+       * El backend responde con un mensaje. La vista volverá
+       * a consultar el listado para obtener el estado oficial.
+       */
+      asistencia: null,
+    }
+  }
+
+  const {
+    asistencias,
+    indiceAsistencia,
+    asistencia,
+  } = obtenerContextoMarcacionSimulada({
+    actividadId,
+    numeroCuenta,
+  })
+
+  if (asistencia.checkIn) {
+    throw new ActividadAdminError(
+      'La entrada del estudiante ya fue registrada.',
+    )
+  }
+
+  const asistenciaActualizada = {
+    ...asistencia,
+    checkIn: true,
+    estado: 'Asistió',
+  }
+
+  asistencias[indiceAsistencia] =
+    asistenciaActualizada
+
+  guardarAsistencias(
+    asistencias,
+  )
+
+  return {
+    mensaje:
+      'La entrada fue registrada correctamente.',
+
+    asistencia:
+      clonarDatos(
+        asistenciaActualizada,
+      ),
+  }
+}
+
+/*
+ * Registra la salida manual.
+ *
+ * API:
+ * POST /asistencias/salida/actividades/{actividad_id}/becario/{num_cuenta}
+ *
+ * Según el contrato actual, esta operación también acredita
+ * automáticamente las horas asignadas a la actividad.
+ */
+export async function registrarSalidaManualActividad(
+  identificador,
+  numeroCuentaSolicitado,
+) {
+  const actividadId =
+    prepararTexto(identificador)
+
+  const numeroCuenta =
+    prepararTexto(
+      numeroCuentaSolicitado,
+    )
+
+  if (!actividadId) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!numeroCuenta) {
+    throw new ActividadAdminError(
+      'El número de cuenta del estudiante es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    const respuesta =
+      await peticionApi(
+        `/asistencias/salida/actividades/${encodeURIComponent(
+          actividadId,
+        )}/becario/${encodeURIComponent(
+          numeroCuenta,
+        )}`,
+        {
+          method: 'POST',
+        },
+      )
+
+    return {
+      mensaje:
+        prepararTexto(
+          respuesta?.mensaje,
+        ) ||
+        'La salida y las horas fueron registradas correctamente.',
+
+      asistencia: null,
+    }
+  }
+
+  const {
+    actividad,
+    asistencias,
+    indiceAsistencia,
+    asistencia,
+  } = obtenerContextoMarcacionSimulada({
+    actividadId,
+    numeroCuenta,
+  })
+
+  if (!asistencia.checkIn) {
+    throw new ActividadAdminError(
+      'Debes registrar la entrada antes de marcar la salida.',
+    )
+  }
+
+  if (asistencia.checkOut) {
+    throw new ActividadAdminError(
+      'La salida del estudiante ya fue registrada.',
+    )
+  }
+
+  const asistenciaActualizada = {
+    ...asistencia,
+    checkOut: true,
+
+    horasRegistradas:
+      actividad.horasAcreditables,
+
+    estado: 'Asistió',
+  }
+
+  /*
+   * Primero preparamos la actualización del estudiante.
+   * Después persistimos ambos cambios del escenario simulado.
+   */
+  const estudiantesActualizados =
+    acreditarHorasEstudianteSimulado({
+      numeroCuenta,
+      actividad,
+    })
+
+  asistencias[indiceAsistencia] =
+    asistenciaActualizada
+
+  guardarEstudiantesSimulados(
+    estudiantesActualizados,
+  )
+
+  guardarAsistencias(
+    asistencias,
+  )
+
+  return {
+    mensaje:
+      'La salida y las horas fueron registradas correctamente.',
+
+    asistencia:
+      clonarDatos(
+        asistenciaActualizada,
+      ),
+  }
+}
+
+/* GENERACIÓN SIMULADA DE CÓDIGOS QR */
+/*
+ * Construye una fecha local usando los valores del formulario.
+ * Evitamos Date.parse para impedir cambios por zona horaria.
  */
 function crearFechaHoraLocalActividad(
   fecha,
@@ -408,10 +2362,6 @@ function crearFechaHoraLocalActividad(
     : null
 }
 
-/*
- * Centraliza el horario utilizado para decidir si una
- * marcación puede habilitarse en el momento actual.
- */
 function obtenerHorarioActividad(
   actividad,
 ) {
@@ -430,46 +2380,6 @@ function obtenerHorarioActividad(
   }
 }
 
-// Normaliza y comprueba el estado de una actividad.
-function validarEstado(estado) {
-  const estadoNormalizado =
-    prepararTexto(estado).toLowerCase()
-
-  if (
-    !ESTADOS_PERMITIDOS.includes(
-      estadoNormalizado,
-    )
-  ) {
-    throw new ActividadAdminError(
-      'El estado de la actividad no es válido.',
-    )
-  }
-
-  return estadoNormalizado
-}
-
-/*
- * Genera un identificador único para cada actividad.
-*/
-function crearIdentificador() {
-  if (
-    typeof crypto !== 'undefined' &&
-    typeof crypto.randomUUID === 'function'
-  ) {
-    return `actividad-${crypto.randomUUID()}`
-  }
-
-  return (
-    `actividad-${Date.now()}-` +
-    Math.random().toString(16).slice(2)
-  )
-}
-
-/*
- * Cada habilitación genera un valor nuevo. De esta forma,
- * volver a habilitar una marcación invalida el token anterior
- * cuando posteriormente se compare con el almacenado.
- */
 function crearIdentificadorTokenQr() {
   if (
     typeof crypto !== 'undefined' &&
@@ -486,9 +2396,8 @@ function crearIdentificadorTokenQr() {
 }
 
 /*
- * Convierte el contenido del token a Base64 URL.
- * El prefijo permite reconocer claramente que se trata
- * de un código local de prueba y no de un token del backend.
+ * Convierte el contenido del token a Base64 URL y agrega un
+ * prefijo que permite reconocer los códigos simulados.
  */
 function codificarTokenQrSimulado(
   contenido,
@@ -502,9 +2411,10 @@ function codificarTokenQrSimulado(
     )
   }
 
-  const bytes = new TextEncoder().encode(
-    JSON.stringify(contenido),
-  )
+  const bytes =
+    new TextEncoder().encode(
+      JSON.stringify(contenido),
+    )
 
   let contenidoBinario = ''
 
@@ -513,12 +2423,11 @@ function codificarTokenQrSimulado(
       String.fromCharCode(byte)
   }
 
-  const base64Url = btoa(
-    contenidoBinario,
-  )
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '')
+  const base64Url =
+    btoa(contenidoBinario)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '')
 
   return (
     PREFIJO_TOKEN_QR_SIMULADO +
@@ -527,8 +2436,8 @@ function codificarTokenQrSimulado(
 }
 
 /*
- * Construye el enlace que abrirá la futura ruta
- * de registro de asistencia del estudiante.
+ * Construye la URL que abrirá la ruta de asistencia
+ * correspondiente al tipo de marcación.
  */
 function crearUrlAsistenciaSimulada(
   tipo,
@@ -556,13 +2465,6 @@ function crearUrlAsistenciaSimulada(
   return url.toString()
 }
 
-/*
- * Crea un nuevo token QR simulado.
- *
- * La generación queda incluida dentro del token
- * para distinguir la habilitación inicial de
- * su única reactivación.
- */
 function crearQrSimulado({
   actividadId,
   tipo,
@@ -592,21 +2494,23 @@ function crearQrSimulado({
   const habilitadaEn =
     ahora.toISOString()
 
-  const expiraEn = new Date(
-    ahora.getTime() +
-      duracionMinutos * 60 * 1000,
-  ).toISOString()
+  const expiraEn =
+    new Date(
+      ahora.getTime() +
+        duracionMinutos * 60 * 1000,
+    ).toISOString()
 
-  const token = codificarTokenQrSimulado({
-    version: 1,
-    actividadId,
-    tipo,
-    generacion,
-    habilitadaEn,
-    expiraEn,
-    nonce:
-      crearIdentificadorTokenQr(),
-  })
+  const token =
+    codificarTokenQrSimulado({
+      version: 1,
+      actividadId,
+      tipo,
+      generacion,
+      habilitadaEn,
+      expiraEn,
+      nonce:
+        crearIdentificadorTokenQr(),
+    })
 
   return {
     tipo,
@@ -625,13 +2529,30 @@ function crearQrSimulado({
   }
 }
 
+function normalizarCantidadGeneracionesQr(
+  valor,
+  tieneQrGuardado,
+) {
+  const cantidad = Number(valor)
+
+  if (
+    Number.isInteger(cantidad) &&
+    cantidad >= 0
+  ) {
+    return Math.min(
+      cantidad,
+      MAXIMO_GENERACIONES_QR,
+    )
+  }
+
+  return tieneQrGuardado
+    ? 1
+    : 0
+}
+
 /*
- * Recupera el último QR cuando todavía se encuentra
- * dentro de su tiempo de vigencia.
- *
- * Esta función no genera un token nuevo. Por eso,
- * cerrar y volver a abrir el diálogo conserva tanto
- * el código como el tiempo restante.
+ * Recupera el último QR cuando todavía está vigente.
+ * Abrir nuevamente el diálogo no genera otro token.
  */
 function obtenerQrVigenteSimulado(
   actividad,
@@ -647,29 +2568,34 @@ function obtenerQrVigenteSimulado(
     : actividad.salidaHabilitada ===
       true
 
-  const habilitadaEn = prepararTexto(
-    esEntrada
-      ? actividad.entradaHabilitadaEn
-      : actividad.salidaHabilitadaEn,
-  )
+  const habilitadaEn =
+    prepararTexto(
+      esEntrada
+        ? actividad.entradaHabilitadaEn
+        : actividad.salidaHabilitadaEn,
+    )
 
-  const expiraEn = prepararTexto(
-    esEntrada
-      ? actividad.entradaHabilitadaHasta
-      : actividad.salidaHabilitadaHasta,
-  )
+  const expiraEn =
+    prepararTexto(
+      esEntrada
+        ? actividad.entradaHabilitadaHasta
+        : actividad.salidaHabilitadaHasta,
+    )
 
-  const token = prepararTexto(
-    esEntrada
-      ? actividad.tokenEntradaSimulado
-      : actividad.tokenSalidaSimulado,
-  )
+  const token =
+    prepararTexto(
+      esEntrada
+        ? actividad.tokenEntradaSimulado
+        : actividad.tokenSalidaSimulado,
+    )
 
-  const generacion = Number(
-    esEntrada
-      ? actividad.generacionesQrEntrada
-      : actividad.generacionesQrSalida,
-  )
+  const generacion =
+    normalizarCantidadGeneracionesQr(
+      esEntrada
+        ? actividad.generacionesQrEntrada
+        : actividad.generacionesQrSalida,
+      Boolean(token),
+    )
 
   const fechaExpiracion =
     Date.parse(expiraEn)
@@ -703,636 +2629,14 @@ function obtenerQrVigenteSimulado(
       DURACION_QR_MINUTOS[tipo],
 
     generacion:
-      Number.isInteger(generacion)
-        ? generacion
-        : 1,
-  }
-}
-
-// Crea una copia independiente de los datos.
-function clonarDatos(datos) {
-  return JSON.parse(
-    JSON.stringify(datos),
-  )
-}
-
-// Normaliza los contadores almacenados.
-function normalizarCantidadGeneracionesQr(
-  valor,
-  tieneQrGuardado,
-) {
-  const cantidad = Number(valor)
-
-  if (
-    Number.isInteger(cantidad) &&
-    cantidad >= 0
-  ) {
-    return Math.min(
-      cantidad,
-      MAXIMO_GENERACIONES_QR,
-    )
-  }
-
-  return tieneQrGuardado
-    ? 1
-    : 0
-}
-
-/*
- * Convierte las actividades antiguas del dashboard
- * al formato completo utilizado por el módulo.
- */
-function normalizarActividadInicial(
-  actividad,
-) {
-  return {
-    /*
-     * Conservamos el identificador existente.
-     * Si no existe, generamos uno nuevo.
-     */
-    id:
-      prepararTexto(actividad.id) ||
-      crearIdentificador(),
-
-    titulo: prepararTexto(
-      actividad.titulo ??
-        actividad.nombre,
-    ),
-
-    descripcion: prepararTexto(
-      actividad.descripcion,
-    ),
-
-    fecha: prepararTexto(
-      actividad.fecha,
-    ),
-
-    horaInicio: prepararTexto(
-      actividad.horaInicio ??
-        actividad.hora,
-    ),
-
-    horaFinalizacion: prepararTexto(
-      actividad.horaFinalizacion,
-    ),
-
-    lugar: prepararTexto(
-      actividad.lugar,
-    ),
-
-    cuposDisponibles:
-      Number.isInteger(
-        Number(
-          actividad.cuposDisponibles,
-        ),
-      )
-        ? Number(
-            actividad.cuposDisponibles,
-          )
-        : 0,
-
-    horasAcreditables:
-      Number.isInteger(
-        Number(
-          actividad.horasAcreditables,
-        ),
-      )
-        ? Number(
-            actividad.horasAcreditables,
-          )
-        : 0,
-
-    // Conserva una imagen cuando el origen de datos la incluya.
-    imagen:
-      actividad.imagen ?? null,
-
-    /*
-     * Unificamos estados como "En curso"
-     * y "en-curso". El backend llama "Completada"
-     * al estado final, que internamente usamos como "finalizada".
-     */
-    estado:
-      normalizarEstadoActividad(
-        actividad.estado,
-      ) ||
-      'programada',
-
-    activa:
-      actividad.activa !== false,
-
-    eliminada:
-      actividad.eliminada === true,
-
-    /*
-     * Configuración simulada del QR de entrada.
-     *
-     * El token permite comprobar posteriormente que
-     * el QR leído corresponde a la última habilitación.
-     */
-    entradaHabilitada:
-      actividad.entradaHabilitada ===
-      true,
-
-    entradaHabilitadaEn:
-      prepararTexto(
-        actividad.entradaHabilitadaEn,
-      ) || null,
-
-    entradaHabilitadaHasta:
-      prepararTexto(
-        actividad.entradaHabilitadaHasta,
-      ) || null,
-
-    tokenEntradaSimulado:
-      prepararTexto(
-        actividad.tokenEntradaSimulado,
-      ) || null,
-
-    // Conserva cuantos QR de entrada han sido generados.
-    generacionesQrEntrada:
-      normalizarCantidadGeneracionesQr(
-        actividad.generacionesQrEntrada,
-
-        Boolean(
-          actividad.entradaHabilitada ===
-            true ||
-          prepararTexto(
-            actividad.tokenEntradaSimulado,
-          ) ||
-          prepararTexto(
-            actividad.entradaHabilitadaEn,
-          ) ||
-          prepararTexto(
-            actividad.entradaHabilitadaHasta,
-          ),
-        ),
-      ),
-
-    /*
-    * Configuración simulada del QR de salida.
-    *
-    * La salida tendrá una vigencia de 20 minutos,
-    * igual que el QR utilizado por el backend.
-    */
-    salidaHabilitada:
-      actividad.salidaHabilitada ===
-      true,
-
-    salidaHabilitadaEn:
-      prepararTexto(
-        actividad.salidaHabilitadaEn,
-      ) || null,
-
-    salidaHabilitadaHasta:
-      prepararTexto(
-        actividad.salidaHabilitadaHasta,
-      ) || null,
-
-    tokenSalidaSimulado:
-      prepararTexto(
-        actividad.tokenSalidaSimulado,
-      ) || null,
-
-    // Conserva cuántos QR de salida han sido generados.
-    generacionesQrSalida:
-      normalizarCantidadGeneracionesQr(
-        actividad.generacionesQrSalida,
-
-        Boolean(
-          actividad.salidaHabilitada ===
-            true ||
-          prepararTexto(
-            actividad.tokenSalidaSimulado,
-          ) ||
-          prepararTexto(
-            actividad.salidaHabilitadaEn,
-          ) ||
-          prepararTexto(
-            actividad.salidaHabilitadaHasta,
-          ),
-        ),
-      ),
-
-    // Información de desactivación y eliminación lógica.
-    desactivadaEn:
-      prepararTexto(
-        actividad.desactivadaEn,
-      ) || null,
-
-    eliminadaEn:
-      prepararTexto(
-        actividad.eliminadaEn,
-      ) || null,
-
-    // Estas fechas permiten conocer cuándo se creó y cuándo se modificó la actividad.
-    creadaEn:
-      prepararTexto(
-        actividad.creadaEn,
-      ) || null,
-
-    actualizadaEn:
-      prepararTexto(
-        actividad.actualizadaEn,
-      ) || null,
-  }
-}
-
-
-function obtenerActividadesIniciales() {
-  const actividades =
-    adminPrincipalDashboardMock
-      .proximasActividades
-
-  if (!Array.isArray(actividades)) {
-    return []
-  }
-
-  return actividades.map(
-    normalizarActividadInicial,
-  )
-}
-
-/*
- * Guarda el arreglo completo de actividades
- * dentro de localStorage.
- */
-function guardarActividades(
-  actividades,
-) {
-  const almacenamiento =
-    obtenerAlmacenamiento()
-
-  if (!almacenamiento) {
-    throw new ActividadAdminError(
-      'El almacenamiento local no está disponible.',
-    )
-  }
-
-  try {
-    almacenamiento.setItem(
-      CLAVE_ACTIVIDADES,
-      JSON.stringify(actividades),
-    )
-  } catch {
-    /*
-     * Este error también puede ocurrir si localStorage
-     * supera su espacio máximo permitido.
-     */
-    throw new ActividadAdminError(
-      'No fue posible guardar las actividades en el navegador.',
-    )
+      generacion || 1,
   }
 }
 
 /*
- * Recupera las actividades almacenadas.
-*/
-function leerActividades() {
-  const almacenamiento =
-    obtenerAlmacenamiento()
-
-  if (!almacenamiento) {
-    throw new ActividadAdminError(
-      'El almacenamiento local no está disponible.',
-    )
-  }
-
-  try {
-    const contenido =
-      almacenamiento.getItem(
-        CLAVE_ACTIVIDADES,
-      )
-
-    /*
-     * null significa que la clave todavía no existe.
-     * Esto ocurre normalmente durante el primer ingreso.
-     */
-    if (contenido === null) {
-      const actividadesIniciales =
-        obtenerActividadesIniciales()
-
-      guardarActividades(
-        actividadesIniciales,
-      )
-
-      return actividadesIniciales
-    }
-
-    const actividades =
-      JSON.parse(contenido)
-
-    /*
-     * La información debe ser siempre un arreglo.
-     * Si localStorage contiene otro tipo de dato,
-     * lo consideramos información dañada.
-    */
-    if (!Array.isArray(actividades)) {
-      throw new Error()
-    }
-
-    return actividades.map(
-      normalizarActividadInicial,
-    )
-  } catch (error) {
-    /*
-     * Si el error ya fue creado por nuestro servicio,
-     * lo conservamos sin reemplazar su mensaje.
-     */
-    if (
-      error instanceof ActividadAdminError
-    ) {
-      throw error
-    }
-
-    throw new ActividadAdminError(
-      'Las actividades almacenadas no tienen un formato válido.',
-    )
-  }
-}
-
-/*
- * Valida todos los datos necesarios para crear
- * o actualizar una actividad.
- *
- * Esta función funciona como una frontera de seguridad:
- * ninguna actividad se guarda sin pasar primero por aquí.
- */
-function prepararDatosActividad(
-  datos,
-  estadoPredeterminado = 'programada',
-) {
-  if (
-    !datos ||
-    typeof datos !== 'object' ||
-    Array.isArray(datos)
-  ) {
-    throw new ActividadAdminError(
-      'La información de la actividad no es válida.',
-    )
-  }
-
-  /*
-   * Primero normalizamos los campos de texto.
-   */
-  const titulo = prepararTexto(
-    datos.titulo,
-  )
-
-  const descripcion = prepararTexto(
-    datos.descripcion,
-  )
-
-  const lugar = prepararTexto(
-    datos.lugar,
-  )
-
-  /*
-   * Comprobamos los campos obligatorios antes de procesar
-   * fechas, horas y cantidades.
-   */
-  if (!titulo) {
-    throw new ActividadAdminError(
-      'El título de la actividad es obligatorio.',
-    )
-  }
-
-  if (titulo.length > 120) {
-    throw new ActividadAdminError(
-      'El título no puede superar los 120 caracteres.',
-    )
-  }
-
-  if (!descripcion) {
-    throw new ActividadAdminError(
-      'La descripción de la actividad es obligatoria.',
-    )
-  }
-
-  if (descripcion.length > 500) {
-    throw new ActividadAdminError(
-      'La descripción no puede superar los 500 caracteres.',
-    )
-  }
-
-  if (!lugar) {
-    throw new ActividadAdminError(
-      'El lugar de la actividad es obligatorio.',
-    )
-  }
-
-  /*
-   * Validamos la fecha y las dos horas por separado.
-   */
-  const fecha = validarFecha(
-    prepararTexto(datos.fecha),
-  )
-
-  const horaInicio = validarHora(
-    prepararTexto(
-      datos.horaInicio,
-    ),
-    'La hora de inicio',
-  )
-
-  const horaFinalizacion =
-    validarHora(
-      prepararTexto(
-        datos.horaFinalizacion,
-      ),
-      'La hora de finalización',
-    )
-
-  /*
-   * Como utilizamos HH:mm, podemos comparar las cadenas
-   * directamente mientras ambas tengan el mismo formato.
-   */
-  if (
-    horaFinalizacion <= horaInicio
-  ) {
-    throw new ActividadAdminError(
-      'La hora de finalización debe ser posterior a la hora de inicio.',
-    )
-  }
-
-  /*
-   * Los cupos deben ser un número entero mayor que cero.
-   */
-  const cuposDisponibles =
-    prepararEntero(
-      datos.cuposDisponibles,
-      'Los cupos disponibles',
-      1,
-    )
-
-  /*
-   * Las horas acreditables deben encontrarse entre 1 y 100,
-   * siguiendo la validación mostrada en la referencia.
-   */
-  const horasAcreditables =
-    prepararEntero(
-      datos.horasAcreditables,
-      'Las horas acreditables',
-      1,
-      100,
-    )
-
-  /*
-   * Devolvemos únicamente información normalizada.
-   * Así evitamos guardar propiedades desconocidas enviadas
-   * accidentalmente desde el formulario.
-   */
-  return {
-    titulo,
-    descripcion,
-    fecha,
-    horaInicio,
-    horaFinalizacion,
-    lugar,
-    cuposDisponibles,
-    horasAcreditables,
-
-    estado: validarEstado(
-      datos.estado ??
-        estadoPredeterminado,
-    ),
-  }
-}
-
-/*
- * Traduce una actividad validada al cuerpo completo que exige
- * CrearActividadInput en el backend. La misma estructura se
- * utiliza tanto al crear como al actualizar una actividad.
- */
-function convertirActividadParaBackend(
-  actividad,
-) {
-  return {
-    titulo: actividad.titulo,
-    descripcion: actividad.descripcion,
-    ubicacion: actividad.lugar,
-    fecha_actividad: actividad.fecha,
-    horas_asignar:
-      actividad.horasAcreditables,
-    hora_inicio: actividad.horaInicio,
-    hora_final:
-      actividad.horaFinalizacion,
-    cupos: actividad.cuposDisponibles,
-  }
-}
-
-/*
- * Ordena las actividades desde la más próxima
- * hasta la más lejana.
- *
- * Combinamos fecha y hora para que dos actividades del mismo
- * día aparezcan ordenadas según su hora de inicio.
- */
-function ordenarActividades(
-  actividades,
-) {
-  return [...actividades].sort(
-    (actividadA, actividadB) => {
-      const fechaHoraA =
-        `${actividadA.fecha}T` +
-        `${actividadA.horaInicio}`
-
-      const fechaHoraB =
-        `${actividadB.fecha}T` +
-        `${actividadB.horaInicio}`
-
-      return fechaHoraA.localeCompare(
-        fechaHoraB,
-      )
-    },
-  )
-}
-
-// Devuelve las actividades desde el origen configurado.
-export async function listarActividades() {
-  if (usarDatosAdminSimulados) {
-    const actividades =
-      leerActividades().filter(
-        (actividad) =>
-          actividad.eliminada !== true,
-      )
-
-    return clonarDatos(
-      ordenarActividades(
-        actividades,
-      ),
-    )
-  }
-
-  const respuesta =
-    await peticionApi(
-      '/actividades',
-    )
-
-  if (!Array.isArray(respuesta)) {
-    throw new ActividadAdminError(
-      'El servidor no devolvió una lista válida de actividades.',
-    )
-  }
-
-  return ordenarActividades(
-    respuesta.map(
-      normalizarActividadBackend,
-    ),
-  )
-}
-
-// Busca una actividad mediante su identificador.
-// Devuelve null si la actividad no existe.
-
-export async function obtenerActividad(
-  identificador,
-) {
-  const id = prepararTexto(
-    identificador,
-  )
-
-  if (!id) {
-    throw new ActividadAdminError(
-      'El identificador de la actividad es obligatorio.',
-    )
-  }
-
-  if (!usarDatosAdminSimulados) {
-    /*
-     * El backend actual no expone GET /actividades/{id}.
-     * Reutilizamos el listado oficial y buscamos el registro
-     * sin inventar una ruta que FastAPI no reconoce.
-     */
-    const actividades =
-      await listarActividades()
-
-    return (
-      actividades.find(
-        (actividad) =>
-          prepararTexto(
-            actividad.id,
-          ) === id,
-      ) ?? null
-    )
-  }
-
-  const actividad =
-    leerActividades().find(
-      (elemento) =>
-        elemento.id === id && elemento.eliminada !== true,
-    )
-
-  return actividad
-    ? clonarDatos(actividad)
-    : null
-}
-
-/*
- * Muestra el QR vigente o genera uno nuevo cuando
- * el anterior ya terminó.
- *
- * Cada tipo dispone de dos generaciones independientes:
- * una habilitación inicial y una reactivación.
+ * La generación API permanece deshabilitada porque el backend
+ * devuelve una imagen PNG y apiFetch trabaja con respuestas
+ * JSON. No simulamos compatibilidad inexistente.
  */
 async function habilitarMarcacionActividad(
   identificador,
@@ -1344,9 +2648,8 @@ async function habilitarMarcacionActividad(
     )
   }
 
-  const id = prepararTexto(
-    identificador,
-  )
+  const id =
+    prepararTexto(identificador)
 
   if (!id) {
     throw new ActividadAdminError(
@@ -1354,9 +2657,10 @@ async function habilitarMarcacionActividad(
     )
   }
 
-  const tipo = prepararTexto(
-    tipoSolicitado,
-  ).toLowerCase()
+  const tipo =
+    prepararTexto(
+      tipoSolicitado,
+    ).toLowerCase()
 
   if (
     !Object.values(
@@ -1394,11 +2698,9 @@ async function habilitarMarcacionActividad(
   }
 
   const estadoActual =
-    prepararTexto(
+    normalizarEstadoActividad(
       actividadActual.estado,
     )
-      .toLowerCase()
-      .replace(/\s+/g, '-')
 
   if (estadoActual === 'cancelada') {
     throw new ActividadAdminError(
@@ -1414,11 +2716,6 @@ async function habilitarMarcacionActividad(
 
   const ahora = new Date()
 
-  /*
-   * Antes de generar otro token comprobamos si existe
-   * uno vigente. Si existe, devolvemos exactamente el
-   * mismo QR y su fecha de expiración original.
-   */
   const qrVigente =
     obtenerQrVigenteSimulado(
       actividadActual,
@@ -1427,18 +2724,22 @@ async function habilitarMarcacionActividad(
     )
 
   const generacionesActuales =
-    tipo === TIPOS_MARCACION.entrada
-      ? actividadActual
-          .generacionesQrEntrada
-      : actividadActual
-          .generacionesQrSalida
+    normalizarCantidadGeneracionesQr(
+      tipo === TIPOS_MARCACION.entrada
+        ? actividadActual
+            .generacionesQrEntrada
+        : actividadActual
+            .generacionesQrSalida,
+      false,
+    )
 
   if (qrVigente) {
     return clonarDatos({
       actividad:
         actividadActual,
 
-      qr: qrVigente,
+      qr:
+        qrVigente,
 
       reutilizado: true,
 
@@ -1485,10 +2786,6 @@ async function habilitarMarcacionActividad(
     )
   }
 
-/*
- * Si ya se utilizaron las dos oportunidades,
- * impedimos generar codigos extra.
-*/
   if (
     generacionesActuales >=
     MAXIMO_GENERACIONES_QR
@@ -1503,13 +2800,14 @@ async function habilitarMarcacionActividad(
   const nuevaGeneracion =
     generacionesActuales + 1
 
-  const qr = crearQrSimulado({
-    actividadId: id,
-    tipo,
-    ahora,
-    generacion:
-      nuevaGeneracion,
-  })
+  const qr =
+    crearQrSimulado({
+      actividadId: id,
+      tipo,
+      ahora,
+      generacion:
+        nuevaGeneracion,
+    })
 
   const camposMarcacion =
     tipo === TIPOS_MARCACION.entrada
@@ -1548,10 +2846,6 @@ async function habilitarMarcacionActividad(
     ...actividadActual,
     ...camposMarcacion,
 
-    /*
-     * La primera habilitación confirma que la
-     * actividad se encuentra operativamente en curso.
-     */
     estado:
       estadoActual === 'programada'
         ? 'en-curso'
@@ -1582,9 +2876,6 @@ async function habilitarMarcacionActividad(
   })
 }
 
-/*
- * Abre el QR de entrada durante 20 minutos.
- */
 export async function habilitarEntradaActividad(
   identificador,
 ) {
@@ -1594,9 +2885,6 @@ export async function habilitarEntradaActividad(
   )
 }
 
-/*
- * Abre el QR de salida durante los 20 minutos del backend.
- */
 export async function habilitarSalidaActividad(
   identificador,
 ) {
@@ -1606,283 +2894,12 @@ export async function habilitarSalidaActividad(
   )
 }
 
+/* RESTABLECIMIENTO DEL ESCENARIO SIMULADO */
 /*
- * Crea y publica una nueva actividad.
-*/
-export async function crearActividad(
-  datos,
-) {
-  const datosPreparados =
-    prepararDatosActividad(
-      {
-        ...datos,
-        estado: 'programada',
-      },
-      'programada',
-    )
-
-  if (!usarDatosAdminSimulados) {
-    const actividadCreada =
-      await peticionApi(
-        '/actividades',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify(
-            convertirActividadParaBackend(
-              datosPreparados,
-            ),
-          ),
-        },
-      )
-
-    return normalizarActividadBackend(
-      actividadCreada,
-    )
-  }
-
-  const fechaActual =
-    new Date().toISOString()
-
-  const nuevaActividad = {
-    id: crearIdentificador(),
-    ...datosPreparados,
-
-    estado: 'programada',
-    activa: true,
-    eliminada: false,
-
-    /*
-     * Una actividad recién creada todavía no tiene
-     * habilitada ninguna marcación de asistencia.
-     */
-    entradaHabilitada: false,
-    entradaHabilitadaEn: null,
-    entradaHabilitadaHasta: null,
-    tokenEntradaSimulado: null,
-    generacionesQrEntrada: 0,
-
-    salidaHabilitada: false,
-    salidaHabilitadaEn: null,
-    salidaHabilitadaHasta: null,
-    tokenSalidaSimulado: null,
-    generacionesQrSalida: 0,
-
-    /*
-     * Estos valores se completarán si la actividad
-     * se desactiva o se elimina posteriormente.
-     */
-    desactivadaEn: null,
-    eliminadaEn: null,
-
-    creadaEn: fechaActual,
-    actualizadaEn: fechaActual,
-  }
-
-  const actividades =
-    leerActividades()
-
-  actividades.push(
-    nuevaActividad,
-  )
-
-  guardarActividades(
-    actividades,
-  )
-
-  return clonarDatos(
-    nuevaActividad,
-  )
-}
-
-/*
- * Actualiza una actividad existente.
-*/
-export async function actualizarActividad(
-  identificador,
-  cambios,
-) {
-  const id = prepararTexto(
-    identificador,
-  )
-
-  if (!id) {
-    throw new ActividadAdminError(
-      'El identificador de la actividad es obligatorio.',
-    )
-  }
-
-  if (!usarDatosAdminSimulados) {
-    /*
-     * FastAPI exige CrearActividadInput completo también
-     * para PUT. Recuperamos la actividad, aplicamos los cambios,
-     * validamos y traducimos todos sus campos antes de enviarla.
-     */
-    const actividadActual =
-      await obtenerActividad(id)
-
-    if (!actividadActual) {
-      throw new ActividadAdminError(
-        'La actividad que deseas actualizar no existe.',
-      )
-    }
-
-    const datosPreparados =
-      prepararDatosActividad({
-        ...actividadActual,
-        ...cambios,
-      })
-
-    const actividadActualizada =
-      await peticionApi(
-        `/actividades/${encodeURIComponent(
-          id,
-        )}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify(
-            convertirActividadParaBackend(
-              datosPreparados,
-            ),
-          ),
-        },
-      )
-
-    return normalizarActividadBackend(
-      actividadActualizada,
-    )
-  }
-
-  const actividades =
-    leerActividades()
-
-  const indiceActividad =
-    actividades.findIndex(
-      (actividad) =>
-        actividad.id === id,
-    )
-
-  if (indiceActividad === -1) {
-    throw new ActividadAdminError(
-      'La actividad que deseas actualizar no existe.',
-    )
-  }
-
-  const actividadActual =
-    actividades[indiceActividad]
-
-  /*
-   * Combinamos la información actual con los cambios.
-   * Después validamos nuevamente todos los campos.
-   */
-  const datosPreparados =
-    prepararDatosActividad({
-      ...actividadActual,
-      ...cambios,
-    })
-
-  const actividadActualizada = {
-    ...actividadActual,
-    ...datosPreparados,
-    id: actividadActual.id,
-    creadaEn:
-      actividadActual.creadaEn,
-    actualizadaEn:
-      new Date().toISOString(),
-  }
-
-  actividades[indiceActividad] =
-    actividadActualizada
-
-  guardarActividades(
-    actividades,
-  )
-
-  return clonarDatos(
-    actividadActualizada,
-  )
-}
-
-/*
- * En el mock realiza una eliminación lógica para facilitar
- * las pruebas. En la API utiliza la eliminación del backend.
- */
-export async function eliminarActividad(
-  identificador,
-) {
-  const id = prepararTexto(
-    identificador,
-  )
-
-  if (!id) {
-    throw new ActividadAdminError(
-      'El identificador de la actividad es obligatorio.',
-    )
-  }
-
-  if (!usarDatosAdminSimulados) {
-    return peticionApi(
-      `/actividades/${encodeURIComponent(
-        id,
-      )}`,
-      {
-        method: 'DELETE',
-      },
-    )
-  }
-
-  const actividades =
-    leerActividades()
-
-  const indiceActividad =
-    actividades.findIndex(
-      (actividad) =>
-        actividad.id === id &&
-        actividad.eliminada !== true,
-    )
-
-  if (indiceActividad === -1) {
-    throw new ActividadAdminError(
-      'La actividad que deseas eliminar no existe.',
-    )
-  }
-
-  const fechaActual =
-    new Date().toISOString()
-
-  const actividadEliminada = {
-    ...actividades[indiceActividad],
-    activa: false,
-    eliminada: true,
-    eliminadaEn: fechaActual,
-    actualizadaEn: fechaActual,
-  }
-
-  actividades[indiceActividad] =
-    actividadEliminada
-
-  guardarActividades(
-    actividades,
-  )
-
-  return clonarDatos(
-    actividadEliminada,
-  )
-}
-
-/*
- * Elimina los cambios realizados durante las pruebas
- * y restaura las actividades originales del mock.
+ * Restaura las actividades, asistencias y estudiantes del mock.
  *
- * Esta función podrá utilizarse desde DevTools o desde
- * una herramienta de pruebas durante el desarrollo.
+ * También se restauran los estudiantes porque registrar una
+ * salida simulada acredita horas en su perfil local.
  */
 export async function restablecerActividades() {
   comprobarModoSimulado()
@@ -1890,8 +2907,24 @@ export async function restablecerActividades() {
   const actividadesIniciales =
     obtenerActividadesIniciales()
 
+  const asistenciasIniciales =
+    obtenerAsistenciasIniciales()
+
+  const estudiantesIniciales =
+    clonarDatos(
+      estudiantesAdminMock,
+    )
+
   guardarActividades(
     actividadesIniciales,
+  )
+
+  guardarAsistencias(
+    asistenciasIniciales,
+  )
+
+  guardarEstudiantesSimulados(
+    estudiantesIniciales,
   )
 
   return clonarDatos(

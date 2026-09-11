@@ -239,6 +239,7 @@
   font: inherit;
   font-size: 0.76rem;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
   transition:
     background 160ms ease,
@@ -790,8 +791,15 @@
   }
 }
 
-/* TELÉFONOS */
+/* Teléfonos */
 @media (max-width: 560px) {
+  .admin-student-detail-breadcrumb {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
   .admin-student-detail-state {
     min-height: 390px;
     padding: 36px 18px;
@@ -829,9 +837,186 @@
     padding: 13px;
   }
 
-  .admin-student-detail-table th,
-  .admin-student-detail-table td {
-    padding: 11px 12px;
+  /* Las tablas se muestran como tarjetas en celular */
+  .admin-student-detail-table-wrapper {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .admin-student-detail-table,
+  .admin-student-contributions-table {
+    min-width: 0;
+    display: block;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /* El encabezado continúa disponible para lectores de pantalla */
+  .admin-student-detail-table thead {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-student-detail-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .admin-student-detail-table tbody tr {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+    border:
+      1px solid var(--admin-border);
+    border-radius: 10px;
+    background: var(--admin-white);
+    box-shadow:
+      0 5px 15px
+      rgb(10 39 64 / 5%);
+  }
+
+  .admin-student-detail-table
+    tbody
+    tr:hover {
+    background: var(--admin-white);
+  }
+
+  /* Cada dato muestra su nombre al lado izquierdo */
+  .admin-student-detail-table
+    tbody
+    td {
+    width: 100%;
+    min-height: 42px;
+    display: grid;
+    grid-template-columns:
+      minmax(100px, 0.43fr)
+      minmax(0, 0.57fr);
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom:
+      1px solid #edf1f4;
+    text-align: right;
+    overflow-wrap: break-word;
+  }
+
+  .admin-student-detail-table
+    tbody
+    td::before {
+    min-width: 0;
+    color: var(--admin-muted);
+    content: attr(data-label);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    line-height: 1.35;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  /* Mantiene las divisiones internas de la última tarjeta */
+  .admin-student-detail-table
+    tbody
+    tr:last-child
+    > td {
+    border-bottom:
+      1px solid #edf1f4;
+  }
+
+  .admin-student-detail-table
+    tbody
+    tr
+    > td:last-child {
+    border-bottom: 0;
+  }
+
+  /*
+   * El nombre de la actividad funciona como encabezado.
+   * Se mueve arriba aunque en el HTML se encuentre después de la fecha.
+   */
+  .admin-student-detail-table
+    tbody
+    td[data-label='Actividad'] {
+    min-height: 0;
+    display: block;
+    order: -1;
+    padding: 12px;
+    color: var(--admin-text);
+    border-bottom:
+      1px solid var(--admin-border);
+    background:
+      linear-gradient(
+        90deg,
+        #f1f8fc,
+        #fbfdfe
+      );
+    font-size: 0.72rem;
+    font-weight: 750;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .admin-student-detail-table
+    tbody
+    td[data-label='Actividad']::before {
+    content: none;
+  }
+
+  /* El periodo funciona como encabezado de la aportación */
+  .admin-student-contributions-table
+    tbody
+    td[data-label='Periodo'] {
+    min-height: 0;
+    display: block;
+    order: -1;
+    padding: 12px;
+    color: var(--admin-text);
+    border-bottom:
+      1px solid var(--admin-border);
+    background:
+      linear-gradient(
+        90deg,
+        #f8f5ed,
+        #fffdf8
+      );
+    font-size: 0.72rem;
+    font-weight: 750;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .admin-student-contributions-table
+    tbody
+    td[data-label='Periodo']::before {
+    content: none;
+  }
+
+  /* Fechas y estados se alinean con sus etiquetas */
+  .admin-student-detail-table
+    tbody
+    time {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .admin-student-contribution-status {
+    justify-self: end;
+  }
+
+  .admin-student-contribution-tabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .admin-student-contribution-tab {
+    flex: 1;
+    white-space: nowrap;
   }
 
   .admin-student-summary__item {

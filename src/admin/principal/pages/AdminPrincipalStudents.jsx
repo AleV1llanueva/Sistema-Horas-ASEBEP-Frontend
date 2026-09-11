@@ -1,3 +1,5 @@
+import * as AlertDialog from '@radix-ui/react-alert-dialog'
+
 import {
   Eye,
   GraduationCap,
@@ -8,7 +10,10 @@ import {
   Search,
   Trash2,
   TriangleAlert,
+  UserCheck,
   UsersRound,
+  UserX,
+  X,
 } from 'lucide-react'
 
 import {
@@ -25,15 +30,39 @@ import {
 } from '../services/adminEstudiantesService.js'
 
 import {
-  limpiarNotificaciones,
   notificarError,
   notificarExito,
   notificarInformacion,
-  solicitarConfirmacion,
 } from '../../../services/notificationService.js'
 
 import '../styles/AdminPrincipalStudents.css'
 
+/*
+ * Cada pestaña define el estado de los estudiantes
+ * que se mostrará dentro del listado.
+ */
+const PESTANAS_ESTUDIANTES = [
+  {
+    id: 'activos',
+    titulo: 'Estudiantes activos',
+    tituloListado: 'Estudiantes activos',
+    activo: true,
+    icono: UserCheck,
+  },
+
+  {
+    id: 'inactivos',
+    titulo: 'Estudiantes inactivos',
+    tituloListado: 'Estudiantes inactivos',
+    activo: false,
+    icono: UserX,
+  },
+]
+
+/*
+ * Convierte el texto de búsqueda a una forma consistente.
+ * Esto permite encontrar nombres aunque se escriban sin tildes.
+ */
 function normalizarBusqueda(valor) {
   return String(valor ?? '')
     .trim()
@@ -64,7 +93,10 @@ function obtenerIniciales(nombreCompleto) {
 function formatearLempiras(valor) {
   const numero = Number(valor)
 
-  if (!Number.isFinite(numero) || numero < 0) {
+  if (
+    !Number.isFinite(numero) ||
+    numero < 0
+  ) {
     return 'L 0.00'
   }
 
@@ -80,7 +112,10 @@ function formatearLempiras(valor) {
 function prepararCantidad(valor) {
   const numero = Number(valor)
 
-  if (!Number.isFinite(numero) || numero < 0) {
+  if (
+    !Number.isFinite(numero) ||
+    numero < 0
+  ) {
     return 0
   }
 
@@ -130,24 +165,37 @@ function AdminPrincipalStudents() {
   ] = useState('')
 
   const [
-    estadoSeleccionado,
-    setEstadoSeleccionado,
-  ] = useState('todos')
+    pestanaActiva,
+    setPestanaActiva,
+  ] = useState('activos')
 
   /*
-  * Guarda el estudiante que esta siendo actualizado.
-  * Esto impide repetir una operacion mientras el servicio
-  * esta operando todavia procesando la solicitud anterior.
-  */
+   * La acción pendiente conserva al estudiante seleccionado
+   * mientras se muestra y se cierra el diálogo.
+   */
+  const [
+    accionPendiente,
+    setAccionPendiente,
+  ] = useState(null)
+
+  const [
+    dialogoAccionAbierto,
+    setDialogoAccionAbierto,
+  ] = useState(false)
+
+  /*
+   * Guarda el estudiante que está siendo actualizado.
+   * Esto evita repetir una operación antes de que termine.
+   */
   const [
     estudianteProcesando,
     setEstudianteProcesando,
   ] = useState('')
 
   /*
-  * La vista consume unicamente las funciones publicas del servicio.
-  * Con la API, la pagina no necesita saber el origen real de los datos.
-  */
+   * La vista solamente consume las funciones públicas
+   * del servicio y no necesita conocer el origen de los datos.
+   */
   useEffect(() => {
     let componenteMontado = true
 
@@ -175,7 +223,10 @@ function AdminPrincipalStudents() {
           return
         }
 
-        console.log('Error de estudiantes: ', errorCarga)
+        console.log(
+          'Error de estudiantes: ',
+          errorCarga,
+        )
 
         setEstudiantes([])
 
@@ -199,57 +250,122 @@ function AdminPrincipalStudents() {
   }, [recarga])
 
   /*
-  - La busqueda considera nombre, numero de cuenta, carrera
-  - y correos sin alterar el arreglo original.
-  */
+   * Los estudiantes eliminados no deben regresar
+   * al listado normal de activos o inactivos.
+   */
+  const estudiantesDisponibles =
+    useMemo(
+      () =>
+        estudiantes.filter(
+          (estudiante) =>
+            estudiante.eliminado !== true,
+        ),
+      [estudiantes],
+    )
 
-  const estudiantesFiltrados = useMemo(() => {
-    const textoBuscado = normalizarBusqueda(busqueda)
+  /*
+   * Los contadores no dependen de la búsqueda.
+   * Siempre muestran la cantidad real de cada pestaña.
+   */
+  const cantidadesPorPestana =
+    useMemo(
+      () => ({
+        activos:
+          estudiantesDisponibles.filter(
+            (estudiante) =>
+              estudiante.credenciales
+                ?.activo !== false,
+          ).length,
 
-    return estudiantes.filter(
-      (estudiante) => {
-        if (estudiante.eliminado === true) {
-          return false
-        }
+        inactivos:
+          estudiantesDisponibles.filter(
+            (estudiante) =>
+              estudiante.credenciales
+                ?.activo === false,
+          ).length,
+      }),
+      [estudiantesDisponibles],
+    )
 
-        const datosPersonales = estudiante.datosPersonales ?? {}
+  const configuracionPestana =
+    PESTANAS_ESTUDIANTES.find(
+      (pestana) =>
+        pestana.id === pestanaActiva,
+    ) ?? PESTANAS_ESTUDIANTES[0]
 
-        const activo = estudiante.credenciales?.activo !== false
+  /*
+   * Primero se seleccionan los estudiantes del estado
+   * correspondiente y después se aplica la búsqueda.
+   */
+  const estudiantesPestana =
+    useMemo(
+      () =>
+        estudiantesDisponibles.filter(
+          (estudiante) => {
+            const activo =
+              estudiante.credenciales
+                ?.activo !== false
 
-        const coincideBusqueda = !textoBuscado ||
-          [
+            return (
+              activo ===
+              configuracionPestana.activo
+            )
+          },
+        ),
+      [
+        estudiantesDisponibles,
+        configuracionPestana,
+      ],
+    )
+
+  const estudiantesFiltrados =
+    useMemo(() => {
+      const textoBuscado =
+        normalizarBusqueda(busqueda)
+
+      if (!textoBuscado) {
+        return estudiantesPestana
+      }
+
+      return estudiantesPestana.filter(
+        (estudiante) => {
+          const datosPersonales =
+            estudiante.datosPersonales ?? {}
+
+          const credenciales =
+            estudiante.credenciales ?? {}
+
+          return [
             datosPersonales.nombreCompleto,
             datosPersonales.numeroCuenta,
             datosPersonales.carrera,
             datosPersonales.correoPersonal,
-            datosPersonales.correoInstitucional,
+            datosPersonales
+              .correoInstitucional,
+            credenciales.rol,
           ].some((campo) =>
             normalizarBusqueda(
               campo,
             ).includes(textoBuscado),
           )
+        },
+      )
+    }, [
+      estudiantesPestana,
+      busqueda,
+    ])
 
-        const coincideEstado = estadoSeleccionado === 'todos' ||
-          (
-            estadoSeleccionado === 'activos' && activo
-          ) ||
-          (
-            estadoSeleccionado === 'inactivos' && !activo
-          )
+  const existenEstudiantes =
+    estudiantesDisponibles.length > 0
 
-        return (
-          coincideBusqueda && coincideEstado
-        )
-      },
-    )
-  }, [
-    estudiantes,
-    busqueda,
-    estadoSeleccionado,
-  ])
+  const existenResultados =
+    estudiantesFiltrados.length > 0
 
-  const existenEstudiantes = estudiantes.length > 0
-  const existenResultados = estudiantesFiltrados.length > 0
+  const hayFiltrosAplicados =
+    Boolean(busqueda.trim())
+
+  const accionEsActivacion =
+    accionPendiente?.nuevoEstado === true
 
   function reintentarCarga() {
     setRecarga(
@@ -258,63 +374,99 @@ function AdminPrincipalStudents() {
     )
   }
 
-  function mostrarRegistroPendiente() {
-    notificarInformacion({
-      id: 'registrar-estudiante-pendiente',
-      titulo: 'Registro disponible próximamente',
-      descripcion: 'La función para añadir nuevos estudiantes estará disponible proximamente.',
-    })
+  function seleccionarPestana(
+    identificador,
+  ) {
+    setPestanaActiva(identificador)
   }
 
-  function mostrarEdicionPendiente(
-    estudiante,
-  ) {
-    const nombre = estudiante.datosPersonales
-      ?.nombreCompleto || 'este estudiante'
-
-    notificarInformacion({
-      id: 'editar-estudiante-pendiente',
-      titulo: 'Edición disponible próximamente',
-      descripcion: `La información de ${nombre} podrá editarse en los avances venideros.`,
-    })
+  function limpiarFiltros() {
+    setBusqueda('')
   }
 
-  async function procesarCambioEstado(
+  /*
+   * Abre la confirmación utilizando el mismo comportamiento
+   * empleado para las actividades.
+   */
+  function solicitarCambioEstado(
     estudiante,
-    nuevoEstado,
-    idConfirmacion,
   ) {
-    limpiarNotificaciones(
-      idConfirmacion,
-    )
+    if (
+      !estudiante?.id ||
+      estudianteProcesando
+    ) {
+      return
+    }
+
+    const activo =
+      estudiante.credenciales
+        ?.activo !== false
+
+    setAccionPendiente({
+      estudiante,
+      nuevoEstado: !activo,
+    })
+
+    setDialogoAccionAbierto(true)
+  }
+
+  function cerrarDialogoAccion() {
+    if (estudianteProcesando) {
+      return
+    }
+
+    /*
+     * La acción se conserva durante el cierre para que
+     * el contenido no cambie antes de terminar la animación.
+     */
+    setDialogoAccionAbierto(false)
+  }
+
+  /*
+   * Cambia el estado y reemplaza solamente al estudiante
+   * actualizado dentro del listado.
+   */
+  async function confirmarCambioEstado() {
+    if (
+      !accionPendiente?.estudiante?.id ||
+      estudianteProcesando
+    ) {
+      return
+    }
+
+    const estudianteSeleccionado =
+      accionPendiente.estudiante
+
+    const nuevoEstado =
+      accionPendiente.nuevoEstado
 
     setEstudianteProcesando(
-      estudiante.id,
+      estudianteSeleccionado.id,
     )
 
     try {
       const estudianteActualizado =
         await cambiarEstadoEstudiante(
-          estudiante.id,
+          estudianteSeleccionado.id,
           nuevoEstado,
         )
 
-      /*
-      * Sustituimos unicamente el registro actualizado.
-      * No es necesario volver a consultar todo el listado.
-      */
       setEstudiantes(
         (estudiantesActuales) =>
           estudiantesActuales.map(
             (estudianteActual) =>
-              estudianteActual.id === estudianteActualizado.id
+              estudianteActual.id ===
+              estudianteActualizado.id
                 ? estudianteActualizado
                 : estudianteActual,
           ),
       )
 
+      setDialogoAccionAbierto(false)
+
       notificarExito({
-        id: `estado-estudiante-${estudiante.id}`,
+        id:
+          `estado-estudiante-${estudianteSeleccionado.id}`,
         titulo: nuevoEstado
           ? 'Estudiante activado'
           : 'Estudiante desactivado',
@@ -324,63 +476,45 @@ function AdminPrincipalStudents() {
       })
     } catch (errorActualizacion) {
       notificarError({
-        id: `error-estado-estudiante-${estudiante.id}`,
-        titulo: 'No fue posible cambiar el estado',
-        descripcion: errorActualizacion instanceof Error
-          ? errorActualizacion.message
-          : 'Ocurrió un error inesperado.',
+        id:
+          `error-estado-estudiante-${estudianteSeleccionado.id}`,
+        titulo:
+          'No fue posible cambiar el estado',
+        descripcion:
+          errorActualizacion instanceof Error
+            ? errorActualizacion.message
+            : 'Ocurrió un error inesperado.',
       })
     } finally {
       setEstudianteProcesando('')
     }
   }
 
-  function solicitarCambioEstado(
-    estudiante,
-  ) {
-    const activo = estudiante.credenciales?.activo !== false
-    const nombre = estudiante.datosPersonales?.nombreCompleto || 'el estudiante seleccionado'
-    const idConfirmacion = `confirmar-estado-estudiante-${estudiante.id}`
-
-    limpiarNotificaciones(
-      idConfirmacion,
-    )
-
-    solicitarConfirmacion({
-      id: idConfirmacion,
-      titulo: activo
-        ? 'Desactivar estudiante'
-        : 'Activar estudiante',
-      descripcion: activo
-        ? `${nombre} quedará marcado como estudiante inactivo.`
-        : `${nombre} volverá a estar activo dentro del sistema.`,
-      textoConfirmar: activo
-        ? 'Desactivar'
-        : 'Activar',
-      textoCancelar: 'Cancelar',
-      alConfirmar: () => procesarCambioEstado(
-        estudiante,
-        !activo,
-        idConfirmacion,
-      ),
-    })
-  }
-
+  /*
+   * El backend todavía no permite eliminar estudiantes.
+   * El botón se conserva preparado mientras llega el contrato.
+   */
   function mostrarEliminacionPendiente(
     estudiante,
   ) {
-    const nombre = estudiante.datosPersonales
-      ?.nombreCompleto || 'el estudiante seleccionado'
+    const nombre =
+      estudiante.datosPersonales
+        ?.nombreCompleto ||
+      'el estudiante seleccionado'
 
     notificarInformacion({
-      id: `eliminar-estudiante-pendiente-${estudiante.id}`,
-      titulo: 'Eliminación disponible próximamente',
-      descripcion: `La opción para eliminar a ${nombre} estará disponible en un próximo avance.`,
+      id:
+        `eliminar-estudiante-pendiente-${estudiante.id}`,
+      titulo:
+        'Eliminación disponible próximamente',
+      descripcion:
+        `La opción para eliminar a ${nombre} todavía no está disponible en el backend.`,
     })
   }
 
   return (
     <div className="admin-students-page">
+      {/* Encabezado principal de la vista. */}
       <header className="admin-students-heading">
         <div>
           <p className="admin-students-heading__eyebrow">
@@ -397,78 +531,133 @@ function AdminPrincipalStudents() {
         </div>
 
         <div className="admin-students-heading__actions">
+          {/* Muestra el total general de estudiantes registrados. */}
           <div className="admin-students-heading__summary">
             <UsersRound aria-hidden="true" />
 
             <div>
               <strong>
-                {estudiantes.length}
+                {estudiantesDisponibles.length}
               </strong>
 
               <span>
-                {estudiantes.length === 1
-                  ? 'estudiante registrado'
-                  : 'estudiantes registrados'}
+                {estudiantesDisponibles.length === 1
+                  ? 'Estudiante registrado'
+                  : 'Estudiantes registrados'}
               </span>
             </div>
           </div>
 
-          <button className="admin-students-add-button" type="button" onClick={mostrarRegistroPendiente}>
+          {/* Permite registrar un estudiante nuevo. */}
+          <Link
+            className="admin-students-add-button"
+            to="/admin-principal/estudiantes/crear"
+          >
             <Plus aria-hidden="true" />
+
             Añadir estudiante
-          </button>
+          </Link>
         </div>
       </header>
 
       {!cargando && !error && (
-        <section
-          className="admin-students-toolbar"
-          aria-label="Filtros de estudiantes"
-        >
-          <label className="admin-students-search">
-            <span>Buscar estudiante</span>
+        <>
+          {/* Menú para cambiar entre activos e inactivos. */}
+          <div
+            className="admin-students-tabs"
+            role="tablist"
+            aria-label="Clasificación de estudiantes"
+          >
+            {PESTANAS_ESTUDIANTES.map(
+              (pestana) => {
+                const IconoPestana =
+                  pestana.icono
 
-            <div className="admin-students-search__control">
-              <Search aria-hidden="true" />
+                const seleccionada =
+                  pestanaActiva ===
+                  pestana.id
 
-              <input
-                type="search"
-                value={busqueda}
-                placeholder="Buscar por nombre, cuenta o carrera"
-                onChange={(evento) =>
-                  setBusqueda(
-                    evento.target.value,
-                  )
-                }
-              />
-            </div>
-          </label>
+                return (
+                  <button
+                    key={pestana.id}
+                    id={
+                      `admin-students-tab-${pestana.id}`
+                    }
+                    className={
+                      seleccionada
+                        ? 'admin-students-tab admin-students-tab--active'
+                        : 'admin-students-tab'
+                    }
+                    type="button"
+                    role="tab"
+                    aria-selected={
+                      seleccionada
+                    }
+                    aria-controls="admin-students-tab-panel"
+                    onClick={() =>
+                      seleccionarPestana(
+                        pestana.id,
+                      )
+                    }
+                  >
+                    <IconoPestana
+                      aria-hidden="true"
+                    />
 
-          <label className="admin-students-filter">
-            <span>Estado</span>
+                    <span>
+                      {pestana.titulo}
+                    </span>
 
-            <select
-              value={estadoSeleccionado}
-              onChange={(evento) =>
-                setEstadoSeleccionado(
-                  evento.target.value,
+                    <small>
+                      {
+                        cantidadesPorPestana[
+                          pestana.id
+                        ]
+                      }
+                    </small>
+                  </button>
                 )
+              },
+            )}
+          </div>
+
+          {/* La búsqueda trabaja sobre la pestaña seleccionada. */}
+          <section
+            className="admin-students-toolbar"
+            aria-label="Filtros de estudiantes"
+          >
+            <label className="admin-students-search">
+              <span>Buscar estudiante</span>
+
+              <div className="admin-students-search__control">
+                <Search aria-hidden="true" />
+
+                <input
+                  type="search"
+                  value={busqueda}
+                  placeholder="Buscar por nombre, cuenta o carrera"
+                  onChange={(evento) =>
+                    setBusqueda(
+                      evento.target.value,
+                    )
+                  }
+                />
+              </div>
+            </label>
+
+            <button
+              className="admin-students-clear-button"
+              type="button"
+              disabled={
+                !hayFiltrosAplicados
               }
+              onClick={limpiarFiltros}
             >
-              <option value="todos">
-                Todos los estudiantes
-              </option>
-
-              <option value="activos">
-                Activos
-              </option>
-
-              <option value="inactivos">
-                Inactivos
-              </option>
-            </select>
-          </label>
-        </section>
+              <X aria-hidden="true" />
+              Limpiar filtros
+            </button>
+          </section>
+        </>
       )}
 
       {cargando && (
@@ -534,8 +723,17 @@ function AdminPrincipalStudents() {
         !error &&
         existenEstudiantes && (
           <section
+            /*
+             * La key vuelve a montar el panel cuando cambia
+             * la pestaña y permite repetir la animación.
+             */
+            key={pestanaActiva}
+            id="admin-students-tab-panel"
             className="admin-students-list"
-            aria-labelledby="admin-students-list-title"
+            role="tabpanel"
+            aria-labelledby={
+              `admin-students-tab-${pestanaActiva}`
+            }
             aria-busy={
               Boolean(estudianteProcesando)
             }
@@ -545,14 +743,16 @@ function AdminPrincipalStudents() {
                 <p>Listado</p>
 
                 <h2 id="admin-students-list-title">
-                  Estudiantes becarios
+                  {
+                    configuracionPestana
+                      .tituloListado
+                  }
                 </h2>
               </div>
 
               <span>
                 {estudiantesFiltrados.length}{' '}
-                {estudiantesFiltrados.length ===
-                  1
+                {estudiantesFiltrados.length === 1
                   ? 'resultado'
                   : 'resultados'}
               </span>
@@ -563,20 +763,36 @@ function AdminPrincipalStudents() {
                 <Search aria-hidden="true" />
 
                 <h3>
-                  No encontramos resultados
+                  {estudiantesPestana.length === 0
+                    ? 'No hay estudiantes en esta sección'
+                    : 'No encontramos resultados'}
                 </h3>
 
                 <p>
-                  Cambia la búsqueda o el estado
-                  seleccionado.
+                  {estudiantesPestana.length === 0
+                    ? 'Los estudiantes aparecerán aquí cuando tengan este estado.'
+                    : 'Cambia la búsqueda o limpia los filtros aplicados.'}
                 </p>
+
+                {hayFiltrosAplicados && (
+                  <button
+                    className="admin-students-no-results__clear"
+                    type="button"
+                    onClick={limpiarFiltros}
+                  >
+                    <X aria-hidden="true" />
+                    Limpiar filtros
+                  </button>
+                )}
               </div>
             ) : (
               <div className="admin-students-table-wrapper">
                 <table className="admin-students-table">
                   <caption>
-                    Listado administrativo de
-                    estudiantes becarios
+                    {
+                      configuracionPestana
+                        .tituloListado
+                    }
                   </caption>
 
                   <thead>
@@ -637,10 +853,8 @@ function AdminPrincipalStudents() {
                           'Estudiante sin nombre'
 
                         return (
-                          <tr
-                            key={estudiante.id}
-                          >
-                            <th scope="row">
+                          <tr key={estudiante.id}>
+                            <th scope="row" data-label="Estudiante">
                               <div className="admin-student-identity">
                                 <span
                                   className="admin-student-identity__avatar"
@@ -665,7 +879,7 @@ function AdminPrincipalStudents() {
                               </div>
                             </th>
 
-                            <td>
+                            <td data-label="Carrera">
                               <span className="admin-student-career">
                                 {datosPersonales
                                   .carrera ||
@@ -673,7 +887,7 @@ function AdminPrincipalStudents() {
                               </span>
                             </td>
 
-                            <td>
+                            <td data-label="Progreso de horas">
                               <div className="admin-student-hours">
                                 <strong>
                                   {prepararCantidad(
@@ -693,7 +907,7 @@ function AdminPrincipalStudents() {
                               </div>
                             </td>
 
-                            <td>
+                            <td data-label="Aportaciones">
                               <div className="admin-student-contributions">
                                 <strong>
                                   {formatearLempiras(
@@ -711,7 +925,7 @@ function AdminPrincipalStudents() {
                               </div>
                             </td>
 
-                            <td>
+                            <td data-label="Estado">
                               <span
                                 className={
                                   activo
@@ -725,7 +939,7 @@ function AdminPrincipalStudents() {
                               </span>
                             </td>
 
-                            <td>
+                            <td data-label="Acciones">
                               <div className="admin-student-actions">
                                 <Link
                                   to={
@@ -735,24 +949,26 @@ function AdminPrincipalStudents() {
                                     )
                                   }
                                   title="Ver estudiante"
-                                  aria-label={`Ver información de ${nombreCompleto}`}
+                                  aria-label={
+                                    `Ver información de ${nombreCompleto}`
+                                  }
                                 >
                                   <Eye aria-hidden="true" />
                                 </Link>
 
-                                <button
-                                  type="button"
-                                  title="Editar estudiante"
-                                  aria-label={`Editar información de ${nombreCompleto}`}
-                                  disabled={procesando}
-                                  onClick={() =>
-                                    mostrarEdicionPendiente(
-                                      estudiante,
-                                    )
-                                  }
+                                <Link to={'/admin-principal/estudiantes/' +
+                                          encodeURIComponent(
+                                            numeroCuenta,
+                                          ) +
+                                          '/editar'
+                                }
+                                title="Editar estudiante"
+                                aria-label={
+                                  `Editar información de ${nombreCompleto}`
+                                }
                                 >
                                   <Pencil aria-hidden="true" />
-                                </button>
+                                </Link>
 
                                 <button
                                   type="button"
@@ -773,14 +989,23 @@ function AdminPrincipalStudents() {
                                     )
                                   }
                                 >
-                                  <Power aria-hidden="true" />
+                                  {procesando ? (
+                                    <LoaderCircle
+                                      className="admin-student-actions__loader"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <Power aria-hidden="true" />
+                                  )}
                                 </button>
 
                                 <button
                                   className="admin-student-actions__delete"
                                   type="button"
                                   title="Eliminar estudiante"
-                                  aria-label={`Eliminar a ${nombreCompleto}`}
+                                  aria-label={
+                                    `Eliminar a ${nombreCompleto}`
+                                  }
                                   disabled={procesando}
                                   onClick={() =>
                                     mostrarEliminacionPendiente(
@@ -802,6 +1027,106 @@ function AdminPrincipalStudents() {
             )}
           </section>
         )}
+
+      {/* Confirmación para activar o desactivar al estudiante. */}
+      <AlertDialog.Root
+        open={dialogoAccionAbierto}
+        onOpenChange={(abierto) => {
+          if (!estudianteProcesando) {
+            setDialogoAccionAbierto(
+              abierto,
+            )
+          }
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="admin-student-confirm-dialog__overlay" />
+
+          <AlertDialog.Content className="admin-student-confirm-dialog__content">
+            <div
+              className={
+                accionEsActivacion
+                  ? 'admin-student-confirm-dialog__icon admin-student-confirm-dialog__icon--activate'
+                  : 'admin-student-confirm-dialog__icon admin-student-confirm-dialog__icon--deactivate'
+              }
+            >
+              <Power aria-hidden="true" />
+            </div>
+
+            <AlertDialog.Title className="admin-student-confirm-dialog__title">
+              {accionEsActivacion
+                ? 'Activar estudiante'
+                : 'Desactivar estudiante'}
+            </AlertDialog.Title>
+
+            <AlertDialog.Description className="admin-student-confirm-dialog__description">
+              {accionEsActivacion
+                ? 'El estudiante volverá a estar activo dentro del sistema.'
+                : 'El estudiante dejará de tener acceso, pero su cuenta y toda su información permanecerán guardadas.'}
+            </AlertDialog.Description>
+
+            <p className="admin-student-confirm-dialog__student">
+              {
+                accionPendiente
+                  ?.estudiante
+                  ?.datosPersonales
+                  ?.nombreCompleto
+              }
+            </p>
+
+            <div className="admin-student-confirm-dialog__actions">
+              <AlertDialog.Cancel asChild>
+                <button
+                  className="admin-student-confirm-dialog__cancel"
+                  type="button"
+                  disabled={
+                    Boolean(
+                      estudianteProcesando,
+                    )
+                  }
+                  onClick={
+                    cerrarDialogoAccion
+                  }
+                >
+                  Cancelar
+                </button>
+              </AlertDialog.Cancel>
+
+              <button
+                className={
+                  accionEsActivacion
+                    ? 'admin-student-confirm-dialog__confirm admin-student-confirm-dialog__confirm--activate'
+                    : 'admin-student-confirm-dialog__confirm admin-student-confirm-dialog__confirm--deactivate'
+                }
+                type="button"
+                disabled={
+                  Boolean(
+                    estudianteProcesando,
+                  )
+                }
+                onClick={
+                  confirmarCambioEstado
+                }
+              >
+                {estudianteProcesando ? (
+                  <LoaderCircle
+                    className="admin-student-confirm-dialog__loader"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Power aria-hidden="true" />
+                )}
+
+                {estudianteProcesando
+                  ? 'Procesando...'
+                  : accionEsActivacion
+                    ? 'Activar estudiante'
+                    : 'Desactivar estudiante'}
+              </button>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </div>
   )
 }

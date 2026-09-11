@@ -1,7 +1,4 @@
-/*
-* Estructura compartida por las vistas administrativas.
-*/
-
+/* Estructura compartida por las vistas administrativas. */
 .admin-layout {
   --admin-navy: #002b4f;
   --admin-navy-hover: #0b406a;
@@ -17,16 +14,26 @@
   --admin-white: #ffffff;
   --admin-danger: #9f3641;
   --admin-danger-hover: #822833;
+  --admin-sidebar-width: 244px;
 
   min-height: 100vh;
   display: grid;
   grid-template-columns:
-    244px minmax(0, 1fr);
+    var(--admin-sidebar-width)
+    minmax(0, 1fr);
   color: var(--admin-text);
   background: var(--admin-background);
+  transition:
+    grid-template-columns
+    220ms ease;
 }
 
-/* ENLACE DE ACCESIBILIDAD */
+/* Reduce la columna cuando el menú muestra solamente los iconos. */
+.admin-layout:has(.admin-sidebar--collapsed) {
+  --admin-sidebar-width: 76px;
+}
+
+/* Enlace de accesibilidad */
 .admin-skip-link {
   position: fixed;
   z-index: 200;
@@ -40,15 +47,18 @@
   font-weight: 700;
   text-decoration: none;
   transform: translateY(-150%);
-  transition: transform 160ms ease;
+  transition:
+    transform 160ms ease;
 }
 
 .admin-skip-link:focus {
   transform: translateY(0);
 }
 
-/* SIDEBAR */
+/* Sidebar para computadoras */
 .admin-sidebar {
+  width: 100%;
+  min-width: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -56,10 +66,69 @@
   z-index: 40;
   top: 0;
   padding: 24px 18px 20px;
+  overflow-x: hidden;
   overflow-y: auto;
   border-right:
     1px solid var(--admin-border);
   background: var(--admin-white);
+  transition:
+    padding 220ms ease;
+}
+
+/* Mantiene el espacio necesario para centrar los iconos. */
+.admin-sidebar--collapsed {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+/* Botón para contraer o expandir el menú. */
+.admin-sidebar-toggle {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  position: fixed;
+  z-index: 70;
+  top: 17px;
+  left:
+    calc(
+      var(--admin-sidebar-width) - 17px
+    );
+  padding: 0;
+  color: var(--admin-text-soft);
+  border:
+    1px solid #cbd8e1;
+  border-radius: 9px;
+  background: var(--admin-white);
+  box-shadow:
+    0 6px 16px
+    rgb(10 39 64 / 12%);
+  cursor: pointer;
+  transition:
+    left 220ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-sidebar-toggle:hover {
+  color: var(--admin-navy);
+  border-color: #91b5cf;
+  background: var(--admin-hover);
+  transform: translateY(-1px);
+}
+
+.admin-sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-sidebar-toggle:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
 }
 
 .admin-sidebar__brand {
@@ -78,7 +147,8 @@
   place-items: center;
   flex-shrink: 0;
   overflow: hidden;
-  border: 2px solid var(--admin-navy);
+  border:
+    2px solid var(--admin-navy);
   border-radius: 50%;
   background: var(--admin-white);
   box-shadow:
@@ -162,14 +232,15 @@
 }
 
 .admin-sidebar__link--active::before {
-  content: '';
   width: 3px;
   height: 22px;
   position: absolute;
   top: 50%;
   left: 0;
-  border-radius: 0 999px 999px 0;
+  border-radius:
+    0 999px 999px 0;
   background: var(--admin-focus);
+  content: '';
   transform: translateY(-50%);
 }
 
@@ -195,11 +266,48 @@
   outline-offset: 2px;
 }
 
-/* ÁREA DERECHA */
+/* Oculta los textos cuando el sidebar está reducido. */
+.admin-sidebar--collapsed
+  .admin-sidebar__brand-copy,
+.admin-sidebar--collapsed
+  .admin-sidebar__link span,
+.admin-sidebar--collapsed
+  .admin-sidebar__logout span {
+  display: none;
+}
+
+.admin-sidebar--collapsed
+  .admin-sidebar__brand {
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/* Centra los iconos dentro de la columna reducida. */
+.admin-sidebar--collapsed
+  .admin-sidebar__link,
+.admin-sidebar--collapsed
+  .admin-sidebar__logout {
+  justify-content: center;
+  gap: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.admin-sidebar--collapsed
+  .admin-sidebar__link:hover,
+.admin-sidebar--collapsed
+  .admin-sidebar__logout:hover {
+  transform: none;
+}
+
+/* Área derecha del panel */
 .admin-layout__content {
   min-width: 0;
 }
 
+/* Barra superior */
 .admin-topbar {
   min-height: 68px;
   display: flex;
@@ -263,7 +371,7 @@
   font-size: 0.86rem;
 }
 
-/* CONTENIDO DE LAS PÁGINAS */
+/* Contenido de las páginas */
 .admin-main-content {
   width: 100%;
   min-width: 0;
@@ -273,7 +381,7 @@
     48px;
 }
 
-/* MENÚ DE PERFIL */
+/* Menú del perfil */
 .admin-profile-menu {
   position: relative;
   flex-shrink: 0;
@@ -286,7 +394,8 @@
   gap: 9px;
   padding: 5px 9px 5px 6px;
   color: var(--admin-text);
-  border: 1px solid transparent;
+  border:
+    1px solid transparent;
   border-radius: 10px;
   background: transparent;
   font: inherit;
@@ -360,8 +469,10 @@
 .admin-profile-menu__chevron {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
   color: var(--admin-muted);
-  transition: transform 160ms ease;
+  transition:
+    transform 160ms ease;
 }
 
 .admin-profile-menu__chevron--open {
@@ -369,7 +480,11 @@
 }
 
 .admin-profile-menu__dropdown {
-  width: min(310px, calc(100vw - 32px));
+  width:
+    min(
+      310px,
+      calc(100vw - 32px)
+    );
   position: absolute;
   z-index: 100;
   top: calc(100% + 10px);
@@ -382,12 +497,14 @@
   box-shadow:
     0 18px 45px
     rgb(10 39 64 / 16%);
+  transform-origin: top right;
   animation:
     admin-profile-dropdown-enter
-    150ms ease-out;
+    150ms ease-out both;
 }
 
 .admin-profile-menu__summary {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -488,16 +605,25 @@
   outline-offset: -2px;
 }
 
-/* ADAPTACIÓN PARA COMPUTADORAS PEQUEÑAS */
+/* El navbar móvil permanece oculto en computadora */
+.admin-mobile-menu {
+  display: none;
+}
+
+/* Computadoras de menor ancho */
 @media (max-width: 1180px) {
   .admin-layout {
-    grid-template-columns:
-      218px minmax(0, 1fr);
+    --admin-sidebar-width: 218px;
   }
 
   .admin-sidebar {
     padding-right: 14px;
     padding-left: 14px;
+  }
+
+  .admin-sidebar--collapsed {
+    padding-right: 12px;
+    padding-left: 12px;
   }
 
   .admin-topbar {
@@ -517,8 +643,7 @@
 
 @media (max-width: 1024px) {
   .admin-layout {
-    grid-template-columns:
-      205px minmax(0, 1fr);
+    --admin-sidebar-width: 205px;
   }
 
   .admin-sidebar {
@@ -529,6 +654,12 @@
   .admin-sidebar__brand {
     padding-right: 5px;
     padding-left: 5px;
+  }
+
+  .admin-sidebar--collapsed
+    .admin-sidebar__brand {
+    padding-right: 0;
+    padding-left: 0;
   }
 
   .admin-topbar {
@@ -542,14 +673,259 @@
   }
 }
 
-/* MOVIMIENTO REDUCIDO */
+/* Diseño para celulares */
+@media (max-width: 760px) {
+  .admin-layout {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: block;
+  }
+
+  /* El navbar inferior reemplaza al sidebar en celular. */
+  .admin-sidebar,
+  .admin-sidebar-toggle {
+    display: none;
+  }
+
+  /*
+   * El espacio inferior evita que el navbar
+   * cubra el contenido de las páginas.
+   */
+  .admin-layout__content {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom:
+      calc(
+        70px +
+        env(safe-area-inset-bottom)
+      );
+  }
+
+  /* Barra superior móvil. */
+  .admin-topbar {
+    min-height: 56px;
+    z-index: 60;
+    gap: 12px;
+    padding:
+      0 12px 0 14px;
+    background:
+      rgb(255 255 255 / 96%);
+    box-shadow:
+      0 4px 16px
+      rgb(16 40 62 / 6%);
+  }
+
+  .admin-topbar__context {
+    gap: 8px;
+  }
+
+  .admin-topbar__context-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .admin-topbar__context-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-topbar__context span {
+    font-size: 0.57rem;
+  }
+
+  .admin-topbar__context strong {
+    max-width: 155px;
+    overflow: hidden;
+    font-size: 0.76rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* El perfil conserva solamente el avatar y la flecha. */
+  .admin-profile-menu__trigger {
+    min-height: 44px;
+    gap: 5px;
+    padding:
+      4px 5px 4px 4px;
+  }
+
+  .admin-profile-menu__trigger-copy {
+    display: none;
+  }
+
+  .admin-profile-menu__avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 0.66rem;
+  }
+
+  .admin-profile-menu__chevron {
+    width: 14px;
+    height: 14px;
+  }
+
+  .admin-profile-menu__dropdown {
+    top: calc(100% + 5px);
+  }
+
+  /* Reduce los márgenes generales de todas las vistas. */
+  .admin-main-content {
+    padding:
+      18px 14px 28px;
+  }
+
+  /* Navbar inferior compartido. */
+  .admin-mobile-menu {
+    min-height: 70px;
+    display: grid;
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      );
+    position: fixed;
+    z-index: 70;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding:
+      0 6px
+      env(safe-area-inset-bottom);
+    border-top:
+      1px solid var(--admin-border);
+    background:
+      rgb(255 255 255 / 96%);
+    box-shadow:
+      0 -8px 24px
+      rgb(16 40 62 / 8%);
+    backdrop-filter: blur(14px);
+  }
+
+  /*
+   * La misma clase funciona para los enlaces
+   * y para el botón de cerrar sesión.
+   */
+  .admin-mobile-menu__link {
+    min-width: 0;
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+    gap: 5px;
+    padding: 7px 4px;
+    color: var(--admin-muted);
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.68rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 160ms ease,
+      background 160ms ease;
+  }
+
+  .admin-mobile-menu__link svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Indicador de la página activa. */
+  .admin-mobile-menu__link::before {
+    width: 28px;
+    height: 3px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    border-radius:
+      0 0 999px 999px;
+    background: transparent;
+    content: '';
+    transform:
+      translateX(-50%);
+  }
+
+  .admin-mobile-menu__link--active {
+    color: var(--admin-navy);
+    background: var(--admin-hover);
+    font-weight: 700;
+  }
+
+  .admin-mobile-menu__link--active::before {
+    background: var(--admin-focus);
+  }
+
+  /* Cerrar sesión conserva su color de advertencia. */
+  .admin-mobile-menu__logout {
+    color: var(--admin-danger);
+  }
+
+  .admin-mobile-menu__logout:hover,
+  .admin-mobile-menu__logout:focus-visible {
+    color: var(--admin-danger-hover);
+    background: #fff1f2;
+  }
+
+  .admin-mobile-menu__link:focus-visible {
+    z-index: 1;
+    outline:
+      3px solid
+      rgb(75 145 196 / 28%);
+    outline-offset: -3px;
+  }
+}
+
+/* Teléfonos pequeños */
+@media (max-width: 380px) {
+  .admin-topbar {
+    padding:
+      0 8px 0 11px;
+  }
+
+  .admin-topbar__context strong {
+    max-width: 132px;
+    font-size: 0.72rem;
+  }
+
+  .admin-profile-menu__dropdown {
+    width:
+      calc(100vw - 16px);
+    right: 0;
+  }
+
+  .admin-main-content {
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+
+  .admin-mobile-menu__link {
+    padding-right: 2px;
+    padding-left: 2px;
+    font-size: 0.61rem;
+  }
+
+  .admin-mobile-menu__link svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+/* Respeta la configuración de movimiento del usuario */
 @media (prefers-reduced-motion: reduce) {
+  .admin-layout,
+  .admin-sidebar,
+  .admin-sidebar-toggle,
   .admin-skip-link,
   .admin-sidebar__link,
   .admin-sidebar__logout,
   .admin-profile-menu__trigger,
   .admin-profile-menu__chevron,
-  .admin-profile-menu__action {
+  .admin-profile-menu__action,
+  .admin-mobile-menu__link {
     transition: none;
   }
 
@@ -561,11 +937,15 @@
 @keyframes admin-profile-dropdown-enter {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform:
+      translateY(-6px)
+      scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform:
+      translateY(0)
+      scale(1);
   }
 }

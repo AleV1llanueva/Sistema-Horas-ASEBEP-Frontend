@@ -1,0 +1,1340 @@
+/*
+ * Estilos para el formulario de registro
+ * y la vista previa del estudiante.
+ */
+.admin-create-student-page {
+  width: min(100%, 1420px);
+  margin: 0 auto;
+}
+
+/* Ruta de navegación */
+.admin-create-student-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  color: var(--admin-muted);
+  font-size: 0.74rem;
+  animation:
+    admin-create-student-entry
+    460ms ease-out both;
+}
+
+.admin-create-student-breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--admin-blue);
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 160ms ease;
+}
+
+.admin-create-student-breadcrumb a svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.admin-create-student-breadcrumb a:hover {
+  color: var(--admin-navy);
+  text-decoration: underline;
+}
+
+/* Encabezado */
+.admin-create-student-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  animation:
+    admin-create-student-entry
+    500ms 40ms ease-out both;
+}
+
+.admin-create-student-heading > div {
+  min-width: 0;
+}
+
+.admin-create-student-heading__eyebrow {
+  margin: 0 0 7px;
+  color: var(--admin-focus);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-create-student-heading h1 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size:
+    clamp(1.75rem, 2.6vw, 2.25rem);
+  line-height: 1.12;
+}
+
+.admin-create-student-heading
+  > div
+  > p:last-child {
+  max-width: 700px;
+  margin: 9px 0 0;
+  color: var(--admin-text-soft);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.admin-create-student-heading__badge {
+  min-height: 37px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 14px;
+  color: #075580;
+  border:
+    1px solid #c8e0ee;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      135deg,
+      #e2f2fa,
+      #f3f9fc
+    );
+  font-size: 0.7rem;
+  font-weight: 750;
+  box-shadow:
+    0 5px 14px
+    rgb(28 100 143 / 8%);
+}
+
+.admin-create-student-heading__badge svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Aviso temporal de los catálogos */
+.admin-create-student-catalog-notice {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 20px;
+  padding: 14px 17px;
+  color: #785814;
+  border:
+    1px solid #ead49a;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      90deg,
+      #fff8e7,
+      #fffdf7
+    );
+  box-shadow:
+    0 6px 18px
+    rgb(152 111 23 / 7%);
+  animation:
+    admin-create-student-entry
+    520ms 75ms ease-out both;
+}
+
+.admin-create-student-catalog-notice > svg {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  color: #b17a0a;
+}
+
+.admin-create-student-catalog-notice strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.76rem;
+}
+
+.admin-create-student-catalog-notice p {
+  margin: 0;
+  color: #806b3e;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+/* Distribución principal */
+.admin-create-student-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(300px, 0.72fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.admin-create-student-form,
+.admin-create-student-preview {
+  border:
+    1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-white);
+  box-shadow:
+    0 10px 28px
+    rgb(10 39 64 / 6%);
+}
+
+/* Formulario */
+.admin-create-student-form {
+  position: relative;
+  overflow: hidden;
+  padding: 27px 24px 24px;
+  animation:
+    admin-create-student-entry
+    560ms 100ms ease-out both;
+}
+
+.admin-create-student-form::before {
+  height: 3px;
+  position: absolute;
+  inset: 0 0 auto;
+  background:
+    linear-gradient(
+      90deg,
+      var(--admin-blue),
+      #55a9d2 72%,
+      #efbd3c
+    );
+  content: '';
+}
+
+/* Cada sección mantiene agrupada su información */
+.admin-create-student-section {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 25px;
+  border: 0;
+}
+
+.admin-create-student-section
+  + .admin-create-student-section {
+  padding-top: 24px;
+  border-top:
+    1px solid var(--admin-border);
+}
+
+.admin-create-student-section legend {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 19px;
+  padding: 0;
+}
+
+.admin-create-student-section
+  legend
+  > span:first-child {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+  border:
+    1px solid #c9e1ef;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      135deg,
+      #e4f3fb,
+      #f3f9fc
+    );
+}
+
+.admin-create-student-section
+  legend
+  > span:first-child
+  svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-create-student-section
+  legend
+  > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-create-student-section
+  legend
+  strong {
+  color: var(--admin-text);
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.admin-create-student-section
+  legend
+  small {
+  color: var(--admin-muted);
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* Campos del formulario */
+.admin-create-student-fields {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 18px 16px;
+}
+
+.admin-create-student-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-create-student-field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-create-student-field > label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--admin-text);
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.admin-create-student-field
+  > label
+  > span {
+  color: var(--admin-danger);
+}
+
+.admin-create-student-field
+  > label
+  > small {
+  margin-left: 4px;
+  padding: 2px 6px;
+  color: var(--admin-muted);
+  border-radius: 999px;
+  background: #f0f3f5;
+  font-size: 0.59rem;
+  font-weight: 600;
+}
+
+.admin-create-student-field > input,
+.admin-create-student-field > select,
+.admin-create-student-input-icon {
+  width: 100%;
+  min-height: 44px;
+  color: var(--admin-text);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  outline: 0;
+  background: #fbfcfd;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-create-student-field > input,
+.admin-create-student-field > select {
+  padding: 0 12px;
+}
+
+.admin-create-student-field > select {
+  cursor: pointer;
+}
+
+.admin-create-student-field
+  > input::placeholder,
+.admin-create-student-input-icon
+  input::placeholder {
+  color: #8b98a4;
+}
+
+.admin-create-student-field
+  > input:focus,
+.admin-create-student-field
+  > select:focus {
+  border-color: var(--admin-focus);
+  background: var(--admin-white);
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.admin-create-student-field
+  > input[aria-invalid='true'],
+.admin-create-student-field
+  > select[aria-invalid='true'] {
+  border-color: var(--admin-danger);
+  background: #fffafb;
+}
+
+/* Campos que incluyen un icono */
+.admin-create-student-input-icon {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+}
+
+.admin-create-student-input-icon > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--admin-muted);
+}
+
+.admin-create-student-input-icon input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  color: var(--admin-text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.admin-create-student-input-icon:focus-within {
+  border-color: var(--admin-focus);
+  background: var(--admin-white);
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.admin-create-student-input-icon:has(
+    input[aria-invalid='true']
+  ) {
+  border-color: var(--admin-danger);
+  background: #fffafb;
+}
+
+/* Estados deshabilitados mientras faltan los IDS */
+.admin-create-student-field
+  > select:disabled {
+  color: #87939d;
+  border-color: #d9e1e6;
+  background: #f1f4f6;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Textos de ayuda y validación */
+.admin-create-student-field__support {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-create-student-field__support small {
+  color: var(--admin-muted);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+.admin-create-student-field__support
+  small:last-child {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-create-student-field__error,
+.admin-create-student-form__catalog-error {
+  margin: 0;
+  color: var(--admin-danger);
+  font-size: 0.64rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.admin-create-student-form__catalog-error {
+  margin-top: 3px;
+  padding: 10px 12px;
+  border:
+    1px solid #efc9ce;
+  border-radius: 8px;
+  background: #fff4f5;
+}
+
+/* Botones inferiores */
+.admin-create-student-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 20px;
+  border-top:
+    1px solid var(--admin-border);
+}
+
+.admin-create-student-form__actions button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-create-student-form__actions
+  button:first-child {
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-create-student-form__actions
+  button:first-child:hover:not(:disabled) {
+  color: var(--admin-navy);
+  border-color: #b9cedc;
+  background: var(--admin-hover);
+}
+
+.admin-create-student-form__actions
+  button[type='submit'] {
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
+  background: var(--admin-navy);
+  box-shadow:
+    0 8px 18px
+    rgb(0 43 79 / 15%);
+}
+
+.admin-create-student-form__actions
+  button[type='submit']:hover:not(:disabled) {
+  background: var(--admin-navy-hover);
+  box-shadow:
+    0 11px 22px
+    rgb(0 43 79 / 19%);
+  transform: translateY(-1px);
+}
+
+.admin-create-student-form__actions
+  button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.admin-create-student-form__actions
+  button
+  svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-create-student-form__loader {
+  animation:
+    admin-create-student-loader-spin
+    850ms linear infinite;
+}
+
+/* Vista previa */
+.admin-create-student-preview {
+  overflow: hidden;
+  position: sticky;
+  top: 92px;
+  animation:
+    admin-create-student-entry
+    580ms 160ms ease-out both;
+}
+
+.admin-create-student-preview::before {
+  height: 3px;
+  position: absolute;
+  inset: 0 0 auto;
+  background:
+    linear-gradient(
+      90deg,
+      var(--admin-blue),
+      #55a9d2 72%,
+      #efbd3c
+    );
+  content: '';
+}
+
+.admin-create-student-preview__header {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 18px 15px;
+  border-bottom:
+    1px solid var(--admin-border);
+  background:
+    linear-gradient(
+      90deg,
+      #fbfcfd,
+      #f3f8fb
+    );
+}
+
+.admin-create-student-preview__header p {
+  margin: 0 0 4px;
+  color: var(--admin-focus);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-create-student-preview__header h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 0.95rem;
+}
+
+.admin-create-student-preview__header
+  > span {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  color: #795860;
+  border:
+    1px solid #ead4d9;
+  border-radius: 999px;
+  background: #f3e8eb;
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+/* Identidad principal */
+.admin-create-student-preview__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 18px;
+  border-bottom:
+    1px solid var(--admin-border);
+}
+
+.admin-create-student-preview__identity
+  > span {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-navy);
+  border:
+    1px solid #c4ddea;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      #dceefa,
+      #f1f8fc
+    );
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  box-shadow:
+    0 6px 14px
+    rgb(13 84 126 / 8%);
+}
+
+.admin-create-student-preview__identity
+  > div {
+  min-width: 0;
+}
+
+.admin-create-student-preview__identity h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--admin-text);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.admin-create-student-preview__identity p {
+  margin: 5px 0 0;
+  color: var(--admin-muted);
+  font-size: 0.68rem;
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+/* Datos que se actualizan con el formulario */
+.admin-create-student-preview__details {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 4px 18px;
+}
+
+.admin-create-student-preview__details
+  > div {
+  min-width: 0;
+  padding: 13px 0;
+  border-bottom:
+    1px solid var(--admin-border);
+}
+
+.admin-create-student-preview__details
+  > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-create-student-preview__details dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-muted);
+  font-size: 0.63rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.admin-create-student-preview__details
+  dt
+  svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-create-student-preview__details dd {
+  margin: 5px 0 0 23px;
+  overflow-wrap: anywhere;
+  color: var(--admin-text);
+  font-size: 0.71rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+/* Aviso de activación */
+.admin-create-student-preview__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 5px 18px 18px;
+  padding: 12px;
+  color: #356646;
+  border:
+    1px solid #c8e3d2;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      135deg,
+      #eaf7ef,
+      #f7fcf9
+    );
+}
+
+.admin-create-student-preview__notice
+  > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #2f8052;
+}
+
+.admin-create-student-preview__notice
+  strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.68rem;
+}
+
+.admin-create-student-preview__notice p {
+  margin: 0;
+  color: #557161;
+  font-size: 0.63rem;
+  line-height: 1.5;
+}
+
+/* Confirmación para cancelar el registro */
+.admin-create-student-cancel-dialog__overlay {
+  position: fixed;
+  z-index: 1220;
+  inset: 0;
+  background:
+    rgb(4 22 36 / 66%);
+  backdrop-filter: blur(3px);
+}
+
+.admin-create-student-cancel-dialog__overlay[
+  data-state='open'
+] {
+  animation:
+    admin-create-student-overlay-open
+    180ms ease-out both;
+}
+
+.admin-create-student-cancel-dialog__overlay[
+  data-state='closed'
+] {
+  animation:
+    admin-create-student-overlay-close
+    150ms ease-in both;
+}
+
+.admin-create-student-cancel-dialog__content {
+  --admin-navy: #002b4f;
+  --admin-navy-hover: #0b406a;
+  --admin-focus: #4b91c4;
+  --admin-text: #10283e;
+  --admin-text-soft: #526575;
+  --admin-border: #c9dce9;
+  --admin-hover: #e6f1f8;
+  --admin-white: #ffffff;
+
+  width: min(calc(100vw - 32px), 455px);
+  max-height: calc(100vh - 32px);
+  position: fixed;
+  z-index: 1221;
+  top: 50%;
+  left: 50%;
+  overflow: hidden auto;
+  padding: 30px;
+  color: var(--admin-text);
+  border:
+    1px solid #b9d4e5;
+  border-radius: 15px;
+  outline: 0;
+  background:
+    linear-gradient(
+      180deg,
+      #fff8e7 0%,
+      #fffdf8 30%,
+      #ffffff 72%
+    );
+  box-shadow:
+    0 30px 75px
+    rgb(0 25 45 / 40%),
+    inset 0 1px 0
+    rgb(255 255 255 / 82%);
+  text-align: center;
+  transform:
+    translate(-50%, -50%);
+}
+
+.admin-create-student-cancel-dialog__content::before {
+  height: 4px;
+  position: absolute;
+  inset: 0 0 auto;
+  background:
+    linear-gradient(
+      90deg,
+      #c28a1c,
+      #edbd46,
+      var(--admin-navy)
+    );
+  content: '';
+}
+
+.admin-create-student-cancel-dialog__content[
+  data-state='open'
+] {
+  animation:
+    admin-create-student-dialog-open
+    210ms ease-out both;
+}
+
+.admin-create-student-cancel-dialog__content[
+  data-state='closed'
+] {
+  animation:
+    admin-create-student-dialog-close
+    160ms ease-in both;
+}
+
+.admin-create-student-cancel-dialog__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 2px auto 14px;
+  color: #9b6c12;
+  border:
+    1px solid #ead59d;
+  border-radius: 14px;
+  background: #fff4d8;
+}
+
+.admin-create-student-cancel-dialog__icon
+  svg {
+  width: 25px;
+  height: 25px;
+}
+
+.admin-create-student-cancel-dialog__title {
+  margin: 0;
+  color: var(--admin-navy);
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.admin-create-student-cancel-dialog__description {
+  max-width: 370px;
+  margin: 10px auto 0;
+  color: var(--admin-text-soft);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.admin-create-student-cancel-dialog__actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.admin-create-student-cancel-dialog__continue,
+.admin-create-student-cancel-dialog__confirm {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 17px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-create-student-cancel-dialog__continue {
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-create-student-cancel-dialog__continue:hover {
+  color: var(--admin-navy);
+  border-color: #bdcedb;
+  background: var(--admin-hover);
+}
+
+.admin-create-student-cancel-dialog__confirm {
+  color: var(--admin-white);
+  border:
+    1px solid #a87618;
+  background: #a87618;
+  box-shadow:
+    0 7px 16px
+    rgb(168 118 24 / 18%);
+}
+
+.admin-create-student-cancel-dialog__confirm:hover {
+  border-color: #8d6110;
+  background: #8d6110;
+  transform: translateY(-1px);
+}
+
+/* Accesibilidad */
+.admin-create-student-breadcrumb
+  a:focus-visible,
+.admin-create-student-field
+  > input:focus-visible,
+.admin-create-student-field
+  > select:focus-visible,
+.admin-create-student-form__actions
+  button:focus-visible,
+.admin-create-student-cancel-dialog__continue:focus-visible,
+.admin-create-student-cancel-dialog__confirm:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 30%);
+  outline-offset: 2px;
+}
+
+/* Animaciones */
+@keyframes admin-create-student-entry {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes admin-create-student-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes admin-create-student-overlay-open {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes admin-create-student-overlay-close {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes admin-create-student-dialog-open {
+  from {
+    opacity: 0;
+    transform:
+      translate(-50%, -47%)
+      scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+}
+
+@keyframes admin-create-student-dialog-close {
+  from {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform:
+      translate(-50%, -48%)
+      scale(0.98);
+  }
+}
+
+/* Computadoras de menor ancho */
+@media (max-width: 1180px) {
+  .admin-create-student-layout {
+    grid-template-columns:
+      minmax(0, 1.4fr)
+      minmax(280px, 0.8fr);
+  }
+
+  .admin-create-student-form {
+    padding:
+      25px 20px 21px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-create-student-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-student-preview {
+    position: static;
+  }
+}
+
+/* Tabletas y teléfonos */
+@media (max-width: 760px) {
+  .admin-create-student-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .admin-create-student-heading__badge {
+    align-self: flex-start;
+  }
+
+  .admin-create-student-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-student-field--wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-create-student-breadcrumb {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .admin-create-student-heading {
+    gap: 13px;
+    margin-bottom: 18px;
+  }
+
+  .admin-create-student-heading h1 {
+    font-size: 1.65rem;
+  }
+
+  .admin-create-student-heading
+    > div
+    > p:last-child {
+    margin-top: 7px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .admin-create-student-heading__badge {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 0.67rem;
+  }
+
+  /* El aviso mantiene el icono alineado con el texto */
+  .admin-create-student-catalog-notice {
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 13px;
+  }
+
+  .admin-create-student-catalog-notice
+    > svg {
+    width: 19px;
+    height: 19px;
+    margin-top: 1px;
+  }
+
+  .admin-create-student-catalog-notice p {
+    font-size: 0.67rem;
+  }
+
+  .admin-create-student-form {
+    padding:
+      22px 15px 16px;
+    border-radius: 11px;
+  }
+
+  .admin-create-student-section {
+    padding-bottom: 21px;
+  }
+
+  .admin-create-student-section
+    + .admin-create-student-section {
+    padding-top: 20px;
+  }
+
+  /* Reduce el espacio de los encabezados de cada sección */
+  .admin-create-student-section legend {
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .admin-create-student-section
+    legend
+    > span:first-child {
+    width: 36px;
+    height: 36px;
+  }
+
+  .admin-create-student-section
+    legend
+    > span:first-child
+    svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .admin-create-student-section
+    legend
+    strong {
+    font-size: 0.8rem;
+  }
+
+  .admin-create-student-section
+    legend
+    small {
+    font-size: 0.63rem;
+  }
+
+  .admin-create-student-fields {
+    gap: 16px;
+  }
+
+  .admin-create-student-field
+    > label {
+    flex-wrap: wrap;
+  }
+
+  /* Los controles mantienen un tamaño cómodo para celular */
+  .admin-create-student-field > input,
+  .admin-create-student-field > select,
+  .admin-create-student-input-icon {
+    min-width: 0;
+    min-height: 46px;
+    font-size: 0.78rem;
+  }
+
+  .admin-create-student-input-icon {
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+
+  .admin-create-student-input-icon input {
+    min-height: 44px;
+    font-size: 0.78rem;
+  }
+
+  .admin-create-student-field__support {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .admin-create-student-field__support
+    small:first-child {
+    min-width: 0;
+  }
+
+  .admin-create-student-field__support
+    small:last-child {
+    margin-left: auto;
+  }
+
+  /* Guardar se mantiene como la acción principal */
+  .admin-create-student-form__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    gap: 9px;
+    margin-top: 0;
+    padding-top: 17px;
+  }
+
+  .admin-create-student-form__actions
+    button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  /* La vista previa permanece debajo del formulario */
+  .admin-create-student-preview {
+    border-radius: 11px;
+  }
+
+  .admin-create-student-preview__header {
+    min-height: 62px;
+    padding:
+      15px 15px 13px;
+  }
+
+  .admin-create-student-preview__identity {
+    align-items: flex-start;
+    padding: 17px 15px;
+  }
+
+  .admin-create-student-preview__identity
+    > span {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .admin-create-student-preview__details {
+    padding:
+      4px 15px;
+  }
+
+  .admin-create-student-preview__details
+    > div {
+    padding: 12px 0;
+  }
+
+  .admin-create-student-preview__notice {
+    margin:
+      5px 15px 15px;
+    padding: 11px;
+  }
+
+  /* El diálogo también utiliza el ancho disponible */
+  .admin-create-student-cancel-dialog__content {
+    width:
+      min(calc(100vw - 22px), 455px);
+    max-height:
+      calc(100vh - 22px);
+    padding:
+      27px 18px 20px;
+    border-radius: 13px;
+  }
+
+  .admin-create-student-cancel-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-create-student-cancel-dialog__continue,
+  .admin-create-student-cancel-dialog__confirm {
+    width: 100%;
+  }
+}
+
+/* Respeta la configuración de movimiento del usuario */
+@media (prefers-reduced-motion: reduce) {
+  .admin-create-student-breadcrumb,
+  .admin-create-student-heading,
+  .admin-create-student-catalog-notice,
+  .admin-create-student-form,
+  .admin-create-student-preview,
+  .admin-create-student-form__loader,
+  .admin-create-student-cancel-dialog__overlay,
+  .admin-create-student-cancel-dialog__content {
+    animation: none;
+  }
+
+  .admin-create-student-breadcrumb a,
+  .admin-create-student-field > input,
+  .admin-create-student-field > select,
+  .admin-create-student-input-icon,
+  .admin-create-student-form__actions button,
+  .admin-create-student-cancel-dialog__continue,
+  .admin-create-student-cancel-dialog__confirm {
+    transition: none;
+  }
+}

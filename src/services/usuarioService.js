@@ -1,4 +1,13 @@
+import {
+  esRolAdministrativo,
+  normalizarRol,
+  ROL_BECARIO,
+} from '../config/rutasPorRol.js'
+
 import { apiFetch } from './api.js'
+import {
+  obtenerRolSesion,
+} from './sesionService.js'
 
 // Valida y prepara el número de cuenta.
 function prepararNumeroCuenta(numeroCuenta) {
@@ -21,7 +30,7 @@ function prepararNumeroCuenta(numeroCuenta) {
   return cuenta
 }
 
-// Convierte cualquier valor textual valido en texto.
+// Convierte cualquier valor válido en texto.
 function prepararTexto(valor) {
   if (
     valor === null ||
@@ -33,12 +42,7 @@ function prepararTexto(valor) {
   return String(valor).trim()
 }
 
-/*
- * Convierte las cantidades enviadas por el backend
- * en números seguros para realizar cálculos.
- *
- * Si el valor no puede convertirse, devolvemos cero.
- */
+// Prepara las cantidades recibidas desde el backend.
 function prepararNumero(valor) {
   const numero = Number(valor)
 
@@ -68,12 +72,8 @@ function prepararNumeroOpcional(valor) {
 }
 
 /*
- * Comprueba que la respuesta tenga las secciones
- * principales definidas por el backend:
- *
- * - credenciales
- * - datos_personales
- * - datos_becario
+ * Comprueba que la respuesta incluya las secciones
+ * utilizadas por las vistas de perfil.
  */
 function validarRespuestaUsuario(datosApi) {
   if (
@@ -110,13 +110,7 @@ function validarRespuestaUsuario(datosApi) {
   }
 }
 
-/*
- * Construye el nombre completo usando únicamente
- * los nombres y apellidos que existan.
- *
- * filter(Boolean) elimina valores null, undefined
- * o cadenas vacías.
- */
+// Construye el nombre utilizando solamente los datos disponibles.
 function construirNombreCompleto(
   datosPersonales,
 ) {
@@ -139,11 +133,8 @@ function construirNombreCompleto(
 }
 
 /*
- * Convierte los nombres enviados por el backend
- * a nombres más fáciles de utilizar en React.
- *
- * Esta función evita llenar los componentes de propiedades
- * como p_nombre, correo_inst o horas_acumuladas.
+ * Convierte las propiedades del backend a los nombres
+ * que utilizan actualmente los componentes de React.
  */
 function normalizarUsuario(datosApi) {
   const credenciales =
@@ -161,11 +152,7 @@ function normalizarUsuario(datosApi) {
         credenciales.rol,
       ),
 
-      /*
-       * FastAPI entrega active como un booleano real.
-       * Comparamos directamente con true para evitar
-       * que una cadena como "false" se considere verdadera.
-       */
+      // FastAPI entrega active como un booleano.
       activo:
         credenciales.active === true,
     },
@@ -174,29 +161,48 @@ function normalizarUsuario(datosApi) {
       numeroCuenta: prepararTexto(
         personales.num_cuenta,
       ),
+
       primerNombre: prepararTexto(
         personales.p_nombre,
       ),
+
       segundoNombre: prepararTexto(
         personales.s_nombre,
       ),
+
       primerApellido: prepararTexto(
         personales.p_apellido,
       ),
+
       segundoApellido: prepararTexto(
         personales.s_apellido,
       ),
+
       nombreCompleto:
-        construirNombreCompleto(personales),
+        construirNombreCompleto(
+          personales,
+        ),
+
       correoPersonal: prepararTexto(
         personales.correo_personal,
       ),
-      correoInstitucional: prepararTexto(
-        personales.correo_inst,
-      ),
+
+      /*
+       * correo_institucional es el nombre actual.
+       * El segundo valor conserva compatibilidad con
+       * respuestas antiguas del backend.
+       */
+      correoInstitucional:
+        prepararTexto(
+          personales
+            .correo_institucional ??
+            personales.correo_inst,
+        ),
+
       carrera: prepararTexto(
         personales.carrera,
       ),
+
       telefono: prepararTexto(
         personales.telefono,
       ),
@@ -211,19 +217,27 @@ function normalizarUsuario(datosApi) {
       periodoInicio: prepararTexto(
         becario.periodo_inicio,
       ),
+
       anioInicio:
         prepararNumeroOpcional(
           becario.anio_inicio,
         ),
-      horasAcumuladas: prepararNumero(
-        becario.horas_acumuladas,
-      ),
-      horasFaltantes: prepararNumero(
-        becario.horas_faltantes,
-      ),
-      mesesSinPagar: prepararNumero(
-        becario.meses_sin_pagar,
-      ),
+
+      horasAcumuladas:
+        prepararNumero(
+          becario.horas_acumuladas,
+        ),
+
+      horasFaltantes:
+        prepararNumero(
+          becario.horas_faltantes,
+        ),
+
+      mesesSinPagar:
+        prepararNumero(
+          becario.meses_sin_pagar,
+        ),
+
       estadoBeca: prepararTexto(
         becario.estado_beca,
       ),
@@ -231,12 +245,87 @@ function normalizarUsuario(datosApi) {
   }
 }
 
+// Localiza la cuenta autenticada dentro del listado administrativo.
+function buscarUsuarioEnListado(
+  usuarios,
+  numeroCuenta,
+) {
+  if (!Array.isArray(usuarios)) {
+    throw new Error(
+      'El servidor no devolvió una lista válida de usuarios.',
+    )
+  }
+
+  return (
+    usuarios.find((usuario) => {
+      const cuentaUsuario =
+        prepararTexto(
+          usuario
+            ?.datos_personales
+            ?.num_cuenta,
+        )
+
+      return (
+        cuentaUsuario === numeroCuenta
+      )
+    }) ?? null
+  )
+}
+
+// Los becarios pueden consultar directamente su perfil.
+async function consultarUsuarioDesdeApi(
+  numeroCuenta,
+) {
+  const rolSesion =
+    normalizarRol(
+      obtenerRolSesion(),
+    )
+
+  if (rolSesion === ROL_BECARIO) {
+    return apiFetch(
+      `/usuarios/${encodeURIComponent(
+        numeroCuenta,
+      )}`,
+      {
+        method: 'GET',
+      },
+    )
+  }
+
+  if (esRolAdministrativo(rolSesion)) {
+    const usuarios =
+      await apiFetch('/usuarios', {
+        method: 'GET',
+      })
+
+    const usuarioEncontrado =
+      buscarUsuarioEnListado(
+        usuarios,
+        numeroCuenta,
+      )
+
+    if (!usuarioEncontrado) {
+      throw new Error(
+        'No se encontró el perfil asociado con la cuenta administrativa.',
+      )
+    }
+
+    return usuarioEncontrado
+  }
+
+  throw new Error(
+    'El rol de la sesión no permite consultar información de perfil.',
+  )
+}
+
 /*
- * Consulta un usuario mediante:
- * GET /usuario/{num_cuenta}
+ * Consulta la información de la cuenta autenticada.
  *
- * apiFetch agrega automáticamente:
- * Authorization: Bearer <token>
+ * En modo simulado, UsuarioProviderPrueba entrega los datos
+ * directamente y esta función no realiza solicitudes HTTP.
+ *
+ * En modo API, UsuarioProvider utiliza esta función para
+ * consultar y normalizar la respuesta del backend.
  */
 export async function obtenerUsuario(
   numeroCuenta,
@@ -244,29 +333,20 @@ export async function obtenerUsuario(
   const cuenta =
     prepararNumeroCuenta(numeroCuenta)
 
-  const datosApi = await apiFetch(
-    `/usuario/${encodeURIComponent(cuenta)}`,
-    {
-      method: 'GET',
-    },
-  )
+  const datosApi =
+    await consultarUsuarioDesdeApi(
+      cuenta,
+    )
 
-  /*
-   * Antes de normalizar verificamos que la respuesta
-   * respete la estructura definida por el backend.
-   */
   validarRespuestaUsuario(datosApi)
 
   const usuario =
     normalizarUsuario(datosApi)
 
-  /*
-   * Comprobamos que el backend haya devuelto la misma
-   * cuenta solicitada desde el JWT.
-   */
+  // Evita mostrar información de una cuenta diferente.
   if (
-    usuario.datosPersonales.numeroCuenta !==
-    cuenta
+    usuario.datosPersonales
+      .numeroCuenta !== cuenta
   ) {
     throw new Error(
       'La información recibida no pertenece a la cuenta autenticada.',

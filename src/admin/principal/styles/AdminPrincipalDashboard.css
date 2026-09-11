@@ -1,8 +1,6 @@
 /*
  * Dashboard del administrador principal.
- *
- * Estos estilos dependen de las variables definidas
- * en AdminLayout.css.
+ * Utiliza las variables compartidas de AdminLayout.css.
  */
 
 .admin-principal-dashboard {
@@ -10,13 +8,16 @@
   margin: 0 auto;
 }
 
-/* ENCABEZADO */
+/* Encabezado */
 .admin-dashboard-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 30px;
   margin-bottom: 24px;
+  animation:
+    admin-dashboard-entry
+    500ms ease-out both;
 }
 
 .admin-dashboard-heading__copy {
@@ -40,7 +41,8 @@
   line-height: 1.12;
 }
 
-.admin-dashboard-heading__copy > p:last-child {
+.admin-dashboard-heading__copy
+  > p:last-child {
   max-width: 650px;
   margin: 9px 0 0;
   color: var(--admin-text-soft);
@@ -91,20 +93,24 @@
   outline-offset: 3px;
 }
 
-/* MÉTRICAS */
+/* Métricas */
 .admin-dashboard-metrics {
   display: grid;
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
   gap: 15px;
-  animation: admin-dashboard-entry 600ms 80ms ease-out both;
+  animation:
+    admin-dashboard-entry
+    600ms 80ms ease-out both;
 }
 
 .admin-metric-card {
   --admin-metric-accent:
     var(--admin-blue);
+
   --admin-metric-icon-color:
     var(--admin-blue);
+
   --admin-metric-icon-background:
     #e2f0fa;
 
@@ -141,7 +147,7 @@
   transform: translateY(-2px);
 }
 
-/* COLORES DE CADA MÉTRICA */
+/* Colores de las métricas */
 .admin-metric-card--actividades {
   --admin-metric-accent: #0b5688;
   --admin-metric-icon-color: #0b5688;
@@ -170,7 +176,7 @@
     #e2f4ea;
 }
 
-/* ICONOS */
+/* Iconos de las métricas */
 .admin-metric-card__icon {
   width: 45px;
   height: 45px;
@@ -189,7 +195,6 @@
   height: 22px;
 }
 
-/* INFORMACIÓN */
 .admin-metric-card__content {
   min-width: 0;
   display: flex;
@@ -216,7 +221,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* PORCENTAJE DE HORAS PENDIENTES */
+/* Porcentaje circular */
 .admin-metric-card__progress {
   width: 58px;
   height: 58px;
@@ -246,11 +251,11 @@
 }
 
 .admin-metric-card__progress::before {
-  content: '';
   position: absolute;
   inset: 6px;
   border-radius: 50%;
   background: var(--admin-white);
+  content: '';
 }
 
 .admin-metric-card__progress span {
@@ -263,15 +268,20 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* PANEL DE ACTIVIDADES */
+/* Panel de actividades */
 .admin-activities-panel {
   margin-top: 20px;
   overflow: hidden;
-  border: 1px solid var(--admin-border);
+  border:
+    1px solid var(--admin-border);
   border-radius: 12px;
   background: var(--admin-white);
-  box-shadow: 0 10px 28px rgb(10 39 64 / 6%);
-  animation: admin-dashboard-entry 620ms 150ms ease-out both;
+  box-shadow:
+    0 10px 28px
+    rgb(10 39 64 / 6%);
+  animation:
+    admin-dashboard-entry
+    620ms 150ms ease-out both;
 }
 
 .admin-activities-panel__header {
@@ -281,7 +291,8 @@
   justify-content: space-between;
   gap: 24px;
   padding: 15px 20px;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom:
+    1px solid var(--admin-border);
   background: #fbfcfd;
 }
 
@@ -319,7 +330,8 @@
 .admin-activities-panel__link svg {
   width: 15px;
   height: 15px;
-  transition: transform 160ms ease;
+  transition:
+    transform 160ms ease;
 }
 
 .admin-activities-panel__link:hover {
@@ -332,11 +344,63 @@
 }
 
 .admin-activities-panel__link:focus-visible {
-  outline: 3px solid rgb(75 145 196 / 30%);
+  outline:
+    3px solid
+    rgb(75 145 196 / 30%);
   outline-offset: 2px;
 }
 
-/* TABLA */
+/* Estados de carga y error */
+.admin-activities-panel
+  > h2,
+.admin-activities-panel
+  > p,
+.admin-activities-panel
+  > button {
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
+.admin-activities-panel
+  > h2 {
+  margin-top: 22px;
+  margin-bottom: 7px;
+  color: var(--admin-text);
+  font-size: 1rem;
+}
+
+.admin-activities-panel
+  > p {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  color: var(--admin-text-soft);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.admin-activities-panel
+  > h2
+  + p {
+  margin-top: 0;
+}
+
+.admin-activities-panel
+  > button {
+  min-height: 39px;
+  margin-top: 0;
+  margin-bottom: 22px;
+  padding: 0 14px;
+  color: var(--admin-white);
+  border: 0;
+  border-radius: 8px;
+  background: var(--admin-navy);
+  font: inherit;
+  font-size: 0.71rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Tabla de actividades */
 .admin-activities-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -401,7 +465,8 @@
 }
 
 .admin-activities-table tbody tr {
-  transition: background 140ms ease;
+  transition:
+    background 140ms ease;
 }
 
 .admin-activities-table tbody tr:hover {
@@ -413,9 +478,13 @@
   font-weight: 700;
 }
 
-.admin-activities-table tbody tr:last-child
+.admin-activities-table
+  tbody
+  tr:last-child
   th,
-.admin-activities-table tbody tr:last-child
+.admin-activities-table
+  tbody
+  tr:last-child
   td {
   border-bottom: 0;
 }
@@ -424,13 +493,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ESTADOS */
+/* Estados de las actividades */
 .admin-activity-status {
+  min-width: 82px;
+  min-height: 25px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 82px;
-  min-height: 25px;
   padding: 3px 9px;
   color: var(--admin-text-soft);
   border-radius: 999px;
@@ -466,7 +535,7 @@
   text-align: center;
 }
 
-/* ANIMACIÓN DE ENTRADA */
+/* Animación de entrada */
 @keyframes admin-dashboard-entry {
   from {
     opacity: 0;
@@ -479,7 +548,7 @@
   }
 }
 
-/* COMPUTADORAS DE MENOR ANCHO */
+/* Computadoras de menor ancho */
 @media (max-width: 1180px) {
   .admin-dashboard-metrics {
     grid-template-columns:
@@ -494,10 +563,10 @@
 @media (max-width: 1024px) {
   .admin-dashboard-heading {
     align-items: flex-start;
-    animation: admin-dashboard-entry 550ms ease-out both;
   }
 
-  .admin-dashboard-heading__copy > p:last-child {
+  .admin-dashboard-heading__copy
+    > p:last-child {
     max-width: 540px;
   }
 
@@ -507,7 +576,263 @@
   }
 }
 
-/* MOVIMIENTO REDUCIDO */
+/* Adaptación para celulares */
+@media (max-width: 760px) {
+  .admin-dashboard-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 17px;
+    margin-bottom: 20px;
+  }
+
+  .admin-dashboard-heading h1 {
+    font-size:
+      clamp(1.65rem, 8vw, 2rem);
+  }
+
+  .admin-dashboard-heading__copy
+    > p:last-child {
+    font-size: 0.8rem;
+  }
+
+  .admin-dashboard-create-button {
+    width: 100%;
+    min-height: 45px;
+  }
+
+  .admin-dashboard-metrics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-metric-card {
+    min-height: 105px;
+    gap: 11px;
+    padding: 14px 12px;
+  }
+
+  .admin-metric-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .admin-metric-card__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .admin-metric-card__title {
+    font-size: 0.7rem;
+  }
+
+  .admin-metric-card__value {
+    font-size: 1.75rem;
+  }
+
+  .admin-activities-panel {
+    margin-top: 15px;
+  }
+
+  .admin-activities-panel__header {
+    min-height: 70px;
+    gap: 12px;
+    padding: 13px 14px;
+  }
+
+  .admin-activities-panel__header h2 {
+    font-size: 0.92rem;
+  }
+
+  .admin-activities-panel__link {
+    padding: 7px;
+    font-size: 0.68rem;
+  }
+}
+
+/*
+ * En celular la tabla se transforma en tarjetas.
+ * La estructura HTML continúa siendo una tabla accesible.
+ */
+@media (max-width: 680px) {
+  .admin-activities-table-wrapper {
+    overflow: visible;
+    padding: 12px;
+    background: #f7f9fb;
+  }
+
+  .admin-activities-table {
+    min-width: 0;
+    display: block;
+    table-layout: auto;
+  }
+
+  .admin-activities-table thead {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-activities-table tbody {
+    display: grid;
+    gap: 11px;
+  }
+
+  .admin-activities-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border:
+      1px solid var(--admin-border);
+    border-radius: 10px;
+    background: var(--admin-white);
+    box-shadow:
+      0 5px 14px
+      rgb(10 39 64 / 4%);
+  }
+
+  .admin-activities-table
+    tbody
+    tr:hover {
+    background: var(--admin-white);
+  }
+
+  /* El título ocupa todo el ancho de la tarjeta en celular */
+  .admin-activities-table tbody th:first-child {
+    width: 100%;
+    display: block;
+    padding: 13px 14px;
+    border-bottom:
+      1px solid var(--admin-border);
+    background:
+      linear-gradient(
+        90deg,
+        #f5f9fc,
+        #fbfdfe
+      );
+    font-size: 0.76rem;
+    line-height: 1.45;
+    white-space: normal;
+    word-break: normal;
+  }
+
+  .admin-activities-table tbody td {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 14px;
+    border-bottom:
+      1px solid #edf1f4;
+    text-align: right;
+  }
+
+  .admin-activities-table
+    tbody
+    td:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-activities-table
+    tbody
+    td::before {
+    flex-shrink: 0;
+    color: var(--admin-muted);
+    font-size: 0.63rem;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  .admin-activities-table
+    tbody
+    td:nth-child(2)::before {
+    content: 'Fecha';
+  }
+
+  .admin-activities-table
+    tbody
+    td:nth-child(3)::before {
+    content: 'Hora';
+  }
+
+  .admin-activities-table
+    tbody
+    td:nth-child(4)::before {
+    content: 'Lugar';
+  }
+
+  .admin-activities-table
+    tbody
+    td:nth-child(5)::before {
+    content: 'Estado';
+  }
+
+  .admin-activities-table
+    .admin-activities-table__empty {
+    min-height: 130px;
+    display: grid;
+    place-items: center;
+    padding: 25px 18px;
+    border-bottom: 0;
+    text-align: center;
+  }
+
+  .admin-activities-table
+    .admin-activities-table__empty::before {
+    content: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-metric-card {
+    min-height: 92px;
+    padding: 14px 16px;
+  }
+
+  .admin-activities-panel__header {
+    align-items: flex-start;
+  }
+
+  .admin-activities-panel__link {
+    flex-shrink: 0;
+  }
+}
+
+/* Teléfonos pequeños */
+@media (max-width: 380px) {
+  .admin-dashboard-heading__eyebrow {
+    font-size: 0.63rem;
+  }
+
+  .admin-dashboard-heading h1 {
+    font-size: 1.55rem;
+  }
+
+  .admin-dashboard-heading__copy
+    > p:last-child {
+    font-size: 0.76rem;
+  }
+
+  .admin-activities-table-wrapper {
+    padding: 9px;
+  }
+
+  .admin-activities-table tbody th,
+  .admin-activities-table tbody td {
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+}
+
+/* Respeta la configuración de movimiento del usuario */
 @media (prefers-reduced-motion: reduce) {
   .admin-dashboard-heading,
   .admin-dashboard-metrics,

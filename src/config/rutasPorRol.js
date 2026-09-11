@@ -33,9 +33,6 @@ export const RUTAS_INICIALES_POR_ROL =
 export const ROLES_PORTAL_PERSONAL =
   Object.freeze([
     ROL_BECARIO,
-    ROL_ADMIN_GENERAL,
-    ROL_ADMIN_APORTACIONES,
-    ROL_ADMIN_HORAS,
   ])
 
 // Elimina espacios accidentales sin cambiar mayúsculas ni minúsculas del nombre oficial.

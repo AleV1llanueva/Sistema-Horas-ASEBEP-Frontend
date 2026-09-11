@@ -3,26 +3,25 @@ import {
   ApiError,
 } from '../../../services/api.js'
 
-/*
- * Servicio del módulo administrativo de estudiantes.
- *
- * VITE_USAR_DATOS_ADMIN_SIMULADOS selecciona el origen:
- *
- * - true: utiliza los datos de prueba guardados en localStorage.
- * - false: consume el contrato disponible en el backend.
- */
-
 import {
   CUOTA_MENSUAL_APORTACION,
   estudiantesAdminMock,
 } from '../mocks/adminPrincipalMock.js'
+
+/*
+ * Servicio administrativo de estudiantes.
+ *
+ * true utiliza datos guardados en localStorage.
+ * false consume el contrato disponible en el backend.
+ */
 
 const CLAVE_ESTUDIANTES =
   'asebep_admin_estudiantes_simulados'
 
 const usarDatosAdminSimulados =
   import.meta.env
-    .VITE_USAR_DATOS_ADMIN_SIMULADOS === 'true'
+    .VITE_USAR_DATOS_ADMIN_SIMULADOS ===
+  'true'
 
 export class EstudianteAdminError extends Error {
   constructor(mensaje) {
@@ -32,10 +31,8 @@ export class EstudianteAdminError extends Error {
   }
 }
 
-/*
- * Evita que los datos simulados se utilicen accidentalmente
- * cuando la variable de entorno indica que debe usarse la API.
- */
+/* Funciones generales del servicio. */
+
 function comprobarModoSimulado() {
   if (!usarDatosAdminSimulados) {
     throw new EstudianteAdminError(
@@ -44,10 +41,6 @@ function comprobarModoSimulado() {
   }
 }
 
-/*
- * Unifica los errores de red y las respuestas rechazadas por
- * FastAPI bajo el tipo de error utilizado por este módulo.
- */
 async function peticionApi(
   endpoint,
   opciones = {},
@@ -123,10 +116,11 @@ function prepararEnteroNoNegativo(
   valor,
   nombreCampo,
 ) {
-  const numero = prepararNumeroNoNegativo(
-    valor,
-    nombreCampo,
-  )
+  const numero =
+    prepararNumeroNoNegativo(
+      valor,
+      nombreCampo,
+    )
 
   if (!Number.isInteger(numero)) {
     throw new EstudianteAdminError(
@@ -160,16 +154,44 @@ function prepararEnteroOpcional(
   return numero
 }
 
+function prepararEnteroPositivo(
+  valor,
+  nombreCampo,
+) {
+  const numero = Number(valor)
+
+  if (
+    !Number.isInteger(numero) ||
+    numero <= 0
+  ) {
+    throw new EstudianteAdminError(
+      `${nombreCampo} no es válido.`,
+    )
+  }
+
+  return numero
+}
+
+function obtenerPrimerValorDefinido(
+  ...valores
+) {
+  return valores.find(
+    (valor) => valor !== undefined,
+  )
+}
+
 /*
- * Los mocks contienen únicamente datos compatibles
- * con JSON, por lo que esta copia evita entregar las
- * referencias originales a los componentes de React.
+ * Los datos simulados son compatibles con JSON.
+ * La copia evita entregar las referencias originales.
  */
+
 function clonarDatos(datos) {
   return JSON.parse(
     JSON.stringify(datos),
   )
 }
+
+/* Normalización de información relacionada. */
 
 function normalizarActividadReciente(
   actividad,
@@ -182,16 +204,25 @@ function normalizarActividadReciente(
 
   return {
     id: prepararTexto(actividad.id),
-    fecha: prepararTexto(actividad.fecha),
-    titulo: prepararTexto(actividad.titulo),
+    fecha: prepararTexto(
+      actividad.fecha,
+    ),
+    titulo: prepararTexto(
+      actividad.titulo,
+    ),
+
     horasAcreditadas:
       prepararNumeroNoNegativo(
-        actividad.horasAcreditadas ?? 0,
+        actividad.horasAcreditadas ??
+          actividad.horas_acreditadas ??
+          0,
         'Las horas acreditadas',
       ),
+
     registradoPor:
       prepararTexto(
-        actividad.registradoPor,
+        actividad.registradoPor ??
+          actividad.registrado_por,
       ) || 'ASEBEP',
   }
 }
@@ -205,9 +236,19 @@ function normalizarAportacion(
     )
   }
 
+  const estadoRecibido =
+    prepararTexto(
+      aportacion.estado,
+    ).toLowerCase()
+
+  /*
+   * El mock utiliza "confirmada", mientras que
+   * el backend utiliza "Aprobado".
+   */
   const estado =
-    prepararTexto(aportacion.estado)
-      .toLowerCase()
+    estadoRecibido === 'aprobado'
+      ? 'confirmada'
+      : estadoRecibido
 
   if (
     estado !== 'pendiente' &&
@@ -220,18 +261,26 @@ function normalizarAportacion(
 
   return {
     id: prepararTexto(aportacion.id),
+
     periodo: prepararTexto(
       aportacion.periodo,
     ),
-    monto: prepararNumeroNoNegativo(
-      aportacion.monto ??
-      CUOTA_MENSUAL_APORTACION,
-      'El monto de la aportación',
-    ),
+
+    monto:
+      prepararNumeroNoNegativo(
+        aportacion.monto ??
+          CUOTA_MENSUAL_APORTACION,
+        'El monto de la aportación',
+      ),
+
     fechaPago:
-      prepararTexto(aportacion.fechaPago) ||
-      null,
+      prepararTexto(
+        aportacion.fechaPago ??
+          aportacion.fecha_pago,
+      ) || null,
+
     estado,
+
     comprobante:
       prepararTexto(
         aportacion.comprobante,
@@ -240,10 +289,74 @@ function normalizarAportacion(
 }
 
 /*
- * Normaliza cada estudiante antes de mostrarlo o guardarlo.
- * Esta función actúa como frontera entre los datos externos
- * y la estructura utilizada por las vistas administrativas.
+ * Convierte el mes de ingreso al periodo
+ * utilizado actualmente por el backend.
  */
+
+function obtenerPeriodoDesdeMes(
+  mesInicio,
+) {
+  if (mesInicio <= 5) {
+    return 'I-PAC'
+  }
+
+  if (mesInicio <= 8) {
+    return 'II-PAC'
+  }
+
+  return 'III-PAC'
+}
+
+/*
+ * Replica el cálculo actual del backend para que
+ * el modo simulado conserve un comportamiento similar.
+ */
+
+function calcularMesesActivos(
+  mesInicio,
+  anioInicio,
+) {
+  const fechaActual = new Date()
+
+  let mes = mesInicio
+  let anio = anioInicio
+  let cantidadMeses = 0
+
+  while (
+    anio < fechaActual.getFullYear() ||
+    (
+      anio ===
+        fechaActual.getFullYear() &&
+      mes <= fechaActual.getMonth() + 1
+    )
+  ) {
+    const eneroEspecial =
+      mes === 1 &&
+      [2024, 2025].includes(anio)
+
+    if (
+      ![1, 12].includes(mes) ||
+      eneroEspecial
+    ) {
+      cantidadMeses += 1
+    }
+
+    if (mes === 12) {
+      mes = 1
+      anio += 1
+    } else {
+      mes += 1
+    }
+  }
+
+  return cantidadMeses
+}
+
+/*
+ * Esta función actúa como frontera entre los datos
+ * del backend, los mocks y las vistas administrativas.
+ */
+
 function normalizarEstudiante(
   estudiante,
 ) {
@@ -274,7 +387,11 @@ function normalizarEstudiante(
           estudiante.datos_becario,
         )
         ? estudiante.datos_becario
-        : {}
+        : esObjeto(
+            estudiante.perfil_becario,
+          )
+          ? estudiante.perfil_becario
+          : {}
 
   const numeroCuenta = prepararTexto(
     datosPersonales.numeroCuenta ??
@@ -335,15 +452,39 @@ function normalizarEstudiante(
     estudiante.eliminado === true
 
   /*
-   * Un estudiante eliminado no puede permanecer activo,
-   * aunque los datos almacenados hayan quedado inconsistentes.
+   * Un registro eliminado no puede aparecer activo,
+   * aunque el almacenamiento tuviera datos inconsistentes.
    */
   const activo =
     !eliminado &&
-    (credenciales.activo ??
+    (
+      credenciales.activo ??
       credenciales.active ??
-      estudiante.active) !== false
+      estudiante.active
+    ) !== false
 
+  const rolId =
+    prepararEnteroOpcional(
+      credenciales.rolId ??
+        credenciales.rol_id ??
+        estudiante.rol_id,
+      'El identificador del rol',
+    )
+
+  const carreraId =
+    prepararEnteroOpcional(
+      datosPersonales.carreraId ??
+        datosPersonales.carrera_id ??
+        estudiante.carrera_id,
+      'El identificador de la carrera',
+    )
+
+  const mesInicio =
+    prepararEnteroOpcional(
+      datosBecario.mesInicio ??
+        datosBecario.mes_inicio,
+      'El mes de inicio',
+    )
 
   const mesesSinPagar =
     prepararEnteroNoNegativo(
@@ -358,20 +499,27 @@ function normalizarEstudiante(
       estudiante.actividadesRecientes,
     )
       ? estudiante.actividadesRecientes
-        .map(normalizarActividadReciente)
-        .sort(
-          (actividadA, actividadB) =>
-            actividadB.fecha.localeCompare(
-              actividadA.fecha,
-            ),
-        )
+          .map(
+            normalizarActividadReciente,
+          )
+          .sort(
+            (
+              actividadA,
+              actividadB,
+            ) =>
+              actividadB.fecha.localeCompare(
+                actividadA.fecha,
+              ),
+          )
       : []
 
   const aportaciones =
-    Array.isArray(estudiante.aportaciones)
+    Array.isArray(
+      estudiante.aportaciones,
+    )
       ? estudiante.aportaciones.map(
-        normalizarAportacion,
-      )
+          normalizarAportacion,
+        )
       : []
 
   return {
@@ -385,6 +533,8 @@ function normalizarEstudiante(
           credenciales.rol ??
             credenciales.role,
         ) || 'becario',
+
+      rolId,
       activo,
     },
 
@@ -395,11 +545,16 @@ function normalizarEstudiante(
       primerApellido,
       segundoApellido,
       nombreCompleto,
-      correoPersonal: prepararTexto(
-        datosPersonales.correoPersonal ??
-          datosPersonales.correo_personal ??
-          estudiante.correo_personal,
-      ),
+
+      correoPersonal:
+        prepararTexto(
+          datosPersonales
+            .correoPersonal ??
+            datosPersonales
+              .correo_personal ??
+            estudiante.correo_personal,
+        ),
+
       correoInstitucional:
         prepararTexto(
           datosPersonales
@@ -409,14 +564,21 @@ function normalizarEstudiante(
             estudiante
               .correo_institucional,
         ),
-      carrera: prepararTexto(
-        datosPersonales.carrera ??
-          estudiante.carrera,
-      ),
-      telefono: prepararTexto(
-        datosPersonales.telefono ??
-          estudiante.telefono,
-      ),
+
+      carrera:
+        prepararTexto(
+          datosPersonales.carrera ??
+            estudiante.carrera,
+        ),
+
+      carreraId,
+
+      telefono:
+        prepararTexto(
+          datosPersonales.telefono ??
+            estudiante.telefono,
+        ),
+
       anioNacimiento:
         prepararEnteroOpcional(
           datosPersonales
@@ -428,16 +590,23 @@ function normalizarEstudiante(
     },
 
     datosBecario: {
-      periodoInicio: prepararTexto(
-        datosBecario.periodoInicio ??
-          datosBecario.periodo_inicio,
-      ),
+      periodoInicio:
+        prepararTexto(
+          datosBecario
+            .periodoInicio ??
+            datosBecario
+              .periodo_inicio,
+        ),
+
       anioInicio:
         prepararEnteroOpcional(
           datosBecario.anioInicio ??
             datosBecario.anio_inicio,
           'El año de inicio',
         ),
+
+      mesInicio,
+
       horasAcumuladas:
         prepararNumeroNoNegativo(
           datosBecario
@@ -447,6 +616,7 @@ function normalizarEstudiante(
             0,
           'Las horas acumuladas',
         ),
+
       horasFaltantes:
         prepararNumeroNoNegativo(
           datosBecario
@@ -456,43 +626,49 @@ function normalizarEstudiante(
             0,
           'Las horas faltantes',
         ),
+
       mesesSinPagar,
+
       estadoBeca:
         eliminado
           ? 'inactivo'
           : prepararTexto(
-              datosBecario.estadoBeca ??
-                datosBecario.estado_beca,
-            ).toLowerCase() ||
-            (activo
-              ? 'activo'
-              : 'inactivo'),
+                datosBecario
+                  .estadoBeca ??
+                  datosBecario
+                    .estado_beca,
+              ).toLowerCase() ||
+            (
+              activo
+                ? 'activo'
+                : 'inactivo'
+            ),
     },
 
     actividadesRecientes,
     aportaciones,
 
-    /*
-     * El saldo siempre se vuelve a calcular para impedir
-     * que quede desactualizado respecto a los meses pendientes.
-     */
     saldoAportacionesPendientes:
       mesesSinPagar *
       CUOTA_MENSUAL_APORTACION,
 
     eliminado,
+
     desactivadoEn:
       prepararTexto(
         estudiante.desactivadoEn,
       ) || null,
+
     eliminadoEn:
       prepararTexto(
         estudiante.eliminadoEn,
       ) || null,
+
     creadoEn:
       prepararTexto(
         estudiante.creadoEn,
       ) || null,
+
     actualizadoEn:
       prepararTexto(
         estudiante.actualizadoEn,
@@ -500,8 +676,14 @@ function normalizarEstudiante(
   }
 }
 
+/* Almacenamiento utilizado por el modo simulado. */
+
 function obtenerEstudiantesIniciales() {
-  if (!Array.isArray(estudiantesAdminMock)) {
+  if (
+    !Array.isArray(
+      estudiantesAdminMock,
+    )
+  ) {
     return []
   }
 
@@ -535,10 +717,10 @@ function guardarEstudiantes(
 }
 
 /*
- * La primera consulta inicializa localStorage con los tres
- * estudiantes del mock. Las siguientes consultas utilizan
- * los cambios realizados durante las pruebas.
+ * La primera consulta carga los registros del mock.
+ * Después se conservan los cambios realizados localmente.
  */
+
 function leerEstudiantes() {
   const almacenamiento =
     obtenerAlmacenamiento()
@@ -608,9 +790,10 @@ function ordenarEstudiantes(
 }
 
 /*
- * Las rutas podrán utilizar el identificador interno o el
- * número de cuenta para localizar al mismo estudiante.
+ * Las rutas pueden utilizar el identificador interno
+ * o el número de cuenta del estudiante.
  */
+
 function buscarIndiceEstudiante(
   estudiantes,
   identificador,
@@ -632,24 +815,297 @@ function buscarIndiceEstudiante(
   )
 }
 
-/*
- * Devuelve el primer valor incluido por quien realiza el
- * cambio. A diferencia de ||, conserva valores como null,
- * false o una cadena vacía para que puedan validarse.
- */
-function obtenerPrimerValorDefinido(
-  ...valores
+/* Preparación de datos para crear un estudiante. */
+
+function prepararDatosCreacion(
+  estudiante,
 ) {
-  return valores.find(
-    (valor) => valor !== undefined,
-  )
+  if (!esObjeto(estudiante)) {
+    throw new EstudianteAdminError(
+      'Los datos del estudiante no son válidos.',
+    )
+  }
+
+  const datosPersonales =
+    esObjeto(estudiante.datosPersonales)
+      ? estudiante.datosPersonales
+      : esObjeto(
+          estudiante.datos_personales,
+        )
+        ? estudiante.datos_personales
+        : {}
+
+  const datosBecario =
+    esObjeto(estudiante.datosBecario)
+      ? estudiante.datosBecario
+      : esObjeto(
+          estudiante.datos_becario,
+        )
+        ? estudiante.datos_becario
+        : {}
+
+  const credenciales =
+    esObjeto(estudiante.credenciales)
+      ? estudiante.credenciales
+      : {}
+
+  const numeroCuenta =
+    prepararTexto(
+      datosPersonales.numeroCuenta ??
+        datosPersonales.num_cuenta ??
+        estudiante.numeroCuenta ??
+        estudiante.num_cuenta,
+    )
+
+  if (!/^\d{11}$/.test(numeroCuenta)) {
+    throw new EstudianteAdminError(
+      'El número de cuenta debe tener exactamente 11 dígitos.',
+    )
+  }
+
+  const primerNombre =
+    prepararTexto(
+      datosPersonales.primerNombre ??
+        datosPersonales.p_nombre ??
+        estudiante.primerNombre ??
+        estudiante.primer_nombre,
+    )
+
+  if (!primerNombre) {
+    throw new EstudianteAdminError(
+      'El primer nombre es obligatorio.',
+    )
+  }
+
+  const segundoNombre =
+    prepararTexto(
+      datosPersonales.segundoNombre ??
+        datosPersonales.s_nombre ??
+        estudiante.segundoNombre ??
+        estudiante.segundo_nombre,
+    )
+
+  const primerApellido =
+    prepararTexto(
+      datosPersonales.primerApellido ??
+        datosPersonales.p_apellido ??
+        estudiante.primerApellido ??
+        estudiante.primer_apellido,
+    )
+
+  if (!primerApellido) {
+    throw new EstudianteAdminError(
+      'El primer apellido es obligatorio.',
+    )
+  }
+
+  const segundoApellido =
+    prepararTexto(
+      datosPersonales.segundoApellido ??
+        datosPersonales.s_apellido ??
+        estudiante.segundoApellido ??
+        estudiante.segundo_apellido,
+    )
+
+  const correoInstitucional =
+    prepararTexto(
+      datosPersonales
+        .correoInstitucional ??
+        datosPersonales
+          .correo_institucional ??
+        estudiante
+          .correoInstitucional ??
+        estudiante
+          .correo_institucional,
+    ).toLowerCase()
+
+  if (
+    !correoInstitucional.endsWith(
+      '@unah.hn',
+    )
+  ) {
+    throw new EstudianteAdminError(
+      'El correo institucional debe terminar en @unah.hn.',
+    )
+  }
+
+  const correoPersonal =
+    prepararTexto(
+      datosPersonales.correoPersonal ??
+        datosPersonales
+          .correo_personal ??
+        estudiante.correoPersonal ??
+        estudiante.correo_personal,
+    ).toLowerCase()
+
+  if (
+    !correoPersonal ||
+    !correoPersonal.includes('@')
+  ) {
+    throw new EstudianteAdminError(
+      'El correo personal no es válido.',
+    )
+  }
+
+  const telefono =
+    prepararTexto(
+      datosPersonales.telefono ??
+        estudiante.telefono,
+    )
+      .replaceAll('-', '')
+      .replaceAll(' ', '')
+
+  if (
+    !/^\d{1,8}$/.test(telefono)
+  ) {
+    throw new EstudianteAdminError(
+      'El teléfono debe contener un máximo de 8 dígitos.',
+    )
+  }
+
+  const carreraId =
+    prepararEnteroPositivo(
+      datosPersonales.carreraId ??
+        datosPersonales.carrera_id ??
+        estudiante.carreraId ??
+        estudiante.carrera_id,
+      'La carrera seleccionada',
+    )
+
+  const rolId =
+    prepararEnteroPositivo(
+      credenciales.rolId ??
+        credenciales.rol_id ??
+        estudiante.rolId ??
+        estudiante.rol_id,
+      'El rol seleccionado',
+    )
+
+  const mesInicio =
+    prepararEnteroPositivo(
+      datosBecario.mesInicio ??
+        datosBecario.mes_inicio ??
+        estudiante.mesInicio ??
+        estudiante.mes_inicio,
+      'El mes de inicio',
+    )
+
+  if (
+    mesInicio < 1 ||
+    mesInicio > 12
+  ) {
+    throw new EstudianteAdminError(
+      'El mes de inicio debe estar entre 1 y 12.',
+    )
+  }
+
+  const anioInicio =
+    prepararEnteroPositivo(
+      datosBecario.anioInicio ??
+        datosBecario.anio_inicio ??
+        estudiante.anioInicio ??
+        estudiante.anio_inicio,
+      'El año de inicio',
+    )
+
+  const anioActual =
+    new Date().getFullYear()
+
+  if (
+    anioInicio < 2000 ||
+    anioInicio > anioActual
+  ) {
+    throw new EstudianteAdminError(
+      'El año de inicio no es válido.',
+    )
+  }
+
+  return {
+    numeroCuenta,
+    primerNombre,
+    segundoNombre,
+    primerApellido,
+    segundoApellido,
+    correoInstitucional,
+    correoPersonal,
+    telefono,
+    carreraId,
+
+    carreraNombre:
+      prepararTexto(
+        datosPersonales.carrera ??
+          estudiante.carreraNombre ??
+          estudiante.carrera,
+      ),
+
+    rolId,
+
+    rolNombre:
+      prepararTexto(
+        credenciales.rol ??
+          estudiante.rolNombre ??
+          estudiante.rol,
+      ),
+
+    mesInicio,
+    anioInicio,
+  }
 }
 
 /*
- * Convierte únicamente los campos que ActualizarUsuarioInput
- * admite en el backend. Los campos locales de horas, estado y
- * aportaciones no se envían porque no forman parte de esa API.
+ * Convierte los datos del formulario al contrato
+ * requerido por CrearUsuario en el backend.
  */
+
+function convertirNuevoEstudianteParaBackend(
+  estudiante,
+) {
+  return {
+    num_cuenta:
+      estudiante.numeroCuenta,
+
+    primer_nombre:
+      estudiante.primerNombre,
+
+    segundo_nombre:
+      estudiante.segundoNombre ||
+      null,
+
+    primer_apellido:
+      estudiante.primerApellido,
+
+    segundo_apellido:
+      estudiante.segundoApellido ||
+      null,
+
+    correo_institucional:
+      estudiante.correoInstitucional,
+
+    correo_personal:
+      estudiante.correoPersonal,
+
+    telefono:
+      estudiante.telefono,
+
+    carrera_id:
+      estudiante.carreraId,
+
+    rol_id:
+      estudiante.rolId,
+
+    mes_inicio:
+      estudiante.mesInicio,
+
+    anio_inicio:
+      estudiante.anioInicio,
+  }
+}
+
+/*
+ * Convierte únicamente los campos que
+ * ActualizarUsuarioInput permite modificar.
+ */
+
 function convertirCambiosParaBackend(
   cambios,
 ) {
@@ -699,7 +1155,8 @@ function convertirCambiosParaBackend(
     correo_personal:
       obtenerPrimerValorDefinido(
         datosPersonales.correoPersonal,
-        datosPersonales.correo_personal,
+        datosPersonales
+          .correo_personal,
         cambios.correo_personal,
       ),
 
@@ -734,13 +1191,16 @@ function convertirCambiosParaBackend(
   }
 
   return Object.fromEntries(
-    Object.entries(equivalencias)
-      .filter(
-        ([, valor]) =>
-          valor !== undefined,
-      ),
+    Object.entries(
+      equivalencias,
+    ).filter(
+      ([, valor]) =>
+        valor !== undefined,
+    ),
   )
 }
+
+/* Consultas principales. */
 
 export async function listarEstudiantes() {
   if (usarDatosAdminSimulados) {
@@ -787,9 +1247,8 @@ export async function obtenerEstudiante(
 
   if (!usarDatosAdminSimulados) {
     /*
-     * El listado administrativo ya contiene los datos que
-     * utiliza la vista de detalle. Buscar aquí también evita
-     * llamar la ruta de perfil reservada para el becario.
+     * El listado administrativo contiene la información
+     * disponible para el administrador principal.
      */
     const estudiantes =
       await listarEstudiantes()
@@ -797,9 +1256,11 @@ export async function obtenerEstudiante(
     return (
       estudiantes.find(
         (estudiante) =>
-          estudiante.id === valorBuscado ||
+          estudiante.id ===
+            valorBuscado ||
           estudiante.datosPersonales
-            .numeroCuenta === valorBuscado,
+            .numeroCuenta ===
+            valorBuscado,
       ) ?? null
     )
   }
@@ -826,11 +1287,330 @@ export async function obtenerEstudiante(
   )
 }
 
-/*
- * La actualización queda disponible para la futura vista
- * de edición, de momento solo mostrara un mensaje de
- * Disponible proximamente".
- */
+/* Creación de estudiantes. */
+
+export async function crearEstudiante(
+  estudiante,
+) {
+  const datosPreparados =
+    prepararDatosCreacion(
+      estudiante,
+    )
+
+  if (!usarDatosAdminSimulados) {
+    const datosParaBackend =
+      convertirNuevoEstudianteParaBackend(
+        datosPreparados,
+      )
+
+    const respuesta =
+      await peticionApi(
+        '/usuarios',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            datosParaBackend,
+          ),
+        },
+      )
+
+    /*
+     * El POST devuelve una respuesta resumida.
+     * Consultamos nuevamente el listado para recuperar
+     * la carrera, el rol y los cálculos del becario.
+     */
+    try {
+      const estudianteRecuperado =
+        await obtenerEstudiante(
+          datosPreparados.numeroCuenta,
+        )
+
+      if (estudianteRecuperado) {
+        return normalizarEstudiante({
+          ...estudianteRecuperado,
+
+          credenciales: {
+            ...estudianteRecuperado
+              .credenciales,
+
+            rolId:
+              datosPreparados.rolId,
+          },
+
+          datosPersonales: {
+            ...estudianteRecuperado
+              .datosPersonales,
+
+            carreraId:
+              datosPreparados.carreraId,
+          },
+
+          datosBecario: {
+            ...estudianteRecuperado
+              .datosBecario,
+
+            mesInicio:
+              datosPreparados.mesInicio,
+          },
+        })
+      }
+    } catch {
+      /*
+       * El usuario ya fue creado por el POST.
+       * Si la segunda consulta falla, utilizamos una
+       * respuesta local para evitar repetir el registro.
+       */
+    }
+
+    const mesesActivos =
+      calcularMesesActivos(
+        datosPreparados.mesInicio,
+        datosPreparados.anioInicio,
+      )
+
+    return normalizarEstudiante({
+      ...respuesta,
+
+      id:
+        `estudiante-${datosPreparados.numeroCuenta}`,
+
+      credenciales: {
+        rol:
+          datosPreparados.rolNombre ||
+          'Rol asignado',
+
+        rolId:
+          datosPreparados.rolId,
+
+        activo:
+          respuesta?.active === true,
+      },
+
+      datosPersonales: {
+        numeroCuenta:
+          datosPreparados.numeroCuenta,
+
+        primerNombre:
+          datosPreparados.primerNombre,
+
+        segundoNombre:
+          datosPreparados.segundoNombre,
+
+        primerApellido:
+          datosPreparados.primerApellido,
+
+        segundoApellido:
+          datosPreparados.segundoApellido,
+
+        correoInstitucional:
+          datosPreparados
+            .correoInstitucional,
+
+        correoPersonal:
+          datosPreparados.correoPersonal,
+
+        telefono:
+          datosPreparados.telefono,
+
+        carrera:
+          datosPreparados
+            .carreraNombre ||
+          'Carrera asignada',
+
+        carreraId:
+          datosPreparados.carreraId,
+      },
+
+      datosBecario: {
+        periodoInicio:
+          respuesta?.perfil_becario
+            ?.periodo_inicio ||
+          obtenerPeriodoDesdeMes(
+            datosPreparados.mesInicio,
+          ),
+
+        mesInicio:
+          datosPreparados.mesInicio,
+
+        anioInicio:
+          datosPreparados.anioInicio,
+
+        horasAcumuladas: 0,
+
+        horasFaltantes:
+          mesesActivos * 20,
+
+        mesesSinPagar:
+          mesesActivos,
+
+        estadoBeca: 'inactivo',
+      },
+
+      actividadesRecientes: [],
+      aportaciones: [],
+      eliminado: false,
+      desactivadoEn: null,
+      eliminadoEn: null,
+      creadoEn:
+        new Date().toISOString(),
+      actualizadoEn:
+        new Date().toISOString(),
+    })
+  }
+
+  const estudiantes =
+    leerEstudiantes()
+
+  const cuentaDuplicada =
+    estudiantes.some(
+      (estudianteActual) =>
+        estudianteActual
+          .datosPersonales
+          .numeroCuenta ===
+        datosPreparados.numeroCuenta,
+    )
+
+  if (cuentaDuplicada) {
+    throw new EstudianteAdminError(
+      'El número de cuenta ya está registrado.',
+    )
+  }
+
+  const correoDuplicado =
+    estudiantes.some(
+      (estudianteActual) =>
+        estudianteActual
+          .datosPersonales
+          .correoInstitucional
+          .toLowerCase() ===
+        datosPreparados
+          .correoInstitucional
+          .toLowerCase(),
+    )
+
+  if (correoDuplicado) {
+    throw new EstudianteAdminError(
+      'El correo institucional ya está registrado.',
+    )
+  }
+
+  const fechaActual =
+    new Date().toISOString()
+
+  const mesesActivos =
+    calcularMesesActivos(
+      datosPreparados.mesInicio,
+      datosPreparados.anioInicio,
+    )
+
+  const estudianteCreado =
+    normalizarEstudiante({
+      id:
+        `estudiante-${datosPreparados.numeroCuenta}`,
+
+      credenciales: {
+        rol:
+          datosPreparados.rolNombre ||
+          'becario',
+
+        rolId:
+          datosPreparados.rolId,
+
+        /*
+         * Todo usuario nuevo debe crear su contraseña
+         * antes de poder ingresar al sistema.
+         */
+        activo: false,
+      },
+
+      datosPersonales: {
+        numeroCuenta:
+          datosPreparados.numeroCuenta,
+
+        primerNombre:
+          datosPreparados.primerNombre,
+
+        segundoNombre:
+          datosPreparados.segundoNombre,
+
+        primerApellido:
+          datosPreparados.primerApellido,
+
+        segundoApellido:
+          datosPreparados.segundoApellido,
+
+        correoInstitucional:
+          datosPreparados
+            .correoInstitucional,
+
+        correoPersonal:
+          datosPreparados.correoPersonal,
+
+        telefono:
+          datosPreparados.telefono,
+
+        carrera:
+          datosPreparados
+            .carreraNombre ||
+          'Carrera asignada',
+
+        carreraId:
+          datosPreparados.carreraId,
+      },
+
+      datosBecario: {
+        periodoInicio:
+          obtenerPeriodoDesdeMes(
+            datosPreparados.mesInicio,
+          ),
+
+        mesInicio:
+          datosPreparados.mesInicio,
+
+        anioInicio:
+          datosPreparados.anioInicio,
+
+        horasAcumuladas: 0,
+
+        horasFaltantes:
+          mesesActivos * 20,
+
+        mesesSinPagar:
+          mesesActivos,
+
+        estadoBeca: 'inactivo',
+      },
+
+      actividadesRecientes: [],
+      aportaciones: [],
+      eliminado: false,
+      desactivadoEn: null,
+      eliminadoEn: null,
+      creadoEn: fechaActual,
+      actualizadoEn: fechaActual,
+    })
+
+  estudiantes.push(
+    estudianteCreado,
+  )
+
+  guardarEstudiantes(
+    estudiantes,
+  )
+
+  return clonarDatos(
+    estudianteCreado,
+  )
+}
+
+/* Edición de información permitida por el backend. */
+
 export async function actualizarEstudiante(
   identificador,
   cambios,
@@ -879,10 +1659,12 @@ export async function actualizarEstudiante(
       )}`,
       {
         method: 'PUT',
+
         headers: {
           'Content-Type':
             'application/json',
         },
+
         body: JSON.stringify(
           datosParaBackend,
         ),
@@ -900,7 +1682,45 @@ export async function actualizarEstudiante(
       )
     }
 
-    return estudianteActualizado
+    /*
+     * El listado actual no devuelve los identificadores.
+     * Conservamos los que ya conoce el formulario.
+     */
+    return normalizarEstudiante({
+      ...estudianteActualizado,
+
+      credenciales: {
+        ...estudianteActualizado
+          .credenciales,
+
+        rolId:
+          datosParaBackend.rol_id ??
+          estudianteActual
+            .credenciales
+            .rolId,
+      },
+
+      datosPersonales: {
+        ...estudianteActualizado
+          .datosPersonales,
+
+        carreraId:
+          datosParaBackend.carrera_id ??
+          estudianteActual
+            .datosPersonales
+            .carreraId,
+      },
+
+      datosBecario: {
+        ...estudianteActualizado
+          .datosBecario,
+
+        mesInicio:
+          estudianteActual
+            .datosBecario
+            .mesInicio,
+      },
+    })
   }
 
   const estudiantes =
@@ -926,8 +1746,8 @@ export async function actualizarEstudiante(
     estudiantes[indiceEstudiante]
 
   /*
-   * Los objetos internos se combinan por separado para
-   * conservar los campos que no fueron incluidos en el cambio.
+   * Los objetos internos se combinan por separado
+   * para conservar los campos que no fueron enviados.
    */
   const estudianteCombinado = {
     ...estudianteActual,
@@ -935,7 +1755,10 @@ export async function actualizarEstudiante(
 
     credenciales: {
       ...estudianteActual.credenciales,
-      ...(esObjeto(cambios.credenciales)
+
+      ...(esObjeto(
+        cambios.credenciales,
+      )
         ? cambios.credenciales
         : {}),
     },
@@ -943,6 +1766,7 @@ export async function actualizarEstudiante(
     datosPersonales: {
       ...estudianteActual
         .datosPersonales,
+
       ...(esObjeto(
         cambios.datosPersonales,
       )
@@ -952,7 +1776,10 @@ export async function actualizarEstudiante(
 
     datosBecario: {
       ...estudianteActual.datosBecario,
-      ...(esObjeto(cambios.datosBecario)
+
+      ...(esObjeto(
+        cambios.datosBecario,
+      )
         ? cambios.datosBecario
         : {}),
     },
@@ -963,16 +1790,20 @@ export async function actualizarEstudiante(
       )
         ? cambios.actividadesRecientes
         : estudianteActual
-          .actividadesRecientes,
+            .actividadesRecientes,
 
     aportaciones:
-      Array.isArray(cambios.aportaciones)
+      Array.isArray(
+        cambios.aportaciones,
+      )
         ? cambios.aportaciones
         : estudianteActual.aportaciones,
 
     id: estudianteActual.id,
+
     creadoEn:
       estudianteActual.creadoEn,
+
     actualizadoEn:
       new Date().toISOString(),
   }
@@ -982,16 +1813,15 @@ export async function actualizarEstudiante(
       estudianteCombinado,
     )
 
-  /*
-   * Evita que dos estudiantes terminen utilizando
-   * el mismo número de cuenta.
-   */
   const cuentaDuplicada =
     estudiantes.some(
-      (estudiante, indice) =>
+      (
+        estudianteGuardado,
+        indice,
+      ) =>
         indice !== indiceEstudiante &&
-        estudiante.eliminado !== true &&
-        estudiante.datosPersonales
+        estudianteGuardado
+          .datosPersonales
           .numeroCuenta ===
         estudianteActualizado
           .datosPersonales
@@ -1004,15 +1834,42 @@ export async function actualizarEstudiante(
     )
   }
 
+  const correoDuplicado =
+    estudiantes.some(
+      (
+        estudianteGuardado,
+        indice,
+      ) =>
+        indice !== indiceEstudiante &&
+        estudianteGuardado
+          .datosPersonales
+          .correoInstitucional
+          .toLowerCase() ===
+        estudianteActualizado
+          .datosPersonales
+          .correoInstitucional
+          .toLowerCase(),
+    )
+
+  if (correoDuplicado) {
+    throw new EstudianteAdminError(
+      'Ya existe otro estudiante con ese correo institucional.',
+    )
+  }
+
   estudiantes[indiceEstudiante] =
     estudianteActualizado
 
-  guardarEstudiantes(estudiantes)
+  guardarEstudiantes(
+    estudiantes,
+  )
 
   return clonarDatos(
     estudianteActualizado,
   )
 }
+
+/* Activación y desactivación. */
 
 export async function cambiarEstadoEstudiante(
   identificador,
@@ -1066,6 +1923,7 @@ export async function cambiarEstadoEstudiante(
 
       datosBecario: {
         ...estudianteActual.datosBecario,
+
         estadoBeca:
           activo
             ? 'activo'
@@ -1077,13 +1935,16 @@ export async function cambiarEstadoEstudiante(
           ? null
           : fechaActual,
 
-      actualizadoEn: fechaActual,
+      actualizadoEn:
+        fechaActual,
     })
 
   estudiantes[indiceEstudiante] =
     estudianteActualizado
 
-  guardarEstudiantes(estudiantes)
+  guardarEstudiantes(
+    estudiantes,
+  )
 
   return clonarDatos(
     estudianteActualizado,
@@ -1091,9 +1952,11 @@ export async function cambiarEstadoEstudiante(
 }
 
 /*
- * La eliminación es lógica: el registro permanece guardado,
- * pero deja de aparecer en las consultas normales.
+ * La eliminación simulada es lógica.
+ * El registro permanece almacenado, pero desaparece
+ * de las consultas administrativas normales.
  */
+
 export async function eliminarEstudiante(
   identificador,
 ) {
@@ -1143,9 +2006,11 @@ export async function eliminarEstudiante(
       },
 
       eliminado: true,
+
       desactivadoEn:
         estudianteActual.desactivadoEn ||
         fechaActual,
+
       eliminadoEn: fechaActual,
       actualizadoEn: fechaActual,
     })
@@ -1153,7 +2018,9 @@ export async function eliminarEstudiante(
   estudiantes[indiceEstudiante] =
     estudianteEliminado
 
-  guardarEstudiantes(estudiantes)
+  guardarEstudiantes(
+    estudiantes,
+  )
 
   return clonarDatos(
     estudianteEliminado,
@@ -1161,9 +2028,10 @@ export async function eliminarEstudiante(
 }
 
 /*
- * Permite regresar a los tres estudiantes originales
- * después de probar activaciones, cambios o eliminaciones.
+ * Permite regresar a los datos iniciales después
+ * de probar registros, cambios o eliminaciones.
  */
+
 export async function restablecerEstudiantes() {
   comprobarModoSimulado()
 

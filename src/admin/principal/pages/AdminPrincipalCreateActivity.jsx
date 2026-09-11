@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   CalendarDays,
   Clock3,
   MapPin,
@@ -339,6 +340,7 @@ function AdminPrincipalCreateActivity() {
         aria-label="Migas de navegación"
       >
         <Link to="/admin-principal/actividades">
+          <ArrowLeft aria-hidden="true" />
           Actividades
         </Link>
 

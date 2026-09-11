@@ -7,13 +7,13 @@
   margin: 0 auto;
 }
 
-/* ENCABEZADO */
+/* Encabezado */
 .admin-activities-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 30px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   animation:
     admin-activities-entry
     500ms ease-out both;
@@ -57,15 +57,21 @@
   gap: 10px;
 }
 
-.admin-activities-history-button,
 .admin-activities-create-button {
   min-height: 43px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 16px;
+  padding: 0 17px;
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
   border-radius: 8px;
+  background: var(--admin-navy);
+  box-shadow:
+    0 8px 18px
+    rgb(0 43 79 / 16%);
   font: inherit;
   font-size: 0.76rem;
   font-weight: 700;
@@ -73,34 +79,9 @@
   cursor: pointer;
   transition:
     color 160ms ease,
-    border-color 160ms ease,
     background 160ms ease,
     box-shadow 160ms ease,
     transform 160ms ease;
-}
-
-.admin-activities-history-button {
-  color: var(--admin-text-soft);
-  border:
-    1px solid var(--admin-border);
-  background: var(--admin-white);
-}
-
-.admin-activities-history-button:hover {
-  color: var(--admin-navy);
-  border-color: #bdcedb;
-  background: var(--admin-hover);
-  transform: translateY(-1px);
-}
-
-.admin-activities-create-button {
-  color: var(--admin-white);
-  border:
-    1px solid var(--admin-navy);
-  background: var(--admin-navy);
-  box-shadow:
-    0 8px 18px
-    rgb(0 43 79 / 16%);
 }
 
 .admin-activities-create-button:hover {
@@ -112,23 +93,147 @@
   transform: translateY(-1px);
 }
 
-.admin-activities-history-button svg,
 .admin-activities-create-button svg {
   width: 17px;
   height: 17px;
 }
 
-/* BÚSQUEDA Y FILTROS */
+/* Pestañas */
+.admin-activities-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 6px;
+  overflow-x: auto;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbfd 0%,
+      #f1f7fb 100%
+    );
+  box-shadow:
+    0 7px 20px
+    rgb(10 39 64 / 5%);
+  scrollbar-width: thin;
+  animation:
+    admin-activities-entry
+    520ms 55ms ease-out both;
+}
+
+.admin-activities-tab {
+  min-width: 150px;
+  min-height: 48px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  padding: 0 13px;
+  overflow: hidden;
+  color: var(--admin-text-soft);
+  border:
+    1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 720;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-activities-tab::after {
+  width: 28px;
+  height: 3px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: auto;
+  border-radius: 999px 999px 0 0;
+  background:
+    linear-gradient(
+      90deg,
+      var(--admin-blue),
+      #62afd8
+    );
+  content: '';
+  opacity: 0;
+  transform: scaleX(0.5);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-activities-tab:hover {
+  color: var(--admin-navy);
+  border-color: #d6e4ed;
+  background: rgb(255 255 255 / 72%);
+  transform: translateY(-1px);
+}
+
+.admin-activities-tab--active {
+  color: var(--admin-navy);
+  border-color: #bdd8e8;
+  background: var(--admin-white);
+  box-shadow:
+    0 5px 14px
+    rgb(20 67 98 / 9%);
+}
+
+.admin-activities-tab--active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.admin-activities-tab > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-activities-tab > small {
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-grid;
+  place-items: center;
+  padding: 2px 7px;
+  color: var(--admin-text-soft);
+  border-radius: 999px;
+  background: #e7eef3;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.admin-activities-tab--active > small {
+  color: #075580;
+  background: #dceef8;
+}
+
+/* Búsqueda y filtros */
 .admin-activities-toolbar {
   display: grid;
   grid-template-columns:
     minmax(280px, 1fr)
     minmax(170px, 210px)
-    minmax(170px, 210px);
+    auto;
   align-items: end;
   gap: 14px;
   margin-bottom: 18px;
-  padding: 18px;
+  padding: 17px 18px;
   border:
     1px solid var(--admin-border);
   border-radius: 11px;
@@ -138,7 +243,7 @@
     rgb(10 39 64 / 5%);
   animation:
     admin-activities-entry
-    540ms 70ms ease-out both;
+    540ms 90ms ease-out both;
 }
 
 .admin-activities-search,
@@ -187,6 +292,7 @@
   background: transparent;
   font: inherit;
   font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .admin-activities-search__control
@@ -229,7 +335,54 @@
     rgb(75 145 196 / 16%);
 }
 
-/* ESTADOS DE CARGA, ERROR Y LISTA VACÍA */
+.admin-activities-clear-button {
+  min-width: 142px;
+  min-height: 44px;
+  grid-column: -2 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #f8fafb;
+  font: inherit;
+  font-size: 0.71rem;
+  font-weight: 720;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-activities-clear-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-activities-clear-button:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-navy);
+  border-color: #b8cedd;
+  background: #edf6fb;
+  transform: translateY(-1px);
+}
+
+.admin-activities-clear-button:disabled {
+  color: #9aa6af;
+  background: #f3f5f6;
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+/* Estados de carga, error y lista vacía */
 .admin-activities-state {
   min-height: 310px;
   display: flex;
@@ -316,7 +469,7 @@
     850ms linear infinite;
 }
 
-/* LISTADO */
+/* Listado */
 .admin-activities-list {
   overflow: hidden;
   border:
@@ -328,7 +481,7 @@
     rgb(10 39 64 / 5%);
   animation:
     admin-activities-entry
-    570ms 130ms ease-out both;
+    400ms 70ms ease-out both;
 }
 
 .admin-activities-list__header {
@@ -340,7 +493,12 @@
   padding: 15px 20px;
   border-bottom:
     1px solid var(--admin-border);
-  background: #fbfcfd;
+  background:
+    linear-gradient(
+      90deg,
+      #fbfcfd,
+      #f4f9fc
+    );
 }
 
 .admin-activities-list__header p {
@@ -361,16 +519,18 @@
 .admin-activities-list__header > span {
   flex-shrink: 0;
   padding: 6px 10px;
-  color: var(--admin-text-soft);
+  color: #075580;
+  border:
+    1px solid #d5e6f0;
   border-radius: 999px;
-  background: #edf2f6;
+  background: #e8f3f9;
   font-size: 0.65rem;
   font-weight: 750;
 }
 
 /*
- * La tabla mantiene todos sus controles accesibles
- * mediante desplazamiento horizontal en pantallas pequeñas.
+ * La tabla mantiene sus controles accesibles mediante
+ * desplazamiento horizontal en pantallas pequeñas.
  */
 .admin-activities-management-table-wrapper {
   width: 100%;
@@ -379,7 +539,7 @@
 
 .admin-activities-management-table {
   width: 100%;
-  min-width: 1360px;
+  min-width: 1280px;
   border-collapse: collapse;
 }
 
@@ -407,9 +567,10 @@
 
 .admin-activities-management-table thead th {
   color: var(--admin-text-soft);
-  font-size: 0.61rem;
+  font-size: 0.63rem;
   font-weight: 800;
   letter-spacing: 0.055em;
+  line-height: 1.35;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -417,13 +578,15 @@
 .admin-activities-management-table tbody th,
 .admin-activities-management-table tbody td {
   color: var(--admin-text-soft);
-  font-size: 0.72rem;
+  font-size: 0.73rem;
   font-weight: 500;
+  line-height: 1.45;
 }
 
 .admin-activities-management-table tbody tr {
   transition:
-    background 150ms ease;
+    background 150ms ease,
+    opacity 150ms ease;
 }
 
 .admin-activities-management-table
@@ -443,7 +606,19 @@
   border-bottom: 0;
 }
 
-/* INFORMACIÓN DE CADA ACTIVIDAD */
+.admin-activities-management-table
+  tbody
+  .admin-activity-row--inactive {
+  background: #fcfafb;
+}
+
+.admin-activities-management-table
+  tbody
+  .admin-activity-row--inactive:hover {
+  background: #faf5f6;
+}
+
+/* Información de cada actividad */
 .admin-activity-name {
   min-width: 220px;
   display: flex;
@@ -460,6 +635,13 @@
   color: var(--admin-blue);
   border-radius: 9px;
   background: #e2f0fa;
+}
+
+.admin-activity-row--inactive
+  .admin-activity-name
+  > span {
+  color: #85616a;
+  background: #f3e8eb;
 }
 
 .admin-activity-name > span svg {
@@ -501,7 +683,32 @@
   white-space: nowrap;
 }
 
-/* ESTADO Y VISIBILIDAD */
+/* Cupos */
+.admin-activity-capacity {
+  min-width: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-activity-capacity strong {
+  color: #176743;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-activity-capacity small {
+  color: var(--admin-muted);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.admin-activity-capacity--full strong {
+  color: #93610c;
+}
+
+/* Estado y visibilidad */
 .admin-activity-state,
 .admin-activity-visibility {
   min-height: 25px;
@@ -512,6 +719,7 @@
   border-radius: 999px;
   font-size: 0.61rem;
   font-weight: 800;
+  line-height: 1.3;
   white-space: nowrap;
 }
 
@@ -525,6 +733,16 @@
   background: #fff4d6;
 }
 
+.admin-activity-state--finalizada {
+  color: #28734e;
+  background: #e2f4ea;
+}
+
+.admin-activity-state--cancelada {
+  color: #8a3340;
+  background: #fbe9ec;
+}
+
 .admin-activity-visibility--active {
   color: #28734e;
   background: #e2f4ea;
@@ -535,7 +753,7 @@
   background: #f3e8eb;
 }
 
-/* CONTROLES DE ASISTENCIA */
+/* Controles de asistencia */
 .admin-activity-attendance-actions {
   min-width: 268px;
   display: grid;
@@ -611,7 +829,7 @@
 
 /*
  * Un botón activo indica que ya existe un QR vigente.
- * Al seleccionarlo se genera un token nuevo.
+ * Al seleccionarlo se vuelve a mostrar el mismo código.
  */
 .admin-activity-attendance-button--active {
   color: #28734e;
@@ -646,7 +864,7 @@
     850ms linear infinite;
 }
 
-/* ACCIONES DEL FUTURO CRUD */
+/* Acciones de las actividades */
 .admin-activity-actions {
   display: flex;
   align-items: center;
@@ -670,6 +888,7 @@
     color 150ms ease,
     border-color 150ms ease,
     background 150ms ease,
+    opacity 150ms ease,
     transform 150ms ease;
 }
 
@@ -678,11 +897,42 @@
   height: 16px;
 }
 
-.admin-activity-actions button:hover {
+.admin-activity-actions
+  button:hover:not(:disabled) {
   color: var(--admin-navy);
   border-color: var(--admin-border);
   background: var(--admin-hover);
   transform: translateY(-1px);
+}
+
+.admin-activity-actions
+  .admin-activity-actions__power {
+  color: #28734e;
+}
+
+.admin-activity-actions
+  .admin-activity-actions__power:hover:not(
+    :disabled
+  ) {
+  color: #1f6040;
+  border-color: #b7dcc7;
+  background: #e9f6ef;
+}
+
+.admin-activity-actions
+  .admin-activity-actions__power--inactive {
+  color: #a16b12;
+  border-color: #ead59d;
+  background: #fff9e9;
+}
+
+.admin-activity-actions
+  .admin-activity-actions__power--inactive:hover:not(
+    :disabled
+  ) {
+  color: #7b500a;
+  border-color: #d8bd75;
+  background: #fff3cf;
 }
 
 .admin-activity-actions
@@ -691,13 +941,21 @@
 }
 
 .admin-activity-actions
-  .admin-activity-actions__delete:hover {
+  .admin-activity-actions__delete:hover:not(
+    :disabled
+  ) {
   color: var(--admin-danger-hover);
   border-color: #f0cbd0;
   background: #fff1f2;
 }
 
-/* SIN RESULTADOS */
+.admin-activity-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+/* Sin resultados */
 .admin-activities-no-results {
   min-height: 250px;
   display: flex;
@@ -710,7 +968,7 @@
   text-align: center;
 }
 
-.admin-activities-no-results svg {
+.admin-activities-no-results > svg {
   width: 34px;
   height: 34px;
   margin-bottom: 4px;
@@ -724,41 +982,335 @@
 }
 
 .admin-activities-no-results p {
+  max-width: 430px;
   margin: 0;
   font-size: 0.75rem;
-}
-
-/* AVISO DE FUNCIONES PENDIENTES */
-.admin-activities-future-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 13px 15px;
-  color: var(--admin-text-soft);
-  border:
-    1px solid #d7e4ed;
-  border-radius: 9px;
-  background: #f3f8fb;
-  animation:
-    admin-activities-entry
-    580ms 190ms ease-out both;
-}
-
-.admin-activities-future-note svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: var(--admin-blue);
-}
-
-.admin-activities-future-note p {
-  margin: 0;
-  font-size: 0.7rem;
   line-height: 1.5;
 }
 
-/* DIÁLOGO DEL CÓDIGO QR */
+.admin-activities-no-results__clear {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 0 14px;
+  color: var(--admin-blue);
+  border:
+    1px solid #c7dfef;
+  border-radius: 8px;
+  background: #eff7fc;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-activities-no-results__clear:hover {
+  color: var(--admin-navy);
+  border-color: #9fc8e2;
+  background: #e2f0fa;
+  transform: translateY(-1px);
+}
+
+.admin-activities-no-results__clear svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Diálogo de confirmación */
+.admin-activity-confirm-dialog__overlay {
+  position: fixed;
+  z-index: 1220;
+  inset: 0;
+  background:
+    rgb(4 22 36 / 66%);
+  backdrop-filter: blur(3px);
+}
+
+.admin-activity-confirm-dialog__overlay[
+  data-state='open'
+] {
+  animation:
+    admin-dialog-overlay-open
+    180ms ease-out both;
+}
+
+.admin-activity-confirm-dialog__overlay[
+  data-state='closed'
+] {
+  animation:
+    admin-dialog-overlay-close
+    150ms ease-in both;
+}
+
+.admin-activity-confirm-dialog__content {
+  --admin-navy: #002b4f;
+  --admin-navy-hover: #0b406a;
+  --admin-blue: #0b5688;
+  --admin-focus: #4b91c4;
+  --admin-text: #10283e;
+  --admin-text-soft: #526575;
+  --admin-muted: #778593;
+  --admin-border: #c9dce9;
+  --admin-hover: #e6f1f8;
+  --admin-white: #ffffff;
+  --admin-danger: #be3144;
+  --admin-danger-hover: #9e2637;
+
+  width: min(calc(100vw - 32px), 470px);
+  max-height: calc(100vh - 32px);
+  position: fixed;
+  z-index: 1221;
+  top: 50%;
+  left: 50%;
+  overflow: hidden auto;
+  padding: 30px;
+  color: var(--admin-text);
+  border:
+    1px solid #b9d4e5;
+  border-radius: 15px;
+  outline: 0;
+  background:
+    linear-gradient(
+      180deg,
+      #e9f5fb 0%,
+      #f7fbfd 28%,
+      #ffffff 70%
+    );
+  box-shadow:
+    0 30px 75px
+    rgb(0 25 45 / 40%),
+    inset 0 1px 0
+    rgb(255 255 255 / 82%);
+  text-align: center;
+  transform:
+    translate(-50%, -50%);
+}
+
+.admin-activity-confirm-dialog__content::before {
+  height: 4px;
+  position: absolute;
+  inset: 0 0 auto;
+  background:
+    linear-gradient(
+      90deg,
+      var(--admin-blue),
+      #65b4d8,
+      #eab83e
+    );
+  content: '';
+}
+
+.admin-activity-confirm-dialog__content[
+  data-state='open'
+] {
+  animation:
+    admin-dialog-content-open
+    210ms ease-out both;
+}
+
+.admin-activity-confirm-dialog__content[
+  data-state='closed'
+] {
+  animation:
+    admin-dialog-content-close
+    160ms ease-in both;
+}
+
+.admin-activity-confirm-dialog__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 2px auto 14px;
+  border:
+    1px solid transparent;
+  border-radius: 14px;
+}
+
+.admin-activity-confirm-dialog__icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.admin-activity-confirm-dialog__icon--activate {
+  color: #28734e;
+  border-color: #c3e2d1;
+  background: #e5f5ec;
+}
+
+.admin-activity-confirm-dialog__icon--deactivate {
+  color: #8a6417;
+  border-color: #ead59d;
+  background: #fff5da;
+}
+
+.admin-activity-confirm-dialog__icon--danger {
+  color: var(--admin-danger);
+  border-color: #efc8ce;
+  background: #fff0f2;
+}
+
+.admin-activity-confirm-dialog__title {
+  margin: 0;
+  color: var(--admin-navy);
+  font-size: 1.23rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.admin-activity-confirm-dialog__description {
+  max-width: 390px;
+  margin: 10px auto 0;
+  color: var(--admin-text-soft);
+  font-size: 0.77rem;
+  line-height: 1.6;
+}
+
+.admin-activity-confirm-dialog__activity {
+  max-width: 390px;
+  margin: 16px auto 0;
+  padding: 10px 13px;
+  overflow: hidden;
+  color: var(--admin-text);
+  border:
+    1px solid #d7e5ed;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 75%);
+  font-size: 0.78rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-activity-confirm-dialog__warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 13px;
+  padding: 10px 12px;
+  color: #8a3340;
+  border:
+    1px solid #edc9ce;
+  border-radius: 9px;
+  background: #fff3f4;
+}
+
+.admin-activity-confirm-dialog__warning svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.admin-activity-confirm-dialog__warning p {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.admin-activity-confirm-dialog__actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 21px;
+}
+
+.admin-activity-confirm-dialog__cancel,
+.admin-activity-confirm-dialog__confirm {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-activity-confirm-dialog__cancel {
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-activity-confirm-dialog__cancel:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-navy);
+  border-color: #bdcedb;
+  background: var(--admin-hover);
+}
+
+.admin-activity-confirm-dialog__confirm {
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
+  background: var(--admin-navy);
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 17%);
+}
+
+.admin-activity-confirm-dialog__confirm:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-white);
+  background: var(--admin-navy-hover);
+  transform: translateY(-1px);
+}
+
+.admin-activity-confirm-dialog__confirm--danger {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger);
+  box-shadow:
+    0 7px 16px
+    rgb(190 49 68 / 18%);
+}
+
+.admin-activity-confirm-dialog__confirm--danger:hover:not(
+    :disabled
+  ) {
+  background: var(--admin-danger-hover);
+}
+
+.admin-activity-confirm-dialog__cancel:disabled,
+.admin-activity-confirm-dialog__confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.admin-activity-confirm-dialog__cancel svg,
+.admin-activity-confirm-dialog__confirm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-activity-confirm-dialog__loader {
+  animation:
+    admin-activities-loader-spin
+    850ms linear infinite;
+}
+
+/* Diálogo del código QR */
 .admin-qr-dialog__overlay {
   position: fixed;
   z-index: 1200;
@@ -772,7 +1324,7 @@
   data-state='open'
 ] {
   animation:
-    admin-qr-overlay-open
+    admin-dialog-overlay-open
     180ms ease-out both;
 }
 
@@ -780,7 +1332,7 @@
   data-state='closed'
 ] {
   animation:
-    admin-qr-overlay-close
+    admin-dialog-overlay-close
     150ms ease-in both;
 }
 
@@ -795,6 +1347,7 @@
   --admin-border: #c9dce9;
   --admin-hover: #e6f1f8;
   --admin-white: #ffffff;
+
   width: min(calc(100vw - 32px), 470px);
   max-height: calc(100vh - 32px);
   position: fixed;
@@ -815,7 +1368,6 @@
       #eef7fc 24%,
       #ffffff 68%
     );
-
   box-shadow:
     0 30px 75px
     rgb(0 25 45 / 42%),
@@ -830,7 +1382,7 @@
   data-state='open'
 ] {
   animation:
-    admin-qr-content-open
+    admin-dialog-content-open
     210ms ease-out both;
 }
 
@@ -838,7 +1390,7 @@
   data-state='closed'
 ] {
   animation:
-    admin-qr-content-close
+    admin-dialog-content-close
     160ms ease-in both;
 }
 
@@ -1098,13 +1650,17 @@
   height: 16px;
 }
 
-/* ACCESIBILIDAD */
-.admin-activities-history-button:focus-visible,
+/* Accesibilidad */
 .admin-activities-create-button:focus-visible,
+.admin-activities-tab:focus-visible,
+.admin-activities-clear-button:focus-visible,
 .admin-activities-state a:focus-visible,
 .admin-activities-state button:focus-visible,
+.admin-activities-no-results__clear:focus-visible,
 .admin-activity-attendance-button:focus-visible,
 .admin-activity-actions button:focus-visible,
+.admin-activity-confirm-dialog__cancel:focus-visible,
+.admin-activity-confirm-dialog__confirm:focus-visible,
 .admin-qr-dialog__close:focus-visible,
 .admin-qr-dialog__secondary:focus-visible,
 .admin-qr-dialog__primary:focus-visible {
@@ -1114,7 +1670,7 @@
   outline-offset: 2px;
 }
 
-/* ANIMACIONES */
+/* Animaciones */
 @keyframes admin-activities-entry {
   from {
     opacity: 0;
@@ -1133,7 +1689,7 @@
   }
 }
 
-@keyframes admin-qr-overlay-open {
+@keyframes admin-dialog-overlay-open {
   from {
     opacity: 0;
   }
@@ -1143,7 +1699,7 @@
   }
 }
 
-@keyframes admin-qr-overlay-close {
+@keyframes admin-dialog-overlay-close {
   from {
     opacity: 1;
   }
@@ -1153,7 +1709,7 @@
   }
 }
 
-@keyframes admin-qr-content-open {
+@keyframes admin-dialog-content-open {
   from {
     opacity: 0;
     transform:
@@ -1169,7 +1725,7 @@
   }
 }
 
-@keyframes admin-qr-content-close {
+@keyframes admin-dialog-content-close {
   from {
     opacity: 1;
     transform:
@@ -1185,7 +1741,7 @@
   }
 }
 
-/* COMPUTADORAS DE MENOR ANCHO */
+/* Computadoras de menor ancho */
 @media (max-width: 1180px) {
   .admin-activities-heading {
     align-items: flex-start;
@@ -1199,6 +1755,10 @@
   .admin-activities-search {
     grid-column: 1 / -1;
   }
+
+  .admin-activities-clear-button {
+    grid-column: 2;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1210,13 +1770,12 @@
     width: 100%;
   }
 
-  .admin-activities-history-button,
   .admin-activities-create-button {
-    flex: 1;
+    width: 100%;
   }
 }
 
-/* TELÉFONOS */
+/* Teléfonos */
 @media (max-width: 680px) {
   .admin-activities-heading {
     gap: 19px;
@@ -1227,9 +1786,18 @@
     flex-direction: column;
   }
 
-  .admin-activities-history-button,
   .admin-activities-create-button {
     width: 100%;
+  }
+
+  .admin-activities-tabs {
+    justify-content: flex-start;
+    padding: 5px;
+  }
+
+  .admin-activities-tab {
+    min-width: 145px;
+    flex: 0 0 145px;
   }
 
   .admin-activities-toolbar {
@@ -1237,8 +1805,13 @@
     padding: 15px;
   }
 
-  .admin-activities-search {
+  .admin-activities-search,
+  .admin-activities-clear-button {
     grid-column: auto;
+  }
+
+  .admin-activities-clear-button {
+    width: 100%;
   }
 
   .admin-activities-list__header {
@@ -1246,6 +1819,218 @@
     padding: 14px 16px;
   }
 
+  /* En celular cada actividad se muestra como una tarjeta */
+  .admin-activities-management-table-wrapper {
+    overflow: visible;
+    padding: 10px;
+    background: #f7f9fb;
+  }
+
+  .admin-activities-management-table {
+    min-width: 0;
+    display: block;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /* El encabezado sigue disponible para lectores de pantalla */
+  .admin-activities-management-table thead {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-activities-management-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-activities-management-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border:
+      1px solid var(--admin-border);
+    border-radius: 11px;
+    background: var(--admin-white);
+    box-shadow:
+      0 5px 15px
+      rgb(10 39 64 / 5%);
+  }
+
+  .admin-activities-management-table
+    tbody
+    tr:hover {
+    background: var(--admin-white);
+  }
+
+  /* Las actividades desactivadas conservan una diferencia visual */
+  .admin-activities-management-table
+    tbody
+    .admin-activity-row--inactive {
+    border-color: #dccbd0;
+    background: var(--admin-white);
+  }
+
+  .admin-activities-management-table
+    tbody
+    .admin-activity-row--inactive:hover {
+    background: var(--admin-white);
+  }
+
+  /* El nombre funciona como encabezado de la tarjeta */
+  .admin-activities-management-table
+    tbody
+    th[data-label='Actividad'] {
+    width: 100%;
+    display: block;
+    padding: 13px 14px;
+    border-bottom:
+      1px solid var(--admin-border);
+    background:
+      linear-gradient(
+        90deg,
+        #f4f9fc,
+        #fbfdfe
+      );
+  }
+
+  /* Cada dato presenta su etiqueta y su valor */
+  .admin-activities-management-table
+    tbody
+    td {
+    width: 100%;
+    min-height: 44px;
+    display: grid;
+    grid-template-columns:
+      minmax(92px, 0.42fr)
+      minmax(0, 0.58fr);
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-bottom:
+      1px solid #edf1f4;
+    text-align: right;
+  }
+
+  .admin-activities-management-table
+    tbody
+    td::before {
+    min-width: 0;
+    color: var(--admin-muted);
+    content: attr(data-label);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.035em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  /*
+  * La última fila de la tabla también necesita sus divisiones
+  * internas cuando se transforma en tarjeta.
+  */
+  .admin-activities-management-table
+    tbody
+    tr:last-child
+    > th[data-label='Actividad'],
+  .admin-activities-management-table
+    tbody
+    tr:last-child
+    > td {
+    border-bottom:
+      1px solid #edf1f4;
+  }
+
+  .admin-activities-management-table
+    tbody
+    tr
+    > td:last-child {
+    border-bottom: 0;
+  }
+
+  /* El título puede ocupar hasta dos líneas */
+  .admin-activity-name {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  .admin-activity-name > div {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-activity-name strong {
+    max-width: none;
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.4;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Los valores se alinean al lado derecho de su etiqueta */
+  .admin-activity-schedule,
+  .admin-activity-capacity {
+    min-width: 0;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .admin-activity-capacity strong,
+  .admin-activity-capacity small {
+    white-space: normal;
+  }
+
+  .admin-activity-state,
+  .admin-activity-visibility {
+    justify-self: end;
+  }
+
+  /* La asistencia utiliza todo el ancho disponible */
+  .admin-activities-management-table
+    td[data-label='Asistencia'] {
+    display: block;
+    text-align: left;
+  }
+
+  .admin-activities-management-table
+    td[data-label='Asistencia']::before {
+    display: block;
+    margin-bottom: 9px;
+  }
+
+  .admin-activity-attendance-actions {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-activity-attendance-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Los botones quedan cómodos para utilizarlos con el dedo */
+  .admin-activity-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .admin-activity-actions button {
+    width: 38px;
+    height: 38px;
+    border-color: var(--admin-border);
+    background: #f8fafb;
+  }
+
+  .admin-activity-confirm-dialog__content,
   .admin-qr-dialog__content {
     width:
       min(calc(100vw - 22px), 470px);
@@ -1255,55 +2040,89 @@
     border-radius: 13px;
   }
 
+  .admin-activity-confirm-dialog__activity,
+  .admin-qr-dialog__activity {
+    max-width: 100%;
+  }
+
+  .admin-activity-confirm-dialog__actions,
+  .admin-qr-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-activity-confirm-dialog__cancel,
+  .admin-activity-confirm-dialog__confirm,
+  .admin-qr-dialog__secondary,
+  .admin-qr-dialog__primary {
+    width: 100%;
+  }
+
   .admin-qr-dialog__close {
     top: 10px;
     right: 10px;
-  }
-
-  .admin-qr-dialog__activity {
-    max-width: 100%;
   }
 
   .admin-qr-dialog__code {
     width: min(100%, 260px);
     padding: 12px;
   }
+}
 
-  .admin-qr-dialog__actions {
-    flex-direction: column-reverse;
+/* En teléfonos estrechos los controles de asistencia se apilan */
+@media (max-width: 430px) {
+  .admin-activities-management-table-wrapper {
+    padding: 8px;
   }
 
-  .admin-qr-dialog__secondary,
-  .admin-qr-dialog__primary {
-    width: 100%;
+  .admin-activities-management-table
+    tbody
+    td {
+    grid-template-columns:
+      minmax(78px, 0.4fr)
+      minmax(0, 0.6fr);
+    gap: 10px;
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+
+  .admin-activity-attendance-actions {
+    grid-template-columns: 1fr;
   }
 }
 
-/* RESPETA LA CONFIGURACIÓN DE MOVIMIENTO DEL USUARIO */
+/* Respeta la configuración de movimiento del usuario */
 @media (prefers-reduced-motion: reduce) {
   .admin-activities-heading,
+  .admin-activities-tabs,
   .admin-activities-toolbar,
   .admin-activities-state,
   .admin-activities-list,
-  .admin-activities-future-note,
   .admin-activities-state__loader,
   .admin-activity-attendance-button__loader,
+  .admin-activity-confirm-dialog__loader,
+  .admin-activity-confirm-dialog__overlay,
+  .admin-activity-confirm-dialog__content,
   .admin-qr-dialog__overlay,
   .admin-qr-dialog__content {
     animation: none;
   }
 
-  .admin-activities-history-button,
   .admin-activities-create-button,
+  .admin-activities-tab,
+  .admin-activities-tab::after,
   .admin-activities-search__control,
   .admin-activities-filter select,
+  .admin-activities-clear-button,
   .admin-activities-state a,
   .admin-activities-state button,
+  .admin-activities-no-results__clear,
   .admin-activities-management-table
     tbody
     tr,
   .admin-activity-attendance-button,
   .admin-activity-actions button,
+  .admin-activity-confirm-dialog__cancel,
+  .admin-activity-confirm-dialog__confirm,
   .admin-qr-dialog__close,
   .admin-qr-dialog__code,
   .admin-qr-dialog__secondary,

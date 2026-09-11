@@ -1,0 +1,828 @@
+/*
+ * Estilos de la vista para editar una actividad.
+ */
+.admin-edit-activity-page {
+    width: min(100%, 1420px);
+    margin: 0 auto;
+}
+
+
+/* Navegación superior */
+.admin-edit-activity-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 14px;
+    color: var(--admin-text-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+    animation:
+        adminEditActivityEntrance
+        460ms ease-out both;
+}
+
+.admin-edit-activity-breadcrumb a,
+.admin-edit-activity-breadcrumb button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  color: var(--admin-blue);
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-edit-activity-breadcrumb
+  a svg,
+.admin-edit-activity-breadcrumb
+  button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.admin-edit-activity-breadcrumb a:hover,
+.admin-edit-activity-breadcrumb button:hover {
+    color: var(--admin-navy);
+    transform: translateX(-2px);
+}
+
+.admin-edit-activity-breadcrumb__separator {
+    color: #9aabc0;
+}
+
+
+/* Encabezado de la vista */
+.admin-edit-activity-heading {
+    margin-bottom: 22px;
+    animation:
+        adminEditActivityEntrance
+        500ms 40ms ease-out both;
+}
+
+.admin-edit-activity-heading__title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 13px;
+}
+
+.admin-edit-activity-heading h1 {
+    margin: 0;
+    color: var(--admin-navy);
+    font-size: clamp(1.8rem, 3vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+}
+
+.admin-edit-activity-heading p {
+    max-width: 720px;
+    margin: 8px 0 0;
+    color: var(--admin-text-soft);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+
+/* Estado actual de la actividad */
+.admin-edit-activity-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 31px;
+    padding: 6px 13px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-edit-activity-status svg {
+    width: 15px;
+    height: 15px;
+}
+
+.admin-edit-activity-status--programada {
+    border-color: #b9ddf4;
+    background: linear-gradient(135deg, #e8f5fd, #d9eefb);
+    color: #09649a;
+}
+
+.admin-edit-activity-status--en-curso {
+    border-color: #b7e3ca;
+    background: linear-gradient(135deg, #ecf9f1, #ddf3e6);
+    color: #267249;
+}
+
+.admin-edit-activity-status--finalizada {
+    border-color: #d5dde7;
+    background: linear-gradient(135deg, #f4f6f8, #e9eef3);
+    color: #526578;
+}
+
+.admin-edit-activity-status--cancelada {
+    border-color: #f0c7c7;
+    background: linear-gradient(135deg, #fff3f3, #fde5e5);
+    color: #b63b3b;
+}
+
+
+/* Tarjeta principal del formulario */
+.admin-edit-activity-form {
+    position: relative;
+    overflow: hidden;
+    padding: 27px;
+    border: 1px solid #cfdeeb;
+    border-radius: 15px;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(88, 181, 224, 0.08),
+            transparent 32%
+        ),
+        linear-gradient(145deg, #ffffff, #fbfdff);
+    box-shadow:
+        0 13px 32px rgba(17, 58, 95, 0.07),
+        0 2px 6px rgba(17, 58, 95, 0.03);
+    animation:
+        adminEditActivityEntrance
+        560ms 100ms ease-out both;
+}
+
+.admin-edit-activity-form::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(
+        90deg,
+        #08699d 0%,
+        #56b6df 58%,
+        #f1b62f 100%
+    );
+    content: "";
+}
+
+.admin-edit-activity-form__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 21px 17px;
+}
+
+
+/* Distribución de los campos */
+.admin-edit-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.admin-edit-field--full {
+    grid-column: 1 / -1;
+}
+
+.admin-edit-field--wide {
+    grid-column: span 2;
+}
+
+.admin-edit-field label {
+    color: var(--admin-navy);
+    font-size: 0.78rem;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+.admin-edit-field__required {
+    color: #c43d3d;
+}
+
+.admin-edit-field__support {
+    margin: 0;
+    color: var(--admin-text-soft);
+    font-size: 0.7rem;
+    line-height: 1.45;
+}
+
+.admin-edit-field__error {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    margin: 0;
+    color: #bd3737;
+    font-size: 0.7rem;
+    font-weight: 650;
+    line-height: 1.4;
+}
+
+.admin-edit-field__error svg {
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    flex: 0 0 auto;
+}
+
+
+/* Contenedor compartido por inputs y textarea */
+.admin-edit-control {
+    display: grid;
+    width: 100%;
+    min-height: 47px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid #c9d7e4;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 2px 5px rgba(24, 65, 103, 0.025);
+    transition:
+        border-color 170ms ease,
+        box-shadow 170ms ease,
+        background-color 170ms ease;
+}
+
+.admin-edit-control:hover {
+    border-color: #a8c6dc;
+}
+
+.admin-edit-control:focus-within {
+    border-color: var(--admin-blue);
+    background: #ffffff;
+    box-shadow:
+        0 0 0 3px rgba(28, 137, 196, 0.13),
+        0 5px 12px rgba(22, 91, 132, 0.06);
+}
+
+.admin-edit-control__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #d6e2ec;
+    background: linear-gradient(145deg, #f0f8fd, #e4f2fa);
+    color: #0875aa;
+    transition:
+        color 170ms ease,
+        background-color 170ms ease;
+}
+
+.admin-edit-control__icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.admin-edit-control:focus-within .admin-edit-control__icon {
+    color: var(--admin-navy);
+    background: linear-gradient(145deg, #e6f4fc, #d7edf9);
+}
+
+
+/* Variantes de color para los iconos */
+.admin-edit-control__icon--gold {
+    border-right-color: #efddaa;
+    background: linear-gradient(145deg, #fff9e9, #fff0c9);
+    color: #a96e08;
+}
+
+.admin-edit-control:focus-within .admin-edit-control__icon--gold {
+    background: linear-gradient(145deg, #fff6dc, #ffeab6);
+    color: #8f5c05;
+}
+
+.admin-edit-control__icon--green {
+    border-right-color: #c8e5d4;
+    background: linear-gradient(145deg, #eefaf3, #dff3e7);
+    color: #27805a;
+}
+
+.admin-edit-control:focus-within .admin-edit-control__icon--green {
+    background: linear-gradient(145deg, #e8f8ef, #d4efdf);
+    color: #206b4c;
+}
+
+.admin-edit-control__icon--navy {
+    border-right-color: #cad9e8;
+    background: linear-gradient(145deg, #edf4fa, #e1ebf5);
+    color: var(--admin-navy);
+}
+
+
+/* Controles del formulario */
+.admin-edit-control input,
+.admin-edit-control textarea {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--admin-text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.admin-edit-control input {
+    min-height: 45px;
+    padding: 0 14px;
+}
+
+.admin-edit-control textarea {
+    min-height: 100px;
+    padding: 12px 14px;
+    resize: vertical;
+}
+
+.admin-edit-control input::placeholder,
+.admin-edit-control textarea::placeholder {
+    color: #91a0af;
+    font-weight: 400;
+}
+
+.admin-edit-control input:disabled,
+.admin-edit-control textarea:disabled {
+    color: #7c8996;
+    cursor: not-allowed;
+}
+
+.admin-edit-control:has(input:disabled),
+.admin-edit-control:has(textarea:disabled) {
+    border-color: #dce3e9;
+    background: #f4f6f8;
+    box-shadow: none;
+    opacity: 0.82;
+}
+
+.admin-edit-control--textarea {
+    align-items: stretch;
+}
+
+.admin-edit-control--textarea .admin-edit-control__icon {
+    align-items: flex-start;
+    padding-top: 13px;
+}
+
+.admin-edit-control--error {
+    border-color: #dc6a6a;
+    background: #fffafa;
+}
+
+.admin-edit-control--error:hover,
+.admin-edit-control--error:focus-within {
+    border-color: #cc4747;
+}
+
+.admin-edit-control--error:focus-within {
+    box-shadow: 0 0 0 3px rgba(204, 71, 71, 0.12);
+}
+
+.admin-edit-control--error .admin-edit-control__icon {
+    border-right-color: #f0cccc;
+    background: #fff0f0;
+    color: #c43d3d;
+}
+
+.admin-edit-control input[type="date"],
+.admin-edit-control input[type="time"] {
+    color-scheme: light;
+}
+
+.admin-edit-control input[type="date"]::-webkit-calendar-picker-indicator,
+.admin-edit-control input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.72;
+    transition: opacity 160ms ease;
+}
+
+.admin-edit-control input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.admin-edit-control input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+
+/* Mensaje informativo */
+.admin-edit-activity-note {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-top: 24px;
+    padding: 13px 15px;
+    border: 1px solid #b9dcf1;
+    border-radius: 10px;
+    background:
+        radial-gradient(
+            circle at right center,
+            rgba(255, 190, 53, 0.1),
+            transparent 27%
+        ),
+        linear-gradient(135deg, #edf8fe, #e4f3fc);
+    color: #075e92;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.admin-edit-activity-note__icon {
+    display: flex;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #0b75aa;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(11, 117, 170, 0.18);
+}
+
+.admin-edit-activity-note__icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+
+/* Botones del formulario */
+.admin-edit-activity-form__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 11px;
+    margin-top: 23px;
+    padding-top: 20px;
+    border-top: 1px solid #dbe5ed;
+}
+
+.admin-edit-activity-cancel,
+.admin-edit-activity-submit {
+    display: inline-flex;
+    min-height: 43px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 750;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.admin-edit-activity-cancel {
+    border: 1px solid #8eacc3;
+    background: #ffffff;
+    color: var(--admin-navy);
+}
+
+.admin-edit-activity-cancel:hover {
+    border-color: var(--admin-blue);
+    background: #f0f8fd;
+    transform: translateY(-1px);
+}
+
+.admin-edit-activity-submit {
+    min-width: 155px;
+    border: 1px solid var(--admin-navy);
+    background: linear-gradient(
+        135deg,
+        var(--admin-navy),
+        #075f91
+    );
+    color: #ffffff;
+    box-shadow: 0 7px 16px rgba(5, 60, 100, 0.19);
+}
+
+.admin-edit-activity-submit:hover {
+    border-color: #075f91;
+    background: linear-gradient(
+        135deg,
+        var(--admin-navy-hover),
+        #0873a9
+    );
+    box-shadow: 0 9px 20px rgba(5, 60, 100, 0.24);
+    transform: translateY(-1px);
+}
+
+.admin-edit-activity-cancel:active,
+.admin-edit-activity-submit:active {
+    transform: translateY(0);
+}
+
+.admin-edit-activity-cancel:focus-visible,
+.admin-edit-activity-submit:focus-visible,
+.admin-edit-activity-breadcrumb a:focus-visible,
+.admin-edit-activity-breadcrumb button:focus-visible {
+    outline: 3px solid rgba(33, 145, 201, 0.24);
+    outline-offset: 2px;
+}
+
+.admin-edit-activity-cancel:disabled,
+.admin-edit-activity-submit:disabled {
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.58;
+    transform: none;
+}
+
+.admin-edit-activity-submit svg,
+.admin-edit-activity-cancel svg {
+    width: 17px;
+    height: 17px;
+}
+
+.admin-edit-activity-submit__loader {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.38);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: adminEditLoader 700ms linear infinite;
+}
+
+
+/* Estados de carga y error */
+.admin-edit-activity-state {
+    display: flex;
+    min-height: 390px;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    border: 1px solid #d5e1ea;
+    border-radius: 15px;
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(20, 61, 96, 0.055);
+}
+
+.admin-edit-activity-state__content {
+    display: flex;
+    max-width: 480px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.admin-edit-activity-state__loader {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 15px;
+    border: 3px solid #dceaf3;
+    border-top-color: var(--admin-blue);
+    border-radius: 50%;
+    animation: adminEditLoader 750ms linear infinite;
+}
+
+.admin-edit-activity-state__icon {
+    display: flex;
+    width: 54px;
+    height: 54px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    border-radius: 16px;
+    background: #fff0f0;
+    color: #c53d3d;
+}
+
+.admin-edit-activity-state__icon svg {
+    width: 27px;
+    height: 27px;
+}
+
+.admin-edit-activity-state h2 {
+    margin: 0;
+    color: var(--admin-navy);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.admin-edit-activity-state p {
+    margin: 8px 0 0;
+    color: var(--admin-text-soft);
+    font-size: 0.79rem;
+    line-height: 1.55;
+}
+
+.admin-edit-activity-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 17px;
+}
+
+
+/* Animaciones pequeñas de la vista */
+@keyframes adminEditLoader {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes adminEditActivityEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* Ajustes para pantallas medianas */
+@media (max-width: 1024px) {
+    .admin-edit-activity-form {
+        padding: 24px;
+    }
+
+    .admin-edit-activity-form__grid {
+        gap: 19px 15px;
+    }
+}
+
+@media (max-width: 840px) {
+    .admin-edit-activity-form__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-edit-field--wide,
+    .admin-edit-field--full {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 620px) {
+    .admin-edit-activity-breadcrumb {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .admin-edit-activity-heading {
+        margin-bottom: 18px;
+    }
+
+    .admin-edit-activity-heading__title {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .admin-edit-activity-heading h1 {
+        width: 100%;
+        font-size: 1.65rem;
+    }
+
+    .admin-edit-activity-heading p {
+        margin-top: 7px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+
+    .admin-edit-activity-status {
+        min-height: 29px;
+        padding: 5px 11px;
+        font-size: 0.68rem;
+    }
+
+    /* El formulario utiliza una sola columna */
+    .admin-edit-activity-form {
+        padding: 21px 15px 17px;
+        border-radius: 11px;
+    }
+
+    .admin-edit-activity-form__grid {
+        grid-template-columns:
+            minmax(0, 1fr);
+        gap: 17px;
+    }
+
+    .admin-edit-field,
+    .admin-edit-field--wide,
+    .admin-edit-field--full {
+        grid-column: 1;
+    }
+
+    /* Reduce el espacio de los iconos sin comprimir los campos */
+    .admin-edit-control {
+        min-width: 0;
+        grid-template-columns:
+            42px minmax(0, 1fr);
+    }
+
+    .admin-edit-control__icon svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .admin-edit-control input,
+    .admin-edit-control textarea {
+        min-width: 0;
+        font-size: 0.8rem;
+    }
+
+    .admin-edit-control input {
+        min-height: 46px;
+        padding-right: 11px;
+        padding-left: 11px;
+    }
+
+    .admin-edit-control textarea {
+        min-height: 115px;
+        padding: 11px;
+    }
+
+    .admin-edit-field__support {
+        overflow-wrap: break-word;
+        font-size: 0.67rem;
+    }
+
+    .admin-edit-field__error {
+        font-size: 0.67rem;
+    }
+
+    /* El aviso mantiene el icono alineado con la primera línea */
+    .admin-edit-activity-note {
+        align-items: flex-start;
+        gap: 9px;
+        margin-top: 20px;
+        padding: 12px;
+        font-size: 0.72rem;
+    }
+
+    .admin-edit-activity-note__icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Guardar se mantiene como la acción principal */
+    .admin-edit-activity-form__actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+        gap: 9px;
+        margin-top: 19px;
+        padding-top: 17px;
+    }
+
+    .admin-edit-activity-cancel,
+    .admin-edit-activity-submit {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    /* También adapta los estados de carga y error */
+    .admin-edit-activity-state {
+        min-height: 330px;
+        padding: 24px 18px;
+        border-radius: 11px;
+    }
+
+    .admin-edit-activity-state__actions {
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-edit-activity-state__actions
+        .admin-edit-activity-cancel,
+    .admin-edit-activity-state__actions
+        .admin-edit-activity-submit {
+        width: 100%;
+    }
+}
+
+
+/* Respeta la configuración de movimiento del dispositivo */
+@media (prefers-reduced-motion: reduce) {
+    .admin-edit-activity-breadcrumb,
+    .admin-edit-activity-heading,
+    .admin-edit-activity-form,
+    .admin-edit-activity-state__loader,
+    .admin-edit-activity-submit__loader {
+        animation: none;
+    }
+
+    .admin-edit-activity-breadcrumb a,
+    .admin-edit-activity-breadcrumb button,
+    .admin-edit-activity-cancel,
+    .admin-edit-activity-submit,
+    .admin-edit-control {
+        transition: none;
+    }
+}

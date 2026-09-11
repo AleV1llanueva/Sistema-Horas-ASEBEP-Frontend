@@ -1,8 +1,9 @@
 /*
  * Datos simulados del administrador principal.
  *
- * Este archivo concentra temporalmente los datos utilizados
- * por las vistas administrativas mientras se prepara el backend.
+ * Este archivo concentra temporalmente la información utilizada
+ * por las vistas administrativas cuando la variable de entorno
+ * VITE_USAR_DATOS_ADMIN_SIMULADOS contiene el valor "true".
  */
 
 export const administradorPrincipalMock = {
@@ -18,8 +19,10 @@ export const administradorPrincipalMock = {
     segundoNombre: '',
     primerApellido: 'Principal',
     segundoApellido: 'ASEBEP',
-    nombreCompleto: 'Administrador Principal ASEBEP',
-    correoInstitucional: 'administracion@asebep.test',
+    nombreCompleto:
+      'Administrador Principal ASEBEP',
+    correoInstitucional:
+      'administracion@asebep.test',
   },
 
   datosAdministrativos: {
@@ -28,30 +31,35 @@ export const administradorPrincipalMock = {
   },
 }
 
-/*
- * Las propiedades "nombre" y "hora" se conservan
- * temporalmente para mantener compatibilidad con el
- * proceso de normalización del servicio de actividades.
- */
+// ACTIVIDADES ADMINISTRATIVAS SIMULADAS
 const proximasActividadesMock = [
   {
     id: 'actividad-001',
-    nombre: 'Apoyo en biblioteca',
-    descripcion: 'Apoyo en la organización, clasificación y atención de materiales en la biblioteca.',
+    nombre: 'Jornada de reforestación universitaria',
+    descripcion: 'Participa en la recuperación de las áreas verdes del campus universitario. La jornada incluye preparación del terreno, siembra y orientación para el cuidado de las nuevas plantas.',
     fecha: '2026-09-12',
-    hora: '09:00',
+    hora: '08:00',
     horaFinalizacion: '12:00',
-    lugar: 'Biblioteca Central',
-    cuposDisponibles: 20,
-    horasAcreditables: 3,
+    lugar: 'Jardín Botánico UNAH',
+
+    /*
+     * Esta actividad tiene tres inscripciones simuladas.
+     * Por eso quedan 22 espacios de los 25 originales.
+     */
+    cuposTotales: 25,
+    cuposDisponibles: 22,
+    horasAcreditables: 4,
     estado: 'programada',
     activa: true,
     eliminada: false,
     desactivadaEn: null,
     eliminadaEn: null,
+
     creadaEn: '2026-08-20T14:00:00.000Z',
+
     actualizadaEn: '2026-08-20T14:00:00.000Z',
   },
+
   {
     id: 'actividad-002',
     nombre: 'Jornada de limpieza',
@@ -60,6 +68,9 @@ const proximasActividadesMock = [
     hora: '08:00',
     horaFinalizacion: '11:00',
     lugar: 'Campus Norte',
+
+    // Tiene una inscripción simulada.
+    cuposTotales: 31,
     cuposDisponibles: 30,
     horasAcreditables: 3,
     estado: 'programada',
@@ -70,6 +81,7 @@ const proximasActividadesMock = [
     creadaEn: '2026-08-20T15:00:00.000Z',
     actualizadaEn: '2026-08-20T15:00:00.000Z',
   },
+
   {
     id: 'actividad-003',
     nombre: 'Apoyo administrativo',
@@ -78,16 +90,23 @@ const proximasActividadesMock = [
     hora: '10:00',
     horaFinalizacion: '13:00',
     lugar: 'Oficinas ASEBEP',
+
+    /*
+     * Esta actividad inicia desactivada para comprobar
+     * posteriormente el filtro y la reactivación.
+     */
+    cuposTotales: 16,
     cuposDisponibles: 15,
     horasAcreditables: 3,
     estado: 'programada',
-    activa: true,
+    activa: false,
     eliminada: false,
-    desactivadaEn: null,
+    desactivadaEn: '2026-09-09T15:30:00.000Z',
     eliminadaEn: null,
     creadaEn: '2026-08-21T14:00:00.000Z',
-    actualizadaEn: '2026-08-21T14:00:00.000Z',
+    actualizadaEn: '2026-09-09T15:30:00.000Z',
   },
+
   {
     id: 'actividad-004',
     nombre: 'Evento cultural',
@@ -96,6 +115,9 @@ const proximasActividadesMock = [
     hora: '16:00',
     horaFinalizacion: '19:00',
     lugar: 'Auditorio Central',
+
+    // Todavía no tiene estudiantes inscritos.
+    cuposTotales: 50,
     cuposDisponibles: 50,
     horasAcreditables: 3,
     estado: 'programada',
@@ -106,8 +128,61 @@ const proximasActividadesMock = [
     creadaEn: '2026-08-21T16:00:00.000Z',
     actualizadaEn: '2026-08-21T16:00:00.000Z',
   },
+
+  {
+    id: 'actividad-005',
+    nombre: 'Entrega de kits estudiantiles',
+    descripcion: 'Apoyo en la organización y entrega de kits para estudiantes beneficiarios de ASEBEP.',
+    fecha: '2026-09-10',
+    hora: '18:00',
+    horaFinalizacion: '22:00',
+    lugar: 'Edificio Administrativo ASEBEP',
+
+    /*
+     * Sus dos cupos están ocupados para comprobar
+     * el estado visual de cupos llenos.
+     */
+    cuposTotales: 2,
+    cuposDisponibles: 0,
+    horasAcreditables: 4,
+    estado: 'en-curso',
+    activa: true,
+    eliminada: false,
+    desactivadaEn: null,
+    eliminadaEn: null,
+    creadaEn: '2026-08-29T16:00:00.000Z',
+    actualizadaEn: '2026-09-10T18:00:00.000Z',
+  },
+
+  {
+    id: 'actividad-006',
+    nombre: 'Clasificación de material educativo',
+    descripcion: 'Apoyo en la clasificación y organización de material educativo utilizado por los estudiantes becarios.',
+    fecha: '2026-09-05',
+    hora: '08:00',
+    horaFinalizacion: '12:00',
+    lugar: 'Centro de Recursos ASEBEP',
+
+    // Esta actividad aparecerá dentro del historial.
+    cuposTotales: 12,
+    cuposDisponibles: 10,
+    horasAcreditables: 4,
+    estado: 'finalizada',
+    activa: true,
+    eliminada: false,
+    desactivadaEn: null,
+    eliminadaEn: null,
+    creadaEn: '2026-08-25T14:00:00.000Z',
+    actualizadaEn: '2026-09-05T18:30:00.000Z',
+  },
 ]
 
+/*
+ * INFORMACIÓN GENERAL DEL DASHBOARD
+ *
+ * Las próximas actividades son compartidas con el módulo
+ * administrativo para evitar mantener dos listas diferentes.
+ */
 export const adminPrincipalDashboardMock = {
   resumen: {
     actividadesProximas: 4,
@@ -117,7 +192,8 @@ export const adminPrincipalDashboardMock = {
     estudiantesActivos: 124,
   },
 
-  proximasActividades: proximasActividadesMock,
+  proximasActividades:
+    proximasActividadesMock,
 }
 
 /*
@@ -127,16 +203,14 @@ export const adminPrincipalDashboardMock = {
 export const CUOTA_MENSUAL_APORTACION = 20
 
 /*
- * Estudiantes simulados para probar el listado administrativo,
- * los filtros, el almacenamiento local y la futura vista de detalle.
+ * ESTUDIANTES ADMINISTRATIVOS SIMULADOS
  *
- * La estructura de credenciales, datosPersonales y datosBecario
- * coincide con el modelo utilizado en el portal del estudiante.
+ * Estos registros alimentan el listado general y la vista
+ * administrativa de detalle de cada estudiante.
  */
 export const estudiantesAdminMock = [
   {
     id: 'estudiante-20241001324',
-
     credenciales: {
       rol: 'becario',
       activo: true,
@@ -163,7 +237,7 @@ export const estudiantesAdminMock = [
       horasFaltantes: 130,
 
       /*
-       * El saldo pendiente se calculará en el servicio:
+       * El saldo pendiente se calcula en el servicio:
        * mesesSinPagar × CUOTA_MENSUAL_APORTACION.
        */
       mesesSinPagar: 2,
@@ -178,6 +252,7 @@ export const estudiantesAdminMock = [
         horasAcreditadas: 6,
         registradoPor: 'Coordinación de Horas',
       },
+
       {
         id: 'registro-horas-002',
         fecha: '2026-08-17',
@@ -196,6 +271,7 @@ export const estudiantesAdminMock = [
         estado: 'pendiente',
         comprobante: null,
       },
+
       {
         id: 'aportacion-002',
         periodo: 'Julio 2026',
@@ -204,12 +280,14 @@ export const estudiantesAdminMock = [
         estado: 'pendiente',
         comprobante: null,
       },
+
       {
         id: 'aportacion-003',
         periodo: 'Junio 2026',
         monto: CUOTA_MENSUAL_APORTACION,
         fechaPago: '2026-06-10',
         estado: 'confirmada',
+
         comprobante:
           'comprobante-juan-junio-2026',
       },
@@ -224,7 +302,6 @@ export const estudiantesAdminMock = [
 
   {
     id: 'estudiante-20241002418',
-
     credenciales: {
       rol: 'becario',
       activo: true,
@@ -238,7 +315,7 @@ export const estudiantesAdminMock = [
       segundoApellido: 'Martínez',
       nombreCompleto: 'María Fernanda López Martínez',
       correoPersonal: 'maria.lopez@example.test',
-      correoInstitucional:'maria.lopez@unah.test',
+      correoInstitucional: 'maria.lopez@unah.test',
       carrera: 'Licenciatura en Administración de Empresas',
       telefono: '97654321',
       anioNacimiento: 2002,
@@ -257,10 +334,12 @@ export const estudiantesAdminMock = [
       {
         id: 'registro-horas-003',
         fecha: '2026-08-20',
+
         titulo: 'Organización de documentos administrativos',
         horasAcreditadas: 5,
         registradoPor: 'Administración ASEBEP',
       },
+
       {
         id: 'registro-horas-004',
         fecha: '2026-08-12',
@@ -277,29 +356,38 @@ export const estudiantesAdminMock = [
         monto: CUOTA_MENSUAL_APORTACION,
         fechaPago: '2026-08-08',
         estado: 'confirmada',
-        comprobante: 'comprobante-maria-agosto-2026',
+
+        comprobante:
+          'comprobante-maria-agosto-2026',
       },
+
       {
         id: 'aportacion-005',
         periodo: 'Julio 2026',
         monto: CUOTA_MENSUAL_APORTACION,
         fechaPago: '2026-07-09',
         estado: 'confirmada',
-        comprobante: 'comprobante-maria-julio-2026',
+
+        comprobante:
+          'comprobante-maria-julio-2026',
       },
+
       {
         id: 'aportacion-006',
         periodo: 'Junio 2026',
         monto: CUOTA_MENSUAL_APORTACION,
         fechaPago: '2026-06-07',
         estado: 'confirmada',
-        comprobante: 'comprobante-maria-junio-2026',
+
+        comprobante:
+          'comprobante-maria-junio-2026',
       },
     ],
 
     eliminado: false,
     desactivadoEn: null,
     eliminadoEn: null,
+
     creadoEn: '2023-02-01T14:00:00.000Z',
     actualizadoEn: '2026-08-20T15:00:00.000Z',
   },
@@ -308,7 +396,7 @@ export const estudiantesAdminMock = [
     id: 'estudiante-20241003756',
 
     /*
-     * Este estudiante inicia desactivado para probar
+     * Este estudiante inicia desactivado para comprobar
      * el filtro y la futura acción de reactivación.
      */
     credenciales: {
@@ -347,6 +435,7 @@ export const estudiantesAdminMock = [
         horasAcreditadas: 4,
         registradoPor: 'Coordinación de Horas',
       },
+
       {
         id: 'registro-horas-006',
         fecha: '2026-06-05',
@@ -365,6 +454,7 @@ export const estudiantesAdminMock = [
         estado: 'pendiente',
         comprobante: null,
       },
+
       {
         id: 'aportacion-008',
         periodo: 'Julio 2026',
@@ -373,6 +463,7 @@ export const estudiantesAdminMock = [
         estado: 'pendiente',
         comprobante: null,
       },
+
       {
         id: 'aportacion-009',
         periodo: 'Junio 2026',
@@ -381,6 +472,7 @@ export const estudiantesAdminMock = [
         estado: 'pendiente',
         comprobante: null,
       },
+
       {
         id: 'aportacion-010',
         periodo: 'Mayo 2026',
@@ -396,5 +488,134 @@ export const estudiantesAdminMock = [
     eliminadoEn: null,
     creadoEn: '2022-05-15T14:00:00.000Z',
     actualizadoEn: '2026-07-15T18:00:00.000Z',
+  },
+]
+
+/*
+ * ASISTENCIAS SIMULADAS POR ACTIVIDAD
+ *
+ * Esta colección reproduce la información que entrega:
+ * GET /asistencias/actividades/{actividad_id}
+ */
+export const asistenciasAdminMock = [
+  /*
+   * ACTIVIDAD 001
+   *
+   * Los tres registros cubren los estados visuales necesarios:
+   *
+   * 1. Inscrito sin entrada.
+   * 2. Entrada registrada y salida pendiente.
+   * 3. Entrada, salida y horas acreditadas.
+   */
+  {
+    id: 'asistencia-actividad-001-juan',
+    actividadId: 'actividad-001',
+    numeroCuenta: '20241001324',
+    checkIn: false,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Inscrito',
+  },
+
+  {
+    id: 'asistencia-actividad-001-maria',
+    actividadId: 'actividad-001',
+    numeroCuenta: '20241002418',
+    checkIn: true,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Asistió',
+  },
+
+  {
+    id: 'asistencia-actividad-001-carlos',
+    actividadId: 'actividad-001',
+    numeroCuenta: '20241003756',
+    checkIn: true,
+    checkOut: true,
+    horasRegistradas: 4,
+    estado: 'Asistió',
+  },
+
+  /*
+   * ACTIVIDAD 002
+   * Juan se encuentra inscrito, pero aún no registra entrada.
+   */
+  {
+    id: 'asistencia-actividad-002-juan',
+    actividadId: 'actividad-002',
+    numeroCuenta: '20241001324',
+    checkIn: false,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Inscrito',
+  },
+
+  /*
+   * ACTIVIDAD 003
+   * La inscripción se conserva aunque la actividad esté desactivada.
+   */
+  {
+    id: 'asistencia-actividad-003-maria',
+    actividadId: 'actividad-003',
+    numeroCuenta: '20241002418',
+    checkIn: false,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Inscrito',
+  },
+
+  /*
+   * La actividad 004 no aparece en esta colección porque
+   * todavía no tiene estudiantes inscritos.
+   */
+
+  /*
+   * ACTIVIDAD 005
+   * Ambos estudiantes ocupan los dos cupos disponibles.
+   */
+  {
+    id: 'asistencia-actividad-005-juan',
+    actividadId: 'actividad-005',
+    numeroCuenta: '20241001324',
+    checkIn: true,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Asistió',
+  },
+
+  {
+    id: 'asistencia-actividad-005-maria',
+    actividadId: 'actividad-005',
+    numeroCuenta: '20241002418',
+    checkIn: true,
+    checkOut: false,
+    horasRegistradas: 0,
+    estado: 'Asistió',
+  },
+
+  /*
+   * ACTIVIDAD 006
+   * Los estudiantes completaron la actividad
+   * y recibieron las horas correspondientes.
+   */
+  {
+    id: 'asistencia-actividad-006-juan',
+    actividadId: 'actividad-006',
+    numeroCuenta: '20241001324',
+    checkIn: true,
+    checkOut: true,
+    horasRegistradas: 4,
+    estado: 'Asistió',
+  },
+
+  {
+    id: 'asistencia-actividad-006-maria',
+    actividadId: 'actividad-006',
+    numeroCuenta: '20241002418',
+    checkIn: true,
+    checkOut: true,
+    horasRegistradas: 4,
+    estado: 'Asistió',
   },
 ]
