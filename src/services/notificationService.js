@@ -1,39 +1,48 @@
 import { toast } from 'sonner'
-// Duraciones de las notificaciones
+
+// Duraciones utilizadas por las diferentes tipos de notificaciones de la aplicacion.
 const DURACIONES = Object.freeze({
     normal: 4500,
     error: 6000,
     confirmacion: 7000,
 })
 
-/* Construimos las opciones comunes de las notificaciones
-- Descripcion
-- Duracion
-- id
+/*
+* Construye las opciones compartidas por Sonner.
+* toasterId permite dirigir una notificacion hacia un
+* Toaster especifico.
 */
 function construirOpciones({
     descripcion,
     duracion,
     id,
+    toasterId,
 }) {
     const opciones = {
-    descripcion: descripcion,
-    duration: duracion,
+        description: descripcion,
+        duration: duracion,
+    }
+
+    // Evita que varias notificaciones iguales se acumulen.
+    if (id) {
+        opciones.id = id
+    }
+
+    // Solamente se agrega cuando una vista necesita utilizar un Toaster diferente al global.
+    if (toasterId) {
+        opciones.toasterId = toasterId
+    }
+
+    return opciones
 }
 
-// Se agrega el identificador cuando fue proporcionado.
-if (id) {
-    opciones.id = id
-}
-return opciones
-}
-
-// Muestra una operacion completada con exito
+// Muestra una operacion completada correctamente.
 export function notificarExito({
     titulo,
     descripcion,
     duracion = DURACIONES.normal,
     id,
+    toasterId,
 }) {
     return toast.success(
         titulo,
@@ -41,16 +50,18 @@ export function notificarExito({
             descripcion,
             duracion,
             id,
+            toasterId,
         }),
     )
 }
 
-// Muestra un error que requiere atencion del usuario
+// Muestra un error que requiere atencion.
 export function notificarError({
     titulo,
     descripcion,
     duracion = DURACIONES.error,
     id,
+    toasterId,
 }) {
     return toast.error(
         titulo,
@@ -58,16 +69,18 @@ export function notificarError({
             descripcion,
             duracion,
             id,
+            toasterId,
         }),
     )
 }
 
-// Muestra un mensaje informativo
+// Muestra informacion relevante para el usuario.
 export function notificarInformacion({
     titulo,
     descripcion,
     duracion = DURACIONES.normal,
     id,
+    toasterId,
 }) {
     return toast.info(
         titulo,
@@ -75,16 +88,18 @@ export function notificarInformacion({
             descripcion,
             duracion,
             id,
+            toasterId,
         }),
     )
 }
 
-// Muestra un mensaje de advertencia que el usuario debe tener en cuenta
+// Muestra una advertencia que el usuario debe tomar en cuenta antes de continuar.
 export function notificarAdvertencia({
     titulo,
     descripcion,
     duracion = DURACIONES.normal,
     id,
+    toasterId,
 }) {
     return toast.warning(
         titulo,
@@ -92,11 +107,12 @@ export function notificarAdvertencia({
             descripcion,
             duracion,
             id,
+            toasterId,
         }),
     )
 }
 
-// Notificacion con acciones de confirmacion/cancelacion
+// Muestra una notificacion con acciones explicitas de confirmacion y cancelacion.
 export function solicitarConfirmacion({
     titulo,
     descripcion,
@@ -106,15 +122,17 @@ export function solicitarConfirmacion({
     alCancelar,
     duracion = DURACIONES.confirmacion,
     id,
+    toasterId,
 }) {
     return toast.warning(titulo, {
         ...construirOpciones({
             descripcion,
             duracion,
             id,
+            toasterId,
         }),
-        
-        // Sonner ejecuta esta funcion cunado el usuario presiona el boton principal
+
+        // Sonner ejecuta esta funcion cuando el usuario presiona el boton principal.
         action: {
             label: textoConfirmar,
             onClick: () => {
@@ -124,7 +142,7 @@ export function solicitarConfirmacion({
             },
         },
 
-        // La segunda accion permite cancelar de manera explicita la notificacion, en caso de que el usuario no quiera confirmar
+        // La accion secundaria permite cancelar explicitamente la operacion.
         cancel: {
             label: textoCancelar,
             onClick: () => {
@@ -136,7 +154,7 @@ export function solicitarConfirmacion({
     })
 }
 
-// Cierra una notificacion especifica
+// Cierra una notificacion especifica mediante el identificador utilizado al mostrarla.
 export function limpiarNotificaciones(id) {
     toast.dismiss(id)
 }

@@ -1,30 +1,17 @@
-import { useState } from 'react'
-import { ArrowRight, Bell, CalendarDays, Check, Clock3,
-    Menu, GraduationCap, X,
+import {
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  Check,
+  Clock3,
+  GraduationCap,
 } from 'lucide-react'
-import { Link, NavLink } from 'react-router'
+import { Link } from 'react-router'
+
 import logoAsebep from '../assets/asebep-logo.png'
+import PublicNavbar from '../components/public/PublicNavbar.jsx'
 import '../styles/Home.css'
 
-const enlacesNavegacion = [
-    {
-        texto: 'Inicio',
-        destino: '/',
-        fin: true,
-    },
-    {
-        texto: 'Beneficios',
-        destino: '/beneficios',
-    },
-    {
-        texto: 'Cómo funciona',
-        destino: '/como-funciona',
-    },
-    {
-        texto: 'Preguntas frecuentes',
-        destino: '/preguntas-frecuentes',
-    },
-]
 
 // Los beneficios se almacenan en una coleccion para evitar repetir manualmente la misma estructura.
 const beneficios = [
@@ -46,106 +33,10 @@ const beneficios = [
 ]
 
 function Home() {
-    const [menuAbierto, setMenuAbierto] = useState(false)
-
-    // Cierra la navegacion movil despues de seleccionar un enelace
-    function cerrarMenu() {
-        setMenuAbierto(false)
-    }
-
     return (
         <div className="student-home">
-            {/* Encabezado publico de ASEBEP. */}
-            <header className="student-home__header">
-                <div className="student-home__header-inner">
-                    <Link className="student-home__brand"
-                    to="/"
-                    onClick={cerrarMenu}
-                    aria-label="Ir a la página principal de ASEBEP"
-                    >
-                        <span
-                            className="student-home__brand-icon"
-                            aria-hidden="true"
-                            >
-                                <img className="student-home__brand-logo" src={logoAsebep} alt="" />
-                            </span>
-
-                            <span className="student-home__brand-copy">
-                                <strong>ASEBEP</strong>
-                                <small>
-                                    Portal de Gestión de Becas
-                                </small>
-                            </span>
-                    </Link>
-
-                    {/* Este boton solo sera visible cuando no exista espacio para mostrar la navegacion completa.*/}
-                    <button
-                        className="student-home__menu-button"
-                        type="button"
-                        onClick={() =>
-                            setMenuAbierto(
-                                (estadoActual) => !estadoActual,
-                            )
-                        }
-                        aria-expanded={menuAbierto}
-                        aria-controls="student-home-navigation"
-                        aria-label={
-                            menuAbierto
-                            ? 'Cerrar menú de navegación'
-                            : 'Abrir menú de navegación'
-                        }
-                        >
-                            {menuAbierto ? (
-                                <X aria-hidden="true" />
-                            ) : (
-                                <Menu aria-hidden="true" />
-                            )}
-                        </button>
-
-                        <nav
-                            id="student-home-navigation"
-                            className={
-                                menuAbierto
-                                ? 'student-home__navigation student-home__navigation--open'
-                                : 'student-home__navigation'
-                            }
-                            aria-label="Navegación principal"
-                            >
-                                <div className="student-home__links">
-                                    {enlacesNavegacion.map(
-                                        (enlace) => (
-                                            <NavLink
-                                            key={enlace.destino}
-                                            className={({
-                                                isActive,
-                                           }) =>
-                                                isActive
-                                                ? 'student-home__link student-home__link--active'
-                                                : 'student-home__link'
-                                            }
-                                            to={enlace.destino}
-                                            end={enlace.fin}
-                                            onClick={cerrarMenu}
-                                            >
-                                                {enlace.texto}
-                                            </NavLink>
-                                        ),
-                                    )}
-                                </div>
-
-                                <div className="student-home__actions">
-                                    <Link
-                                        className="student-home__login-link"
-                                        to="/login"
-                                        onClick={cerrarMenu}
-                                        >
-                                            Iniciar sesión
-                                    </Link>
-                                </div>
-                        </nav>
-                </div>
-            </header>
-
+            {/* Encabezado compartido por todas las paginas publicas. */}
+            <PublicNavbar />
             <main>
                 {/* Presentacion principal del portal estudiantil. */}
                 <section

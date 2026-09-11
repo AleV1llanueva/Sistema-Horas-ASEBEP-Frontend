@@ -1,98 +1,97 @@
 import {
+  CalendarDays,
   LayoutDashboard,
   LogOut,
-  ShieldCheck,
-  UserRound,
+  WalletCards,
 } from 'lucide-react'
 import { NavLink } from 'react-router'
 
 import {
-  obtenerRutaAdministrativaPorRol,
-} from '../config/rutasPorRol.js'
-import {
   useCerrarSesion,
 } from '../hooks/useCerrarSesion.js'
-import { useUsuario } from '../hooks/useUsuario.js'
+import UserProfileMenu from './UserProfileMenu.jsx'
 
 function MobileNavigation() {
   const {
     solicitarCierreSesion,
   } = useCerrarSesion()
 
-  const { rol } = useUsuario()
-
   /*
-   * Para un administrador devuelve la ruta de su área.
-   * Para un becario devuelve null.
+   * NavLink informa si la dirección actual coincide
+   * con cada opción del menú.
    */
-  const rutaAdministrativa =
-    obtenerRutaAdministrativaPorRol(rol)
-
-  /*
-   * Los becarios mantienen tres opciones.
-   * Los administradores reciben una cuarta opción
-   * para regresar a su panel administrativo.
-   */
-  const cantidadOpciones =
-    rutaAdministrativa ? 4 : 3
-
-  function obtenerClase({ isActive }) {
+  function obtenerClase({
+    isActive,
+  }) {
     return isActive
       ? 'mobile-menu__link mobile-menu__link--active'
       : 'mobile-menu__link'
   }
 
   return (
+    <>
+    <UserProfileMenu />
     <nav
       className="mobile-menu"
       aria-label="Navegación móvil"
       style={{
+        /*
+         * El menú móvil siempre tendrá exactamente:
+         * Dashboard, Actividades, Aportes y Cerrar sesión.
+         */
         gridTemplateColumns:
-          `repeat(${cantidadOpciones}, minmax(0, 1fr))`,
+          'repeat(4, minmax(0, 1fr))',
       }}
     >
-      {/* Enlace hacia el panel personal. */}
+      {/* Acceso al resumen personal del usuario. */}
       <NavLink
         className={obtenerClase}
         to="/dashboard"
       >
-        <LayoutDashboard aria-hidden="true" />
+        <LayoutDashboard
+          aria-hidden="true"
+        />
 
         <span>Dashboard</span>
       </NavLink>
 
-      {/* Enlace hacia la información personal. */}
+      {/* Acceso a las actividades del estudiante. */}
       <NavLink
         className={obtenerClase}
-        to="/perfil"
+        to="/actividades"
       >
-        <UserRound aria-hidden="true" />
+        <CalendarDays
+          aria-hidden="true"
+        />
 
-        <span>Perfil</span>
+        <span>Actividades</span>
       </NavLink>
 
       {/*
-       * Esta opción solamente aparece cuando la sesión
-       * pertenece a un administrador reconocido.
+       * Acceso abreviado al historial y los formularios
+       * de aportaciones.
        */}
-      {rutaAdministrativa && (
-        <NavLink
-          className={obtenerClase}
-          to={rutaAdministrativa}
-          aria-label="Volver al panel administrativo"
-        >
-          <ShieldCheck aria-hidden="true" />
+      <NavLink
+        className={obtenerClase}
+        to="/aportaciones"
+      >
+        <WalletCards
+          aria-hidden="true"
+        />
 
-          <span>Panel admin</span>
-        </NavLink>
-      )}
+        <span>Aportes</span>
+      </NavLink>
 
+      {/*
+       * Acción sensible que conserva la confirmación
+       * definida por el hook de cierre de sesión.
+       */}
       <button
-        className={
-          'mobile-menu__link mobile-menu__logout'
-        }
+        className="mobile-menu__link mobile-menu__logout"
         type="button"
-        onClick={solicitarCierreSesion}
+        onClick={
+          solicitarCierreSesion
+        }
         aria-label="Cerrar sesión"
       >
         <LogOut aria-hidden="true" />
@@ -100,6 +99,7 @@ function MobileNavigation() {
         <span>Cerrar sesión</span>
       </button>
     </nav>
+    </>
   )
 }
 

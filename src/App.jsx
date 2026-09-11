@@ -11,18 +11,33 @@ import {
 } from 'react-router'
 import { Toaster as SonnerToaster } from 'sonner'
 
-// Imports de rutas para administrador
+// Rutas del área administrativa.
 import AdminPrincipalRoutes from './admin/principal/AdminPrincipalRoutes.jsx'
+
+// Componentes compartidos de protección.
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import ScrollToTop from './components/ScrollToTop.jsx'
+
+// Roles autorizados para cada área.
 import {
   ROL_ADMIN_GENERAL,
   ROLES_PORTAL_PERSONAL,
 } from './config/rutasPorRol.js'
 
-// Imports de rutas de usuario.
+// Páginas públicas del sistema.
+import Home from './pages/Home.jsx'
+import PreguntasFrecuentes from './pages/public/PreguntasFrecuentes.jsx'
+import ComoFunciona from './pages/public/ComoFunciona.jsx'
+import Beneficios from './pages/public/Beneficios.jsx'
+import GuiaPostulacion from './pages/public/GuiaPostulacion.jsx'
+
+// Páginas que forman parte del portal.
+import Activities from './pages/Activities.jsx'
+import ActivityDetail from './pages/ActivityDetail.jsx'
+import Contributions from './pages/Contributions.jsx'
+import ContributionDetail from './pages/ContributionDetail.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import FirstAccess from './pages/FirstAccess.jsx'
-import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import PasswordRecovery from './pages/PasswordRecovery.jsx'
 import Profile from './pages/Profile.jsx'
@@ -110,6 +125,7 @@ function App() {
           ),
         }}
       />
+      <ScrollToTop />
 
       {/*
        * Las rutas de usuario y administrador se
@@ -121,9 +137,17 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/recuperar-contrasena" element={<PasswordRecovery />} />
         <Route path="/primer-ingreso" element={<FirstAccess />} />
+        <Route path="/preguntas-frecuentes" element={<PreguntasFrecuentes />} />
+        <Route path="/como-funciona" element={<ComoFunciona />} />
+        <Route path="/beneficios" element={<Beneficios />} />
+        <Route path="/guia-postulacion" element={<GuiaPostulacion />} />
 
         {/* Rutas protegidas del portal personal. */}
         <Route path="/dashboard" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><Dashboard /></ProtectedRoute>} />
+        <Route path="/actividades" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}> <Activities /> </ProtectedRoute>} />
+        <Route path="/actividades/:actividadId" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}> <ActivityDetail /> </ProtectedRoute>} />
+        <Route path="/aportaciones" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><Contributions /></ProtectedRoute>} />
+        <Route path="/aportaciones/:aportacionId" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><ContributionDetail /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute rolesPermitidos={ROLES_PORTAL_PERSONAL}><Profile /></ProtectedRoute>} />
 
         {/* Rutas protegidas del administrador principal.

@@ -1,0 +1,718 @@
+/*
+ * VISTA DE DETALLE DE UNA APORTACIÓN
+ *
+ * Este archivo cubre:
+ * - Comprobantes individuales.
+ * - Comprobantes de varios meses.
+ * - Estados pendiente, aprobado y requiere corrección.
+ * - Estados de carga, error y registro no encontrado.
+ */
+
+/* CONTENEDOR PRINCIPAL */
+.contribution-detail-main {
+  width: min(100%, 1260px);
+  margin: 0 auto;
+  padding: 30px 34px 60px;
+}
+
+/* NAVEGACIÓN DE REGRESO */
+.contribution-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 24px;
+  color: #0b5688;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.contribution-detail-back:hover {
+  color: #002b4f;
+  transform: translateX(-2px);
+}
+
+.contribution-detail-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ENCABEZADO DE LA PÁGINA */
+.contribution-detail-heading {
+  animation:
+    contribution-detail-entry
+    480ms ease-out both;
+}
+
+.contribution-detail-heading > p {
+  margin: 0 0 8px;
+  color: #4b91c4;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.contribution-detail-heading h1 {
+  margin: 0;
+  color: #10283e;
+  font-size:
+    clamp(1.75rem, 3vw, 2.35rem);
+  letter-spacing: -0.045em;
+}
+
+.contribution-detail-heading > span {
+  display: block;
+  max-width: 760px;
+  margin-top: 9px;
+  color: #6c7a88;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+/* TARJETA PRINCIPAL DEL RESUMEN */
+.contribution-detail-card {
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid #d7e0e7;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 34px
+    rgb(10 39 64 / 6%);
+  animation:
+    contribution-detail-entry
+    560ms 70ms ease-out both;
+}
+
+/* ENCABEZADO DE LA TARJETA */
+.contribution-detail-card__header {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 19px 24px;
+  border-bottom:
+    1px solid #dce4ea;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #fbfdff 100%
+    );
+}
+
+.contribution-detail-card__header h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #002b4f;
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+
+/* ESTADO PRINCIPAL DEL COMPROBANTE */
+.contribution-detail-status {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.contribution-detail-status svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.contribution-detail-status--pending {
+  color: #a75e00;
+  background: #fff1d2;
+}
+
+.contribution-detail-status--approved {
+  color: #1f7148;
+  background: #dff1e7;
+}
+
+.contribution-detail-status--correction {
+  color: #ae303d;
+  background: #fde3e5;
+}
+
+/* CUADRÍCULA DE INFORMACIÓN */
+.contribution-detail-data {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0 16px;
+}
+
+/*
+ * Cada elemento contiene una etiqueta dt
+ * y el valor correspondiente dentro de dd.
+ */
+.contribution-detail-data__item {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  min-height: 88px;
+  margin: 0;
+  padding: 17px 18px;
+  border-bottom:
+    1px solid #e1e7ec;
+}
+
+.contribution-detail-data__item:nth-child(odd) {
+  border-right:
+    1px solid #e1e7ec;
+}
+
+.contribution-detail-data__item:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.contribution-detail-data__item dt {
+  margin: 0;
+  color: #526575;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.contribution-detail-data__item dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #10283e;
+  font-size: 0.86rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+/* VARIANTES DEL VALOR DE ESTADO */
+.contribution-detail-data__value--pending {
+  color: #c36e00 !important;
+}
+
+.contribution-detail-data__value--approved {
+  color: #218455 !important;
+}
+
+.contribution-detail-data__value--correction {
+  color: #bb3442 !important;
+}
+
+/* OBSERVACIONES Y MENSAJE SEGÚN EL ESTADO */
+.contribution-detail-review {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(310px, 0.95fr);
+  align-items: stretch;
+  gap: 24px;
+  padding: 22px 24px;
+  border-top:
+    1px solid #dce4ea;
+  background: #ffffff;
+}
+
+/* TEXTO ENVIADO POR ASEBEP */
+.contribution-detail-observations {
+  min-width: 0;
+}
+
+.contribution-detail-observations h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #10283e;
+  font-size: 0.86rem;
+}
+
+.contribution-detail-observations h3 svg {
+  width: 18px;
+  height: 18px;
+  color: #4b91c4;
+}
+
+.contribution-detail-observations p {
+  max-width: 620px;
+  margin: 9px 0 0;
+  color: #526575;
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+/* MENSAJE INFORMATIVO DEL ESTADO */
+.contribution-detail-notice {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 17px 18px;
+  border: 1px solid;
+  border-radius: 9px;
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+.contribution-detail-notice > svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.contribution-detail-notice div {
+  min-width: 0;
+}
+
+.contribution-detail-notice strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.73rem;
+}
+
+.contribution-detail-notice p {
+  margin: 0;
+}
+
+/* MENSAJE PARA REVISIÓN PENDIENTE */
+.contribution-detail-notice--pending {
+  color: #315d7c;
+  border-color: #b9d9ee;
+  background:
+    linear-gradient(
+      135deg,
+      #f9fdff 0%,
+      #edf7fd 100%
+    );
+}
+
+.contribution-detail-notice--pending > svg {
+  color: #1683cc;
+}
+
+/* MENSAJE PARA COMPROBANTE APROBADO */
+.contribution-detail-notice--approved {
+  color: #286044;
+  border-color: #b9dfca;
+  background:
+    linear-gradient(
+      135deg,
+      #fbfffd 0%,
+      #ecf8f1 100%
+    );
+}
+
+.contribution-detail-notice--approved > svg {
+  color: #218455;
+}
+
+/* MENSAJE PARA COMPROBANTE CON CORRECCIÓN */
+.contribution-detail-notice--correction {
+  color: #843640;
+  border-color: #efc2c7;
+  background:
+    linear-gradient(
+      135deg,
+      #fffafa 0%,
+      #fff0f1 100%
+    );
+}
+
+.contribution-detail-notice--correction > svg {
+  color: #bb3442;
+}
+
+/* ACCIONES INFERIORES */
+.contribution-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px;
+  border-top:
+    1px solid #e1e7ec;
+  background: #fbfcfd;
+}
+
+.contribution-detail-button {
+  min-height: 41px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 19px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.contribution-detail-button svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+/* BOTÓN PARA VOLVER AL HISTORIAL */
+.contribution-detail-button--secondary {
+  min-width: 176px;
+  color: #0b5688;
+  border: 1px solid #0b5688;
+  background: #ffffff;
+}
+
+.contribution-detail-button--secondary:hover {
+  color: #002b4f;
+  border-color: #002b4f;
+  background: #edf5fb;
+  transform: translateY(-1px);
+}
+
+/* BOTÓN PRINCIPAL PARA ESTADOS SIN CORRECCIÓN */
+.contribution-detail-button--primary {
+  min-width: 176px;
+  color: #ffffff;
+  border: 1px solid #002b4f;
+  background: #002b4f;
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 14%);
+}
+
+.contribution-detail-button--primary:hover {
+  border-color: #063d68;
+  background: #063d68;
+  transform: translateY(-1px);
+}
+
+/*
+ * Botón que lleva al formulario para crear
+ * un comprobante nuevo.
+ */
+.contribution-detail-button--correction {
+  min-width: 220px;
+  color: #ffffff;
+  border: 1px solid #a92e3b;
+  background: #a92e3b;
+  box-shadow:
+    0 7px 16px
+    rgb(169 46 59 / 16%);
+}
+
+.contribution-detail-button--correction:hover {
+  border-color: #8d2530;
+  background: #8d2530;
+  transform: translateY(-1px);
+}
+
+/* ESTADOS DE CARGA, ERROR Y REGISTRO NO ENCONTRADO */
+.contribution-detail-state {
+  min-height: 330px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin-top: 24px;
+  padding: 38px;
+  color: #647383;
+  border: 1px solid #d7e0e7;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 34px
+    rgb(10 39 64 / 5%);
+  text-align: center;
+  animation:
+    contribution-detail-entry
+    430ms ease-out both;
+}
+
+.contribution-detail-state > svg {
+  width: 42px;
+  height: 42px;
+  color: #6d97b5;
+}
+
+.contribution-detail-state h1,
+.contribution-detail-state h2 {
+  margin: 16px 0 0;
+  color: #10283e;
+  font-size: 1.05rem;
+}
+
+.contribution-detail-state p {
+  max-width: 480px;
+  margin: 8px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.contribution-detail-state button,
+.contribution-detail-state a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 0 15px;
+  color: #ffffff;
+  border: 1px solid #002b4f;
+  border-radius: 7px;
+  background: #002b4f;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.contribution-detail-state button:hover,
+.contribution-detail-state a:hover {
+  background: #063d68;
+  transform: translateY(-1px);
+}
+
+.contribution-detail-state button svg,
+.contribution-detail-state a svg {
+  width: 15px;
+  height: 15px;
+}
+
+.contribution-detail-state--error > svg {
+  color: #aa4450;
+}
+
+/* TEXTO EXCLUSIVO PARA LECTORES DE PANTALLA */
+.contribution-detail-sr-only {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ACCESIBILIDAD POR TECLADO */
+.contribution-detail-back:focus-visible,
+.contribution-detail-button:focus-visible,
+.contribution-detail-state button:focus-visible,
+.contribution-detail-state a:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 3px;
+}
+
+/* ANIMACIÓN DE ENTRADA */
+@keyframes contribution-detail-entry {
+  from {
+    opacity: 0;
+    transform: translateY(13px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* TABLETAS Y COMPUTADORAS PEQUEÑAS */
+@media (max-width: 980px) {
+  .contribution-detail-review {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+
+  .contribution-detail-notice {
+    min-height: 78px;
+  }
+}
+
+/* DISPOSITIVOS MÓVILES */
+@media (max-width: 760px) {
+  .contribution-detail-main {
+    padding: 22px 14px 30px;
+  }
+
+  .contribution-detail-back {
+    margin-bottom: 19px;
+  }
+
+  .contribution-detail-heading > p {
+    display: none;
+  }
+
+  .contribution-detail-heading h1 {
+    font-size: 1.5rem;
+  }
+
+  .contribution-detail-heading > span {
+    font-size: 0.75rem;
+  }
+
+  .contribution-detail-card {
+    margin-top: 20px;
+    border-radius: 10px;
+  }
+
+  .contribution-detail-card__header {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 16px;
+  }
+
+  .contribution-detail-card__header h2 {
+    font-size: 0.95rem;
+  }
+
+  .contribution-detail-status {
+    align-self: flex-start;
+    padding: 7px 10px;
+    font-size: 0.65rem;
+  }
+
+  /*
+   * En móvil cada dato ocupa una fila completa
+   * para evitar columnas demasiado estrechas.
+   */
+  .contribution-detail-data {
+    grid-template-columns: 1fr;
+    padding: 0 14px;
+  }
+
+  .contribution-detail-data__item {
+    min-height: 75px;
+    padding: 14px 3px;
+    border-right: 0;
+    border-bottom:
+      1px solid #e1e7ec;
+  }
+
+  .contribution-detail-data__item:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .contribution-detail-data__item:nth-last-child(-n + 2) {
+    border-bottom:
+      1px solid #e1e7ec;
+  }
+
+  .contribution-detail-data__item:last-child {
+    border-bottom: 0;
+  }
+
+  .contribution-detail-data__item dt {
+    font-size: 0.66rem;
+  }
+
+  .contribution-detail-data__item dd {
+    font-size: 0.79rem;
+  }
+
+  .contribution-detail-review {
+    gap: 16px;
+    padding: 19px 16px;
+  }
+
+  .contribution-detail-observations p {
+    font-size: 0.69rem;
+  }
+
+  .contribution-detail-notice {
+    min-height: 0;
+    padding: 15px;
+    font-size: 0.67rem;
+  }
+
+  .contribution-detail-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    gap: 9px;
+    padding: 16px;
+  }
+
+  .contribution-detail-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .contribution-detail-state {
+    min-height: 280px;
+    margin-top: 20px;
+    padding: 28px 20px;
+    border-radius: 10px;
+  }
+}
+
+/* TELÉFONOS PEQUEÑOS */
+@media (max-width: 430px) {
+  .contribution-detail-main {
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+
+  .contribution-detail-card__header {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .contribution-detail-data {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .contribution-detail-review,
+  .contribution-detail-actions {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}
+
+/* MOVIMIENTO REDUCIDO */
+@media (prefers-reduced-motion: reduce) {
+  .contribution-detail-heading,
+  .contribution-detail-card,
+  .contribution-detail-state {
+    animation: none;
+  }
+
+  .contribution-detail-back,
+  .contribution-detail-button,
+  .contribution-detail-state button,
+  .contribution-detail-state a {
+    transition: none;
+  }
+}

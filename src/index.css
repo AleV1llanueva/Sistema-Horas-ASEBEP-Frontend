@@ -1,5 +1,11 @@
+/*
+ * CONFIGURACIÓN GLOBAL
+ */
 :root {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
   color: #10283e;
   background: #f6f8fb;
 }
@@ -8,8 +14,80 @@
   box-sizing: border-box;
 }
 
-body{
+body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+}
+
+/*
+ * NOTIFICACIONES CON ACCIONES
+ *
+ * Cuando una notificación contiene botones, utilizamos
+ * una cuadrícula para separar el contenido de las
+ * acciones de confirmación y cancelación.
+ */
+[data-sonner-toast][data-styled='true']:has([data-button]) {
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto
+    auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 12px;
+}
+
+/*
+ * El icono y el contenido permanecen en la primera
+ * fila de la notificación.
+ */
+[data-sonner-toast][data-styled='true']:has([data-button])
+  [data-icon] {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  margin-top: 2px;
+}
+
+[data-sonner-toast][data-styled='true']:has([data-button])
+  [data-content] {
+  grid-column: 2 / -1;
+  grid-row: 1;
+}
+
+/*
+ * Los botones se colocan en la segunda fila y se
+ * alinean hacia la parte derecha de la tarjeta.
+ */
+[data-sonner-toast][data-styled='true']:has([data-button])
+  [data-cancel] {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+[data-sonner-toast][data-styled='true']:has([data-button])
+  [data-action] {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+[data-sonner-toast][data-styled='true']:has([data-button])
+  [data-button] {
+  justify-self: end;
+  margin: 0;
+}
+
+/*
+ * TABLET Y ESCRITORIO
+ *
+ * Sonner establece su ancho mediante una variable
+ * en línea. Se utiliza important únicamente para
+ * reemplazar esa variable interna de la librería.
+ */
+@media (min-width: 761px) {
+  [data-sonner-toaster] {
+    --width: 420px !important;
+  }
 }

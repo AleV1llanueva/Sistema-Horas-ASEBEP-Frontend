@@ -1,0 +1,342 @@
+/*
+ * DIÁLOGO DE CONFIRMACIÓN DE ACTIVIDADES,
+ * CON ESTILOS PERSONALIZADOS PARA ASEBEP.
+ */
+
+/* FONDO BLOQUEADO */
+.activity-confirmation-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgb(4 22 37 / 68%);
+  backdrop-filter: blur(5px);
+}
+
+.activity-confirmation-overlay[
+  data-state='open'
+] {
+  animation:
+    activity-confirmation-overlay-enter
+    180ms ease-out both;
+}
+
+.activity-confirmation-overlay[
+  data-state='closed'
+] {
+  animation:
+    activity-confirmation-overlay-exit
+    150ms ease-in both;
+}
+
+/* TARJETA PRINCIPAL */
+.activity-confirmation-dialog {
+  --activity-confirmation-color: #0b5688;
+  --activity-confirmation-dark: #003f69;
+  --activity-confirmation-soft: #e3f0f9;
+
+  width: min(
+    calc(100vw - 32px),
+    460px
+  );
+  max-height: min(
+    calc(100vh - 32px),
+    620px
+  );
+  max-height: min(
+    calc(100dvh - 32px),
+    620px
+  );
+  position: fixed;
+  z-index: 1001;
+  top: 50%;
+  left: 50%;
+  overflow-y: auto;
+  padding: 28px;
+  color: #10283e;
+  border: 1px solid #dbe2e8;
+  border-radius: 14px;
+  outline: none;
+  background: #ffffff;
+  box-shadow:
+    0 28px 80px
+    rgb(0 20 38 / 32%);
+  transform:
+    translate(-50%, -50%);
+}
+
+/* Colores para confirmar una inscripción. */
+.activity-confirmation-dialog--enrollment {
+  --activity-confirmation-color: #0b5688;
+  --activity-confirmation-dark: #003f69;
+  --activity-confirmation-soft: #e3f0f9;
+}
+
+/* Colores para cancelar una inscripción. */
+.activity-confirmation-dialog--cancellation {
+  --activity-confirmation-color: #a4404c;
+  --activity-confirmation-dark: #81323b;
+  --activity-confirmation-soft: #fff0f2;
+}
+
+.activity-confirmation-dialog[
+  data-state='open'
+] {
+  animation:
+    activity-confirmation-dialog-enter
+    220ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.activity-confirmation-dialog[
+  data-state='closed'
+] {
+  animation:
+    activity-confirmation-dialog-exit
+    150ms ease-in both;
+}
+
+/* ICONO DE LA ACCIÓN */
+.activity-confirmation-dialog__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  color:
+    var(--activity-confirmation-color);
+  border-radius: 50%;
+  background:
+    var(--activity-confirmation-soft);
+}
+
+.activity-confirmation-dialog__icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+/* INFORMACIÓN DEL DIÁLOGO */
+.activity-confirmation-dialog__title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #002b4f;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.activity-confirmation-dialog__description {
+  max-width: 380px;
+  margin: 10px auto 0;
+  overflow-wrap: anywhere;
+  color: #647383;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  text-align: center;
+}
+
+/* BOTONES */
+.activity-confirmation-dialog__actions {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e7eb;
+}
+
+.activity-confirmation-dialog__button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+/* Acción para regresar sin realizar cambios. */
+.activity-confirmation-dialog__button--secondary {
+  color: #314c61;
+  border: 1px solid #cdd6de;
+  background: #ffffff;
+}
+
+.activity-confirmation-dialog__button--secondary:hover {
+  color: #002b4f;
+  border-color: #9fb1bf;
+  background: #f3f7fa;
+  transform: translateY(-1px);
+}
+
+/* Acción principal de inscripción o cancelación. */
+.activity-confirmation-dialog__button--primary {
+  color: #ffffff;
+  border:
+    1px solid
+    var(--activity-confirmation-color);
+  background:
+    var(--activity-confirmation-color);
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 14%);
+}
+
+.activity-confirmation-dialog__button--primary:hover {
+  border-color:
+    var(--activity-confirmation-dark);
+  background:
+    var(--activity-confirmation-dark);
+  transform: translateY(-1px);
+}
+
+/* Estado durante la operación asincrónica. */
+.activity-confirmation-dialog__button:disabled {
+  opacity: 0.62;
+  cursor: wait;
+  transform: none;
+}
+
+.activity-confirmation-dialog__button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 30%);
+  outline-offset: 3px;
+}
+
+/* INDICADOR DE PROCESAMIENTO */
+.activity-confirmation-dialog__loader {
+  width: 17px;
+  height: 17px;
+  animation:
+    activity-confirmation-loader-spin
+    750ms linear infinite;
+}
+
+/* DISEÑO PARA CELULARES */
+@media (max-width: 520px) {
+  .activity-confirmation-dialog {
+    width:
+      calc(100vw - 24px);
+    max-height:
+      calc(100dvh - 24px);
+    padding: 24px 18px 18px;
+    border-radius: 12px;
+  }
+
+  .activity-confirmation-dialog__icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 15px;
+  }
+
+  .activity-confirmation-dialog__title {
+    font-size: 1.08rem;
+  }
+
+  .activity-confirmation-dialog__description {
+    font-size: 0.75rem;
+  }
+
+  .activity-confirmation-dialog__actions {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-top: 21px;
+    padding-top: 17px;
+  }
+
+  .activity-confirmation-dialog__button {
+    width: 100%;
+  }
+}
+
+/* ANIMACIONES */
+@keyframes activity-confirmation-overlay-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes activity-confirmation-overlay-exit {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes activity-confirmation-dialog-enter {
+  from {
+    opacity: 0;
+    transform:
+      translate(
+        -50%,
+        calc(-50% + 14px)
+      )
+      scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+}
+
+@keyframes activity-confirmation-dialog-exit {
+  from {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform:
+      translate(
+        -50%,
+        calc(-50% + 8px)
+      )
+      scale(0.99);
+  }
+}
+
+@keyframes activity-confirmation-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* RESPETO POR MOVIMIENTO REDUCIDO */
+@media (prefers-reduced-motion: reduce) {
+  .activity-confirmation-overlay,
+  .activity-confirmation-dialog,
+  .activity-confirmation-dialog__loader {
+    animation: none;
+  }
+
+  .activity-confirmation-dialog *,
+  .activity-confirmation-dialog *::before,
+  .activity-confirmation-dialog *::after {
+    transition: none;
+  }
+}

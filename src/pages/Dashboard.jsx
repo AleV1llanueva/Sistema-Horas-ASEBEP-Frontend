@@ -7,6 +7,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 
+import { Link } from 'react-router'
 import AppSidebar from '../components/AppSidebar.jsx'
 import MobileNavigation from '../components/MobileNavigation.jsx'
 import { useUsuario } from '../hooks/useUsuario.js'
@@ -403,20 +404,14 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {/*
-                     * Este botón todavía no ejecuta ninguna acción.
-                     */}
-                    <button
+                    <Link
                       className="summary-action"
-                      type="button"
-                      disabled
-                      title="Disponible cuando conectemos la API"
+                      to="/aportaciones"
                     >
                       Ver historial
-                      <ArrowRight
-                        aria-hidden="true"
-                      />
-                    </button>
+
+                      <ArrowRight aria-hidden="true" />
+                    </Link>
                   </article>
 
                   {/* Tarjeta de multas. */}

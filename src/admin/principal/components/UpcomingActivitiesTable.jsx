@@ -47,18 +47,19 @@ function formatearFecha(fecha) {
 * Convierte estados como "EN_CURSO" o "programda" en textos apropiados para la interfaz.
 */
 function formatearEstado(estado) {
-    const texto = String(estado ?? '')
-        .trim()
-        .replace(/_/g, ' ')
-        .toLowerCase()
+  const texto = String(estado ?? '')
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase()
 
-    if (!texto) {
-        return 'Sin estado'
-    }
+  if (!texto) {
+    return 'Sin estado'
+  }
 
-    return (
-        texto.charAt(0).toUpperCase() + texto.slice(1)
-    )
+  return (
+    texto.charAt(0).toUpperCase() +
+    texto.slice(1)
+  )
 }
 
 /*

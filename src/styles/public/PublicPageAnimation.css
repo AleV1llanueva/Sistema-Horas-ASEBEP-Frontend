@@ -1,0 +1,25 @@
+/* Animación compartida por las páginas públicas, excepto Home. */
+.public-page-entry {
+  animation:
+    public-page-entry
+    500ms ease-out both;
+}
+
+@keyframes public-page-entry {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respeta la configuración de movimiento del dispositivo. */
+@media (prefers-reduced-motion: reduce) {
+  .public-page-entry {
+    animation: none;
+  }
+}

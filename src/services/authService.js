@@ -1,3 +1,8 @@
+import {
+    actualizarContrasenaConPinMock,
+    solicitarPinCambioContrasenaMock,
+} from '../mocks/autenticacionMock.js'
+
 import { apiFetch } from './api.js'
 import {
     guardarSesion,
@@ -5,30 +10,37 @@ import {
 } from './sesionService.js'
 
 /*
-* Envia las credenciales del formulario del backend
-* Frontend: numeroCuenta & contrasena
-* API: num_cuenta & password
+* EL modo simulado solamente puede funcionar durante
+* el desarrollo y cuando la variable este activada.
 */
-export async function iniciarSesion({
+const usarDatosSimulados =
+    import.meta.env.DEV &&
+    import.meta.env.VITE_USAR_DATOS_SIMULADOS === 'true'
+
+    /*
+    * Normaliza el numero de cuenta antes de utilizarlo
+    * en una solicitud real o simulada.
+    */
+   function normalizarNumeroCuenta(
+    numeroCuenta,
+   ) {
+    return String(numeroCuenta ?? '').trim()
+   }
+
+   // Envia las credenciales del formulario al backend.
+   export async function iniciarSesion({
     numeroCuenta,
     contrasena,
-}) {
-    // Convertimos el numero de cuenta en texto para evitar problemas
-    const numeroCuentaNormalizado = String(
-        numeroCuenta ?? '',
-    ).trim()
-
-    // Espereamos la respuesta del access_token antes de construir la sesion
+   }) {
+    const numeroCuentaNormalizado =
+        normalizarNumeroCuenta(numeroCuenta)
     const respuestaLogin = await apiFetch(
         '/auth/login',
         {
             method: 'POST',
-            //Indicamos que el cuerpo de la peticion contiene JSON.
             headers: {
                 'Content-Type': 'application/json',
             },
-
-            // JSON. stringify convierte el objeto de JS en texto JSON que FastAPI ocupa
             body: JSON.stringify({
                 num_cuenta: numeroCuentaNormalizado,
                 password: contrasena,
@@ -38,17 +50,86 @@ export async function iniciarSesion({
 
     /*
     * guardarSesion:
-    - Extrae el JWT de access_token
-    - Decodifica su payload
-    - Obtiene num_cuenta, rol y exp.
-    - Guarda la sesion en sessionStorage
-
-    * Si el JWT no contiene num_cuenta, se produce un error
+    * 1. Extrae el JWT de access_token.
+    * 2. Decodifica su payload.
+    * 3. Obtiene num_cuenta, rol y exp.
+    * 4. Guarda la sesion en sessionStorage.
     */
    return guardarSesion(respuestaLogin)
+   }
+
+   /*
+   * Solicita el PIN necesario para cambiar la contraseña.
+   - El backend obtiene el correo institucional asociado al numero de cuenta
+   - y envia automaticamente el PIN.
+   */
+  export async function solicitarPinCambioContrasena({
+    numeroCuenta,
+  }) {
+    const numeroCuentaNormalizado = normalizarNumeroCuenta(numeroCuenta)
+
+    // En desarrollo utilizamos el PIN simulado 123456. En produccion siempre se consulta al backend.
+    if (usarDatosSimulados) {
+        return solicitarPinCambioContrasenaMock({
+            numeroCuenta: numeroCuentaNormalizado,
+        })
+    }
+
+    return apiFetch(
+        '/auth/password/pin',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            num_cuenta: numeroCuentaNormalizado,
+        }),
+        },
+    )
 }
 
-// Cerrar sesion elimina el JWT almacenado en el navegador
+// Envia el PIN y la contraseña nueva.
+export async function actualizarContrasenaConPin({
+    numeroCuenta,
+    pin,
+    nuevaContrasena,
+}) {
+    const numeroCuentaNormalizado = normalizarNumeroCuenta(numeroCuenta)
+    const pinNormalizado = String(pin ?? '').trim()
+
+    // La contraseña no se recorta ni se transforma, se envia como fue escrita.
+    const contrasena = String(nuevaContrasena ?? '')
+
+    if (usarDatosSimulados) {
+        return actualizarContrasenaConPinMock({
+            numeroCuenta: numeroCuentaNormalizado,
+            pin: pinNormalizado,
+            nuevaContrasena: contrasena,
+        })
+    }
+
+    return apiFetch(
+        '/auth/password/nueva',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                num_cuenta: numeroCuentaNormalizado,
+                pin: pinNormalizado,
+                nueva_password: contrasena,
+            }),
+        },
+    )
+}
+/*
+* Cerrar sesión elimina unicamente el JWT almacenado.
+*
+* La contraseña modificada permanece disponible en el backend
+* o el almacenamiento simulado.
+*/
 export function cerrarSesion() {
     limpiarSesion()
 }

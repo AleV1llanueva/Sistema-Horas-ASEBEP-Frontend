@@ -12,13 +12,10 @@
   --home-hover: #edf5fb;
   --home-white: #ffffff;
   --home-success: #218455;
-
   min-height: 100vh;
   overflow-x: hidden;
-
   color: var(--home-text);
   background: var(--home-background);
-
   font-family:
     Arial,
     Helvetica,
@@ -36,7 +33,7 @@
   color: inherit;
   text-decoration: none;
 }
-ffffff
+
 .student-home button {
   color: inherit;
   font: inherit;
@@ -48,184 +45,8 @@ ffffff
   outline-offset: 3px;
 }
 
-/*Encabezado público */
-
-.student-home__header {
-  position: sticky;
-  z-index: 100;
-  top: 0;
-  width: 100%;
-  border-bottom: 1px solid var(--home-border);
-  background: var(--home-white);
-  box-shadow: 0 6px 18px rgb(10 39 64 / 4%);
-}
-
-.student-home__header-inner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 1536px;
-  min-height: 84px;
-  margin: 0 auto;
-  padding: 0 clamp(24px, 4.5vw, 72px);
-}
-
-.student-home__brand {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 13px;
-  border-radius: 10px;
-}
-
-.student-home__brand-icon {
-  display: grid;
-  width: 52px;
-  height: 52px;
-  place-items: center;
-  color: var(--home-white);
-  border-radius: 11px;
-  background: var(--home-navy);
-  box-shadow: 0 8px 18px rgb(0 43 79 / 16%);
-  overflow: hidden;
-  padding: 2px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
-.student-home__brand-logo {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.student-home__brand-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.student-home__brand-copy strong {
-  color: var(--home-text);
-  font-size: 1.55rem;
-  line-height: 1;
-  letter-spacing: -0.025em;
-}
-
-.student-home__brand-copy small {
-  color: var(--home-muted);
-
-  font-size: 0.76rem;
-  line-height: 1.3;
-}
-
-.student-home__navigation {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: clamp(28px, 3vw, 48px);
-}
-
-.student-home__links {
-  display: flex;
-  align-items: center;
-  gap: clamp(20px, 2.2vw, 36px);
-}
-
-.student-home__link {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--home-text-soft);
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition:
-    color 180ms ease,
-    background-color 180ms ease;
-}
-
-.student-home__link::after {
-  position: absolute;
-  right: 0;
-  bottom: -20px;
-  left: 0;
-  height: 2px;
-  content: '';
-  transform: scaleX(0);
-  transform-origin: center;
-  border-radius: 999px;
-  background: var(--home-blue);
-  transition: transform 180ms ease;
-}
-
-.student-home__link:hover {
-  color: var(--home-blue);
-}
-
-.student-home__link--active {
-  color: var(--home-navy);
-}
-
-.student-home__link--active::after {
-  transform: scaleX(1);
-}
-
-.student-home__actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.student-home__login-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  padding: 0 24px;
-  color: var(--home-white);
-  border-radius: 8px;
-  background: var(--home-navy);
-  box-shadow: 0 8px 16px rgb(0 43 79 / 14%);
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition:
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.student-home__login-link:hover {
-  transform: translateY(-2px);
-  background: var(--home-navy-hover);
-  box-shadow: 0 11px 20px rgb(0 43 79 / 18%);
-}
-
-.student-home__menu-button {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  cursor: pointer;
-  color: var(--home-navy);
-  border: 1px solid var(--home-border);
-  border-radius: 8px;
-  background: var(--home-white);
-}
-
-.student-home__menu-button svg {
-  width: 23px;
-  height: 23px;
-}
 
 /* Presentación principal */
-
 .student-home__hero {
   display: grid;
   grid-template-columns:
@@ -334,8 +155,6 @@ ffffff
   transform: translateX(4px);
 }
 
-.student-home a.student-home__login-link,
-.student-home a.student-home__login-link:visited,
 .student-home a.student-home__primary-button,
 .student-home a.student-home__primary-button:visited {
   color: #ffffff;
@@ -735,98 +554,9 @@ Animacion al entrar al sitio web
 }
 
 @media (width <= 1240px) {
-  .student-home__header-inner {
-    padding-right: 32px;
-    padding-left: 32px;
-  }
-
-  .student-home__navigation {
-    gap: 26px;
-  }
-
-  .student-home__links {
-    gap: 22px;
-  }
-
   .student-home__hero-copy {
     padding-right: 48px;
     padding-left: 48px;
-  }
-}
-
-
-@media (width <= 1120px) {
-  .student-home__menu-button {
-    display: inline-flex;
-  }
-
-  .student-home__navigation {
-    position: absolute;
-    top: calc(100% + 1px);
-    right: 32px;
-    align-items: stretch;
-    flex-direction: column;
-    gap: 20px;
-    width: min(420px, calc(100vw - 64px));
-    padding: 22px;
-    pointer-events: none;
-    visibility: hidden;
-    transform: translateY(-10px);
-    opacity: 0;
-    border: 1px solid var(--home-border);
-    border-radius: 10px;
-    background: var(--home-white);
-    box-shadow: 0 18px 38px rgb(10 39 64 / 14%);
-
-    transition:
-      opacity 180ms ease,
-      transform 180ms ease,
-      visibility 180ms ease;
-  }
-
-  .student-home__navigation--open {
-    pointer-events: auto;
-    visibility: visible;
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  .student-home__links {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .student-home__link {
-    width: 100%;
-    min-height: 46px;
-    padding: 0 14px;
-    border-radius: 7px;
-  }
-
-  .student-home__link::after {
-    display: none;
-  }
-
-  .student-home__link:hover {
-    background: var(--home-hover);
-  }
-
-  .student-home__link--active {
-    color: var(--home-navy);
-    background: var(--home-selected);
-  }
-
-  .student-home__actions {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 18px;
-    border-top: 1px solid var(--home-border);
-  }
-
-  .student-home__login-link {
-    width: 100%;
   }
 }
 
@@ -879,36 +609,6 @@ Animacion al entrar al sitio web
 /* Adaptación para celular */
 
 @media (width <= 640px) {
-  .student-home__header-inner {
-    min-height: 74px;
-    padding-right: 20px;
-    padding-left: 20px;
-  }
-
-  .student-home__brand-icon {
-    width: 46px;
-    height: 46px;
-  }
-
-  .student-home__brand-icon svg {
-    width: 26px;
-    height: 26px;
-  }
-
-  .student-home__brand-copy strong {
-    font-size: 1.32rem;
-  }
-
-  .student-home__brand-copy small {
-    font-size: 0.68rem;
-  }
-
-  .student-home__navigation {
-    right: 20px;
-
-    width: calc(100vw - 40px);
-  }
-
   .student-home__hero-copy {
     padding:
       58px
@@ -1038,14 +738,6 @@ Animacion al entrar al sitio web
 }
 
 @media (width <= 420px) {
-  .student-home__brand-copy small {
-    display: none;
-  }
-
-  .student-home__brand-copy strong {
-    font-size: 1.22rem;
-  }
-
   .student-home__hero-copy h1 {
     font-size: 2.42rem;
   }
@@ -1062,8 +754,6 @@ Animacion al entrar al sitio web
     animation: none;
   }
 
-  .student-home__link,
-  .student-home__login-link,
   .student-home__primary-button,
   .student-home__secondary-button,
   .student-home__benefit-card,

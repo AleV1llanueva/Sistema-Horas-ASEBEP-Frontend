@@ -70,7 +70,7 @@ export function useCerrarSesion() {
       id: ID_CONFIRMACION_CIERRE,
       titulo: '¿Cerrar sesión?',
       descripcion:
-        'Tendrás que ingresar nuevamente para acceder al portal.',
+        'Deberás iniciar sesión nuevamente.',
       textoConfirmar: 'Confirmar',
       alConfirmar: cerrarSesion,
     })

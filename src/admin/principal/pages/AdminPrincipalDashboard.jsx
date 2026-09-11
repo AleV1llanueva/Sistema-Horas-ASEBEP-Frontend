@@ -1,8 +1,6 @@
 import {
   CalendarDays,
-  Clock3,
   Plus,
-  ReceiptText,
   UsersRound,
 } from 'lucide-react'
 
@@ -15,9 +13,6 @@ import {
 import { Link } from 'react-router'
 import AdminMetricCard from '../components/AdminMetricCard.jsx'
 import UpcomingActivitiesTable from '../components/UpcomingActivitiesTable.jsx'
-import {
-  adminPrincipalDashboardMock,
-} from '../mocks/adminPrincipalMock.js'
 
 import {
   listarActividades,
@@ -40,21 +35,7 @@ function obtenerFechaHoy() {
   return `${anio}-${mes}-${dia}`
 }
 
-// Convierte las cantidades metricas en numeros seguros y no muestra valores negativos
-function prepararValor(valor) {
-  const numero = Number(valor)
-
-  if (!Number.isFinite(numero)) {
-    return 0
-  }
-
-  return Math.max(0, numero)
-}
-
 function AdminPrincipalDashboard() {
-  // Por ahora, las metricas administrativas vienen de los datos simulados
-  const resumen = adminPrincipalDashboardMock.resumen
-
   /*
   * Estados necesarios para controlar:
   * Las actividades obtenidas, la pantalla de carga, los posibles errores, los intentos de recarga.
@@ -181,7 +162,9 @@ function AdminPrincipalDashboard() {
     {
       id: 'estudiantes-activos',
       titulo: 'Estudiantes activos',
-      valor: estudiantesActivos,
+      valor: cargandoEstudiantes
+        ? '-'
+        : estudiantesActivos,
       icono: UsersRound,
       variante: 'estudiantes',
     },
