@@ -245,7 +245,7 @@ export async function obtenerUsuario(
     prepararNumeroCuenta(numeroCuenta)
 
   const datosApi = await apiFetch(
-    `/usuario/${encodeURIComponent(cuenta)}`,
+    `/usuarios/${encodeURIComponent(cuenta)}`,
     {
       method: 'GET',
     },
