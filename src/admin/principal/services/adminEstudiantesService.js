@@ -1,9 +1,15 @@
+import {
+  apiFetch,
+  ApiError,
+} from '../../../services/api.js'
+
 /*
- * Servicio simulado del módulo administrativo de estudiantes.
+ * Servicio del módulo administrativo de estudiantes.
  *
- * Las funciones públicas son asincrónicas para conservar el
- * mismo contrato para la conexión con la API.
- * Mientras tanto, los datos se almacenan en localStorage.
+ * VITE_USAR_DATOS_ADMIN_SIMULADOS selecciona el origen:
+ *
+ * - true: utiliza los datos de prueba guardados en localStorage.
+ * - false: consume el contrato disponible en el backend.
  */
 
 import {
@@ -15,7 +21,6 @@ const CLAVE_ESTUDIANTES =
   'asebep_admin_estudiantes_simulados'
 
 const usarDatosAdminSimulados =
-  import.meta.env.DEV &&
   import.meta.env
     .VITE_USAR_DATOS_ADMIN_SIMULADOS === 'true'
 
@@ -29,12 +34,38 @@ export class EstudianteAdminError extends Error {
 
 /*
  * Evita que los datos simulados se utilicen accidentalmente
- * fuera del entorno de desarrollo configurado.
+ * cuando la variable de entorno indica que debe usarse la API.
  */
 function comprobarModoSimulado() {
   if (!usarDatosAdminSimulados) {
     throw new EstudianteAdminError(
-      'Los datos administrativos simulados están desactivados.',
+      'Esta operación simulada está desactivada.',
+    )
+  }
+}
+
+/*
+ * Unifica los errores de red y las respuestas rechazadas por
+ * FastAPI bajo el tipo de error utilizado por este módulo.
+ */
+async function peticionApi(
+  endpoint,
+  opciones = {},
+) {
+  try {
+    return await apiFetch(
+      endpoint,
+      opciones,
+    )
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw new EstudianteAdminError(
+        error.message,
+      )
+    }
+
+    throw new EstudianteAdminError(
+      'No se pudo conectar con el servidor backend.',
     )
   }
 }
@@ -194,7 +225,7 @@ function normalizarAportacion(
     ),
     monto: prepararNumeroNoNegativo(
       aportacion.monto ??
-        CUOTA_MENSUAL_APORTACION,
+      CUOTA_MENSUAL_APORTACION,
       'El monto de la aportación',
     ),
     fechaPago:
@@ -230,15 +261,25 @@ function normalizarEstudiante(
   const datosPersonales =
     esObjeto(estudiante.datosPersonales)
       ? estudiante.datosPersonales
-      : {}
+      : esObjeto(
+          estudiante.datos_personales,
+        )
+        ? estudiante.datos_personales
+        : {}
 
   const datosBecario =
     esObjeto(estudiante.datosBecario)
       ? estudiante.datosBecario
-      : {}
+      : esObjeto(
+          estudiante.datos_becario,
+        )
+        ? estudiante.datos_becario
+        : {}
 
   const numeroCuenta = prepararTexto(
-    datosPersonales.numeroCuenta,
+    datosPersonales.numeroCuenta ??
+      datosPersonales.num_cuenta ??
+      estudiante.num_cuenta,
   )
 
   if (!numeroCuenta) {
@@ -248,19 +289,27 @@ function normalizarEstudiante(
   }
 
   const primerNombre = prepararTexto(
-    datosPersonales.primerNombre,
+    datosPersonales.primerNombre ??
+      datosPersonales.p_nombre ??
+      estudiante.primer_nombre,
   )
 
   const segundoNombre = prepararTexto(
-    datosPersonales.segundoNombre,
+    datosPersonales.segundoNombre ??
+      datosPersonales.s_nombre ??
+      estudiante.segundo_nombre,
   )
 
   const primerApellido = prepararTexto(
-    datosPersonales.primerApellido,
+    datosPersonales.primerApellido ??
+      datosPersonales.p_apellido ??
+      estudiante.primer_apellido,
   )
 
   const segundoApellido = prepararTexto(
-    datosPersonales.segundoApellido,
+    datosPersonales.segundoApellido ??
+      datosPersonales.s_apellido ??
+      estudiante.segundo_apellido,
   )
 
   const nombreCompleto =
@@ -291,11 +340,16 @@ function normalizarEstudiante(
    */
   const activo =
     !eliminado &&
-    credenciales.activo !== false
+    (credenciales.activo ??
+      credenciales.active ??
+      estudiante.active) !== false
+
 
   const mesesSinPagar =
     prepararEnteroNoNegativo(
-      datosBecario.mesesSinPagar ?? 0,
+      datosBecario.mesesSinPagar ??
+        datosBecario.meses_sin_pagar ??
+        0,
       'Los meses sin pagar',
     )
 
@@ -304,20 +358,20 @@ function normalizarEstudiante(
       estudiante.actividadesRecientes,
     )
       ? estudiante.actividadesRecientes
-          .map(normalizarActividadReciente)
-          .sort(
-            (actividadA, actividadB) =>
-              actividadB.fecha.localeCompare(
-                actividadA.fecha,
-              ),
-          )
+        .map(normalizarActividadReciente)
+        .sort(
+          (actividadA, actividadB) =>
+            actividadB.fecha.localeCompare(
+              actividadA.fecha,
+            ),
+        )
       : []
 
   const aportaciones =
     Array.isArray(estudiante.aportaciones)
       ? estudiante.aportaciones.map(
-          normalizarAportacion,
-        )
+        normalizarAportacion,
+      )
       : []
 
   return {
@@ -328,7 +382,8 @@ function normalizarEstudiante(
     credenciales: {
       rol:
         prepararTexto(
-          credenciales.rol,
+          credenciales.rol ??
+            credenciales.role,
         ) || 'becario',
       activo,
     },
@@ -341,46 +396,64 @@ function normalizarEstudiante(
       segundoApellido,
       nombreCompleto,
       correoPersonal: prepararTexto(
-        datosPersonales.correoPersonal,
+        datosPersonales.correoPersonal ??
+          datosPersonales.correo_personal ??
+          estudiante.correo_personal,
       ),
       correoInstitucional:
         prepararTexto(
           datosPersonales
-            .correoInstitucional,
+            .correoInstitucional ??
+            datosPersonales
+              .correo_institucional ??
+            estudiante
+              .correo_institucional,
         ),
       carrera: prepararTexto(
-        datosPersonales.carrera,
+        datosPersonales.carrera ??
+          estudiante.carrera,
       ),
       telefono: prepararTexto(
-        datosPersonales.telefono,
+        datosPersonales.telefono ??
+          estudiante.telefono,
       ),
       anioNacimiento:
         prepararEnteroOpcional(
           datosPersonales
-            .anioNacimiento,
+            .anioNacimiento ??
+            datosPersonales
+              .anio_nacimiento,
           'El año de nacimiento',
         ),
     },
 
     datosBecario: {
       periodoInicio: prepararTexto(
-        datosBecario.periodoInicio,
+        datosBecario.periodoInicio ??
+          datosBecario.periodo_inicio,
       ),
       anioInicio:
         prepararEnteroOpcional(
-          datosBecario.anioInicio,
+          datosBecario.anioInicio ??
+            datosBecario.anio_inicio,
           'El año de inicio',
         ),
       horasAcumuladas:
         prepararNumeroNoNegativo(
           datosBecario
-            .horasAcumuladas ?? 0,
+            .horasAcumuladas ??
+            datosBecario
+              .horas_acumuladas ??
+            0,
           'Las horas acumuladas',
         ),
       horasFaltantes:
         prepararNumeroNoNegativo(
           datosBecario
-            .horasFaltantes ?? 0,
+            .horasFaltantes ??
+            datosBecario
+              .horas_faltantes ??
+            0,
           'Las horas faltantes',
         ),
       mesesSinPagar,
@@ -388,7 +461,8 @@ function normalizarEstudiante(
         eliminado
           ? 'inactivo'
           : prepararTexto(
-              datosBecario.estadoBeca,
+              datosBecario.estadoBeca ??
+                datosBecario.estado_beca,
             ).toLowerCase() ||
             (activo
               ? 'activo'
@@ -558,24 +632,177 @@ function buscarIndiceEstudiante(
   )
 }
 
+/*
+ * Devuelve el primer valor incluido por quien realiza el
+ * cambio. A diferencia de ||, conserva valores como null,
+ * false o una cadena vacía para que puedan validarse.
+ */
+function obtenerPrimerValorDefinido(
+  ...valores
+) {
+  return valores.find(
+    (valor) => valor !== undefined,
+  )
+}
+
+/*
+ * Convierte únicamente los campos que ActualizarUsuarioInput
+ * admite en el backend. Los campos locales de horas, estado y
+ * aportaciones no se envían porque no forman parte de esa API.
+ */
+function convertirCambiosParaBackend(
+  cambios,
+) {
+  const datosPersonales =
+    esObjeto(cambios.datosPersonales)
+      ? cambios.datosPersonales
+      : esObjeto(
+          cambios.datos_personales,
+        )
+        ? cambios.datos_personales
+        : {}
+
+  const credenciales =
+    esObjeto(cambios.credenciales)
+      ? cambios.credenciales
+      : {}
+
+  const equivalencias = {
+    primer_nombre:
+      obtenerPrimerValorDefinido(
+        datosPersonales.primerNombre,
+        datosPersonales.p_nombre,
+        cambios.primer_nombre,
+      ),
+
+    segundo_nombre:
+      obtenerPrimerValorDefinido(
+        datosPersonales.segundoNombre,
+        datosPersonales.s_nombre,
+        cambios.segundo_nombre,
+      ),
+
+    primer_apellido:
+      obtenerPrimerValorDefinido(
+        datosPersonales.primerApellido,
+        datosPersonales.p_apellido,
+        cambios.primer_apellido,
+      ),
+
+    segundo_apellido:
+      obtenerPrimerValorDefinido(
+        datosPersonales.segundoApellido,
+        datosPersonales.s_apellido,
+        cambios.segundo_apellido,
+      ),
+
+    correo_personal:
+      obtenerPrimerValorDefinido(
+        datosPersonales.correoPersonal,
+        datosPersonales.correo_personal,
+        cambios.correo_personal,
+      ),
+
+    correo_institucional:
+      obtenerPrimerValorDefinido(
+        datosPersonales
+          .correoInstitucional,
+        datosPersonales
+          .correo_institucional,
+        cambios.correo_institucional,
+      ),
+
+    telefono:
+      obtenerPrimerValorDefinido(
+        datosPersonales.telefono,
+        cambios.telefono,
+      ),
+
+    carrera_id:
+      obtenerPrimerValorDefinido(
+        datosPersonales.carreraId,
+        datosPersonales.carrera_id,
+        cambios.carrera_id,
+      ),
+
+    rol_id:
+      obtenerPrimerValorDefinido(
+        credenciales.rolId,
+        credenciales.rol_id,
+        cambios.rol_id,
+      ),
+  }
+
+  return Object.fromEntries(
+    Object.entries(equivalencias)
+      .filter(
+        ([, valor]) =>
+          valor !== undefined,
+      ),
+  )
+}
+
 export async function listarEstudiantes() {
-  comprobarModoSimulado()
+  if (usarDatosAdminSimulados) {
+    const estudiantes =
+      leerEstudiantes().filter(
+        (estudiante) =>
+          estudiante.eliminado !== true,
+      )
 
-  const estudiantes =
-    leerEstudiantes().filter(
-      (estudiante) =>
-        estudiante.eliminado !== true,
+    return clonarDatos(
+      ordenarEstudiantes(
+        estudiantes,
+      ),
     )
+  }
 
-  return clonarDatos(
-    ordenarEstudiantes(estudiantes),
+  const respuesta =
+    await peticionApi('/usuarios')
+
+  if (!Array.isArray(respuesta)) {
+    throw new EstudianteAdminError(
+      'El servidor no devolvió una lista válida de estudiantes.',
+    )
+  }
+
+  return ordenarEstudiantes(
+    respuesta.map(
+      normalizarEstudiante,
+    ),
   )
 }
 
 export async function obtenerEstudiante(
   identificador,
 ) {
-  comprobarModoSimulado()
+  const valorBuscado =
+    prepararTexto(identificador)
+
+  if (!valorBuscado) {
+    throw new EstudianteAdminError(
+      'El identificador del estudiante es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    /*
+     * El listado administrativo ya contiene los datos que
+     * utiliza la vista de detalle. Buscar aquí también evita
+     * llamar la ruta de perfil reservada para el becario.
+     */
+    const estudiantes =
+      await listarEstudiantes()
+
+    return (
+      estudiantes.find(
+        (estudiante) =>
+          estudiante.id === valorBuscado ||
+          estudiante.datosPersonales
+            .numeroCuenta === valorBuscado,
+      ) ?? null
+    )
+  }
 
   const estudiantes =
     leerEstudiantes()
@@ -583,7 +810,7 @@ export async function obtenerEstudiante(
   const indiceEstudiante =
     buscarIndiceEstudiante(
       estudiantes,
-      identificador,
+      valorBuscado,
     )
 
   if (
@@ -608,12 +835,72 @@ export async function actualizarEstudiante(
   identificador,
   cambios,
 ) {
-  comprobarModoSimulado()
-
   if (!esObjeto(cambios)) {
     throw new EstudianteAdminError(
       'Los cambios del estudiante no son válidos.',
     )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    const estudianteActual =
+      await obtenerEstudiante(
+        identificador,
+      )
+
+    if (!estudianteActual) {
+      throw new EstudianteAdminError(
+        'El estudiante que deseas actualizar no existe.',
+      )
+    }
+
+    const datosParaBackend =
+      convertirCambiosParaBackend(
+        cambios,
+      )
+
+    if (
+      Object.keys(
+        datosParaBackend,
+      ).length === 0
+    ) {
+      throw new EstudianteAdminError(
+        'Los cambios indicados no pertenecen a campos editables de la API.',
+      )
+    }
+
+    const numeroCuenta =
+      estudianteActual
+        .datosPersonales
+        .numeroCuenta
+
+    await peticionApi(
+      `/usuarios/${encodeURIComponent(
+        numeroCuenta,
+      )}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify(
+          datosParaBackend,
+        ),
+      },
+    )
+
+    const estudianteActualizado =
+      await obtenerEstudiante(
+        numeroCuenta,
+      )
+
+    if (!estudianteActualizado) {
+      throw new EstudianteAdminError(
+        'El estudiante fue actualizado, pero no pudo recuperarse nuevamente.',
+      )
+    }
+
+    return estudianteActualizado
   }
 
   const estudiantes =
@@ -676,7 +963,7 @@ export async function actualizarEstudiante(
       )
         ? cambios.actividadesRecientes
         : estudianteActual
-            .actividadesRecientes,
+          .actividadesRecientes,
 
     aportaciones:
       Array.isArray(cambios.aportaciones)
@@ -706,9 +993,9 @@ export async function actualizarEstudiante(
         estudiante.eliminado !== true &&
         estudiante.datosPersonales
           .numeroCuenta ===
-          estudianteActualizado
-            .datosPersonales
-            .numeroCuenta,
+        estudianteActualizado
+          .datosPersonales
+          .numeroCuenta,
     )
 
   if (cuentaDuplicada) {
@@ -731,11 +1018,15 @@ export async function cambiarEstadoEstudiante(
   identificador,
   activo,
 ) {
-  comprobarModoSimulado()
-
   if (typeof activo !== 'boolean') {
     throw new EstudianteAdminError(
       'El estado del estudiante no es válido.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    throw new EstudianteAdminError(
+      'El backend actual todavía no permite activar o desactivar estudiantes.',
     )
   }
 
@@ -806,7 +1097,11 @@ export async function cambiarEstadoEstudiante(
 export async function eliminarEstudiante(
   identificador,
 ) {
-  comprobarModoSimulado()
+  if (!usarDatosAdminSimulados) {
+    throw new EstudianteAdminError(
+      'El backend actual todavía no permite eliminar estudiantes.',
+    )
+  }
 
   const estudiantes =
     leerEstudiantes()

@@ -26,6 +26,7 @@ lerna-debug.log*
 # Archivos de caché
 .eslintcache
 .oxlintcache
+.pnpm-store/
 
 # Visual Studio Code
 .vscode/*

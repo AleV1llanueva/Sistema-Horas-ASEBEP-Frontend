@@ -1,12 +1,16 @@
+import {
+  apiFetch,
+  ApiError,
+} from '../../../services/api.js'
+
 /*
  * Servicio de actividades del administrador principal.
  *
- * Mientras el backend administrativo no esté disponible,
- * este archivo simula sus operaciones utilizando localStorage.
+ * Sus funciones públicas mantienen un único contrato para
+ * los componentes, pero cambian su origen según el entorno:
  *
- * Todas las funciones públicas son asincrónicas para que,
- * cuando conectemos el backend, los componentes de React
- * no tengan que cambiar la forma en que consumen el servicio.
+ * - En modo simulado utilizan localStorage.
+ * - En modo API consumen el backend mediante apiFetch.
  */
 
 import {
@@ -38,10 +42,10 @@ const TIPOS_MARCACION = Object.freeze({
   salida: 'salida',
 })
 
-// Entrada y salida conservan la vigencia de 10 minutos.
+// El backend vigente utiliza 20 minutos para ambos códigos QR.
 const DURACION_QR_MINUTOS = Object.freeze({
-  [TIPOS_MARCACION.entrada]: 10,
-  [TIPOS_MARCACION.salida]: 10,
+  [TIPOS_MARCACION.entrada]: 20,
+  [TIPOS_MARCACION.salida]: 20,
 })
 
 const PREFIJO_TOKEN_QR_SIMULADO =
@@ -73,6 +77,122 @@ export class ActividadAdminError extends Error {
     super(mensaje)
 
     this.name = 'ActividadAdminError'
+  }
+}
+
+/*
+ * Convierte los estados del backend y del mock al formato
+ * interno que utilizan las vistas administrativas.
+ */
+function normalizarEstadoActividad(
+  estado,
+) {
+  const estadoPreparado =
+    prepararTexto(estado)
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+
+  const equivalencias = {
+    programada: 'programada',
+    'en-curso': 'en-curso',
+    completada: 'finalizada',
+    finalizada: 'finalizada',
+    cancelada: 'cancelada',
+  }
+
+  return (
+    equivalencias[estadoPreparado] ??
+    estadoPreparado
+  )
+}
+
+/*
+ * FastAPI serializa las horas como HH:mm:ss. La interfaz
+ * trabaja con HH:mm, por lo que retiramos únicamente los
+ * segundos cuando la respuesta posee un formato válido.
+ */
+function normalizarHoraBackend(
+  hora,
+) {
+  const horaPreparada =
+    prepararTexto(hora)
+
+  const coincidencia =
+    /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/.exec(
+      horaPreparada,
+    )
+
+  return coincidencia
+    ? `${coincidencia[1]}:${coincidencia[2]}`
+    : horaPreparada
+}
+
+/*
+ * Traduce una actividad recibida en snake_case desde FastAPI
+ * al formato camelCase utilizado por los componentes de React.
+ */
+function normalizarActividadBackend(
+  actividad,
+) {
+  if (
+    !actividad ||
+    typeof actividad !== 'object' ||
+    Array.isArray(actividad)
+  ) {
+    throw new ActividadAdminError(
+      'El servidor devolvió una actividad con un formato inválido.',
+    )
+  }
+
+  return normalizarActividadInicial({
+    id: actividad.id,
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion,
+    lugar: actividad.ubicacion,
+    fecha: actividad.fecha_actividad,
+    horaInicio:
+      normalizarHoraBackend(
+        actividad.hora_inicio,
+      ),
+    horaFinalizacion:
+      normalizarHoraBackend(
+        actividad.hora_final,
+      ),
+    cuposDisponibles:
+      actividad.cupos_disponibles ??
+      actividad.cupos,
+    horasAcreditables:
+      actividad.horas_asignar,
+    imagen: actividad.imagen ?? null,
+    estado: actividad.estado,
+    activa: actividad.activa,
+    eliminada: actividad.eliminada,
+  })
+}
+
+/*
+ * Centraliza los errores de la API para que las vistas siempre
+ * reciban mensajes propios del módulo de actividades.
+ */
+async function peticionApi(
+  endpoint,
+  opciones = {},
+) {
+  try {
+    return await apiFetch(
+      endpoint,
+      opciones,
+    )
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw new ActividadAdminError(
+        error.message,
+      )
+    }
+
+    throw new ActividadAdminError(
+      'No se pudo conectar con el servidor backend.',
+    )
   }
 }
 
@@ -682,16 +802,19 @@ function normalizarActividadInicial(
           )
         : 0,
 
+    // Conserva una imagen cuando el origen de datos la incluya.
+    imagen:
+      actividad.imagen ?? null,
+
     /*
      * Unificamos estados como "En curso"
-     * y "en-curso" bajo el mismo formato.
+     * y "en-curso". El backend llama "Completada"
+     * al estado final, que internamente usamos como "finalizada".
      */
     estado:
-      prepararTexto(
+      normalizarEstadoActividad(
         actividad.estado,
-      )
-        .toLowerCase()
-        .replace(/\s+/g, '-') ||
+      ) ||
       'programada',
 
     activa:
@@ -748,7 +871,7 @@ function normalizarActividadInicial(
     /*
     * Configuración simulada del QR de salida.
     *
-    * La salida tendrá una vigencia de 10 minutos,
+    * La salida tendrá una vigencia de 20 minutos,
     * igual que el QR utilizado por el backend.
     */
     salidaHabilitada:
@@ -1076,6 +1199,28 @@ function prepararDatosActividad(
 }
 
 /*
+ * Traduce una actividad validada al cuerpo completo que exige
+ * CrearActividadInput en el backend. La misma estructura se
+ * utiliza tanto al crear como al actualizar una actividad.
+ */
+function convertirActividadParaBackend(
+  actividad,
+) {
+  return {
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion,
+    ubicacion: actividad.lugar,
+    fecha_actividad: actividad.fecha,
+    horas_asignar:
+      actividad.horasAcreditables,
+    hora_inicio: actividad.horaInicio,
+    hora_final:
+      actividad.horaFinalizacion,
+    cupos: actividad.cuposDisponibles,
+  }
+}
+
+/*
  * Ordena las actividades desde la más próxima
  * hasta la más lejana.
  *
@@ -1102,17 +1247,37 @@ function ordenarActividades(
   )
 }
 
-// Devuelve todas las actividades simuladas.
+// Devuelve las actividades desde el origen configurado.
 export async function listarActividades() {
-  comprobarModoSimulado()
+  if (usarDatosAdminSimulados) {
+    const actividades =
+      leerActividades().filter(
+        (actividad) =>
+          actividad.eliminada !== true,
+      )
 
-  const actividades =
-    leerActividades().filter(
-        (actividad) => actividad.eliminada !== true,
+    return clonarDatos(
+      ordenarActividades(
+        actividades,
+      ),
+    )
+  }
+
+  const respuesta =
+    await peticionApi(
+      '/actividades',
     )
 
-  return clonarDatos(
-    ordenarActividades(actividades),
+  if (!Array.isArray(respuesta)) {
+    throw new ActividadAdminError(
+      'El servidor no devolvió una lista válida de actividades.',
+    )
+  }
+
+  return ordenarActividades(
+    respuesta.map(
+      normalizarActividadBackend,
+    ),
   )
 }
 
@@ -1122,8 +1287,6 @@ export async function listarActividades() {
 export async function obtenerActividad(
   identificador,
 ) {
-  comprobarModoSimulado()
-
   const id = prepararTexto(
     identificador,
   )
@@ -1131,6 +1294,25 @@ export async function obtenerActividad(
   if (!id) {
     throw new ActividadAdminError(
       'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    /*
+     * El backend actual no expone GET /actividades/{id}.
+     * Reutilizamos el listado oficial y buscamos el registro
+     * sin inventar una ruta que FastAPI no reconoce.
+     */
+    const actividades =
+      await listarActividades()
+
+    return (
+      actividades.find(
+        (actividad) =>
+          prepararTexto(
+            actividad.id,
+          ) === id,
+      ) ?? null
     )
   }
 
@@ -1156,7 +1338,11 @@ async function habilitarMarcacionActividad(
   identificador,
   tipoSolicitado,
 ) {
-  comprobarModoSimulado()
+  if (!usarDatosAdminSimulados) {
+    throw new ActividadAdminError(
+      'La generación del QR mediante la API todavía no está disponible en esta vista.',
+    )
+  }
 
   const id = prepararTexto(
     identificador,
@@ -1397,7 +1583,7 @@ async function habilitarMarcacionActividad(
 }
 
 /*
- * Abre el QR de entrada durante 10 minutos.
+ * Abre el QR de entrada durante 20 minutos.
  */
 export async function habilitarEntradaActividad(
   identificador,
@@ -1409,7 +1595,7 @@ export async function habilitarEntradaActividad(
 }
 
 /*
- * Abre el QR de salida durante los 10 minutos acordados.
+ * Abre el QR de salida durante los 20 minutos del backend.
  */
 export async function habilitarSalidaActividad(
   identificador,
@@ -1426,8 +1612,6 @@ export async function habilitarSalidaActividad(
 export async function crearActividad(
   datos,
 ) {
-  comprobarModoSimulado()
-
   const datosPreparados =
     prepararDatosActividad(
       {
@@ -1436,6 +1620,29 @@ export async function crearActividad(
       },
       'programada',
     )
+
+  if (!usarDatosAdminSimulados) {
+    const actividadCreada =
+      await peticionApi(
+        '/actividades',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify(
+            convertirActividadParaBackend(
+              datosPreparados,
+            ),
+          ),
+        },
+      )
+
+    return normalizarActividadBackend(
+      actividadCreada,
+    )
+  }
 
   const fechaActual =
     new Date().toISOString()
@@ -1498,8 +1705,6 @@ export async function actualizarActividad(
   identificador,
   cambios,
 ) {
-  comprobarModoSimulado()
-
   const id = prepararTexto(
     identificador,
   )
@@ -1507,6 +1712,51 @@ export async function actualizarActividad(
   if (!id) {
     throw new ActividadAdminError(
       'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    /*
+     * FastAPI exige CrearActividadInput completo también
+     * para PUT. Recuperamos la actividad, aplicamos los cambios,
+     * validamos y traducimos todos sus campos antes de enviarla.
+     */
+    const actividadActual =
+      await obtenerActividad(id)
+
+    if (!actividadActual) {
+      throw new ActividadAdminError(
+        'La actividad que deseas actualizar no existe.',
+      )
+    }
+
+    const datosPreparados =
+      prepararDatosActividad({
+        ...actividadActual,
+        ...cambios,
+      })
+
+    const actividadActualizada =
+      await peticionApi(
+        `/actividades/${encodeURIComponent(
+          id,
+        )}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify(
+            convertirActividadParaBackend(
+              datosPreparados,
+            ),
+          ),
+        },
+      )
+
+    return normalizarActividadBackend(
+      actividadActualizada,
     )
   }
 
@@ -1561,54 +1811,71 @@ export async function actualizarActividad(
 }
 
 /*
-* Oculta una actividad sin borrarla fisicamente.
-*/
+ * En el mock realiza una eliminación lógica para facilitar
+ * las pruebas. En la API utiliza la eliminación del backend.
+ */
 export async function eliminarActividad(
-    identificador,
+  identificador,
 ) {
-    comprobarModoSimulado()
-    const id = prepararTexto(
-        identificador,
+  const id = prepararTexto(
+    identificador,
+  )
+
+  if (!id) {
+    throw new ActividadAdminError(
+      'El identificador de la actividad es obligatorio.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    return peticionApi(
+      `/actividades/${encodeURIComponent(
+        id,
+      )}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
+  const actividades =
+    leerActividades()
+
+  const indiceActividad =
+    actividades.findIndex(
+      (actividad) =>
+        actividad.id === id &&
+        actividad.eliminada !== true,
     )
 
-    if (!id) {
-        throw new ActividadAdminError(
-            'El identificador de la actividad es obligatorio.',
-        )
-    }
-
-    const actividades = leerActividades()
-    const indiceActividad = actividades.findIndex(
-        (actividad) =>
-            actividad.id === id && actividad.eliminada !== true,
+  if (indiceActividad === -1) {
+    throw new ActividadAdminError(
+      'La actividad que deseas eliminar no existe.',
     )
+  }
 
-    if (indiceActividad === -1) {
-        throw new ActividadAdminError(
-            'La actividad que deseas eliminar no existe.',
-        )
-    }
+  const fechaActual =
+    new Date().toISOString()
 
-    const fechaActual = new Date().toISOString()
-    const actividadEliminada = {
-        ...actividades[indiceActividad],
-        activa: false,
-        eliminada: true,
-        eliminadaEn: fechaActual,
-        actualizadaEn: fechaActual,
-    }
+  const actividadEliminada = {
+    ...actividades[indiceActividad],
+    activa: false,
+    eliminada: true,
+    eliminadaEn: fechaActual,
+    actualizadaEn: fechaActual,
+  }
 
-    actividades[indiceActividad] = actividadEliminada
-    
-    guardarActividades(
-        actividades,
-    )
+  actividades[indiceActividad] =
+    actividadEliminada
 
-    return clonarDatos(
-        actividadEliminada,
-    )
+  guardarActividades(
+    actividades,
+  )
+
+  return clonarDatos(
+    actividadEliminada,
+  )
 }
-
 
 /*
  * Elimina los cambios realizados durante las pruebas

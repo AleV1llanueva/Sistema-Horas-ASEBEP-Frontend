@@ -160,7 +160,7 @@ function validarFormulario(
     formulario.horaInicio &&
     formulario.horaFinalizacion &&
     formulario.horaFinalizacion <=
-      formulario.horaInicio
+    formulario.horaInicio
   ) {
     errores.horaFinalizacion =
       'Debe ser posterior a la hora de inicio.'
@@ -317,6 +317,7 @@ function AdminPrincipalCreateActivity() {
         },
       )
     } catch (errorPublicacion) {
+      console.log(errorPublicacion)
       notificarError({
         id: ID_ERROR_PUBLICACION,
         titulo:
@@ -687,12 +688,12 @@ function AdminPrincipalCreateActivity() {
 
                 <span>
                   {formulario.horaInicio &&
-                  formulario.horaFinalizacion
+                    formulario.horaFinalizacion
                     ? `${formatearHora(
-                        formulario.horaInicio,
-                      )} – ${formatearHora(
-                        formulario.horaFinalizacion,
-                      )}`
+                      formulario.horaInicio,
+                    )} – ${formatearHora(
+                      formulario.horaFinalizacion,
+                    )}`
                     : 'Horario pendiente'}
                 </span>
               </li>

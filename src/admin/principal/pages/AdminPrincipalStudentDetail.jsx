@@ -1,371 +1,372 @@
 import {
-    ArrowLeft,
-    CalendarDays,
-    CircleCheck,
-    CircleDollarSign,
-    Clock3,
-    GraduationCap,
-    IdCard,
-    LoaderCircle,
-    Mail,
-    Pencil,
-    Phone,
-    ReceiptText,
-    TriangleAlert,
-    UserRound,
+  ArrowLeft,
+  CalendarDays,
+  CircleCheck,
+  CircleDollarSign,
+  Clock3,
+  GraduationCap,
+  IdCard,
+  LoaderCircle,
+  Mail,
+  Pencil,
+  Phone,
+  ReceiptText,
+  TriangleAlert,
+  UserRound,
 } from 'lucide-react'
 
 import {
-    useEffect,
-    useMemo,
-    useState,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react'
 
 import {
-    Link,
-    useParams,
+  Link,
+  useParams,
 } from 'react-router'
 
 import {
-    obtenerEstudiante,
+  obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
 
 import {
-    notificarInformacion,
+  notificarInformacion,
 } from '../../../services/notificationService.js'
 
 import '../styles/AdminPrincipalStudentDetail.css'
 
 function mostrarDato(valor) {
-    const texto = String(valor ?? '').trim()
+  const texto = String(valor ?? '').trim()
 
-    return texto || 'No disponible'
+  return texto || 'No disponible'
 }
 
 function prepararCantidad(valor) {
-    const numero = Number(valor)
+  const numero = Number(valor)
 
-    if (
-        !Number.isFinite(numero) || numero < 0
-    ) {
-        return 0
-    }
+  if (
+    !Number.isFinite(numero) || numero < 0
+  ) {
+    return 0
+  }
 
-    return numero
+  return numero
 }
 
 function formatearLempiras(valor) {
-    const numero = prepararCantidad(valor)
+  const numero = prepararCantidad(valor)
 
-    return `L ${new Intl.NumberFormat(
-        'es-HN',
-        {
-            minimumFractionDigits: 2,
-            maximumFractionDigits:2,
-        },
-    ).format(numero)}`
+  return `L ${new Intl.NumberFormat(
+    'es-HN',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  ).format(numero)}`
 }
 
 function formatearFecha(fecha) {
-    if (
-        typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
-    ) {
-        return 'Fecha no disponible'
-    }
+  if (
+    typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
+  ) {
+    return 'Fecha no disponible'
+  }
 
-    const [
-        anio,
-        mes,
-        dia,
-    ] = fecha.split('-').map(Number)
+  const [
+    anio,
+    mes,
+    dia,
+  ] = fecha.split('-').map(Number)
 
-    const fechaLocal = new Date(
-        anio,
-        mes - 1,
-        dia,
-    )
+  const fechaLocal = new Date(
+    anio,
+    mes - 1,
+    dia,
+  )
 
-    if (
-        fechaLocal.getFullYear() !== anio ||
-        fechaLocal.getMonth() !== mes - 1 ||
-        fechaLocal.getDate() !== dia
-    ) {
-        return 'Fecha no disponible'
-    }
+  if (
+    fechaLocal.getFullYear() !== anio ||
+    fechaLocal.getMonth() !== mes - 1 ||
+    fechaLocal.getDate() !== dia
+  ) {
+    return 'Fecha no disponible'
+  }
 
-    return new Intl.DateTimeFormat(
-        'es-HN',
-        {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        },
-    ).format(fechaLocal)
+  return new Intl.DateTimeFormat(
+    'es-HN',
+    {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    },
+  ).format(fechaLocal)
 }
 
 function formatearEstado(estado) {
-    const texto = String(estado ?? '')
-        .trim()
-        .replace(/-/g, ' ')
-        .toLowerCase()
+  const texto = String(estado ?? '')
+    .trim()
+    .replace(/-/g, ' ')
+    .toLowerCase()
 
-    if (!texto) {
-        return 'Sin estado'
-    }
+  if (!texto) {
+    return 'Sin estado'
+  }
 
-    return (
-        texto.charAt(0).toUpperCase() + texto.slice(1)
-    )
+  return (
+    texto.charAt(0).toUpperCase() + texto.slice(1)
+  )
 }
 
 function construirPeriodoInicio(
-    datosBecario,
+  datosBecario,
 ) {
-    return [
-        datosBecario?.periodoInicio,
-        datosBecario?.anioInicio,
-    ]
-        .filter(
-            (valor) =>
-                valor !== null && valor !== undefined &&
-            String(valor).trim() !== '',
-        )
-        .join(' ')
+  return [
+    datosBecario?.periodoInicio,
+    datosBecario?.anioInicio,
+  ]
+    .filter(
+      (valor) =>
+        valor !== null && valor !== undefined &&
+        String(valor).trim() !== '',
+    )
+    .join(' ')
 }
 
 function describirMesesPendientes(
-    mesesSinPagar,
+  mesesSinPagar,
 ) {
-    const meses = prepararCantidad(
-        mesesSinPagar,
-    )
+  const meses = prepararCantidad(
+    mesesSinPagar,
+  )
 
-    if (meses === 0) {
-        return 'Sin meses pendientes'
-    }
+  if (meses === 0) {
+    return 'Sin meses pendientes'
+  }
 
-    return meses === 1
-        ? '1 mes pendiente'
-        : `${meses} meses pendientes`
+  return meses === 1
+    ? '1 mes pendiente'
+    : `${meses} meses pendientes`
 }
 
 function AdminPrincipalStudentDetail() {
-    const { numeroCuenta } = useParams()
+  const { numeroCuenta } = useParams()
 
-    const [
-        estudiante,
-        setEstudiante,
-    ] = useState(null)
+  const [
+    estudiante,
+    setEstudiante,
+  ] = useState(null)
 
-    const [
-        cargando,
-        setCargando,
-    ] = useState(true)
+  const [
+    cargando,
+    setCargando,
+  ] = useState(true)
 
-    const [
-        error,
-        setError,
-    ] = useState('')
+  const [
+    error,
+    setError,
+  ] = useState('')
 
-    const [
-        recarga,
-        setRecarga,
-    ] = useState(0)
+  const [
+    recarga,
+    setRecarga,
+  ] = useState(0)
 
-    const [
-        filtroAportaciones,
-        setFiltroAportaciones,
-    ] = useState('historial')
+  const [
+    filtroAportaciones,
+    setFiltroAportaciones,
+  ] = useState('historial')
 
-    /*
-    * El numero de cuenta proviene de la URL.
-    * El servicio puede localizar al estudiante por ese
-    * valor sin que la vista acceda directamente al mock.
-    */
-   useEffect(() =>{
+  /*
+  * El numero de cuenta proviene de la URL.
+  * El servicio puede localizar al estudiante por ese
+  * valor sin que la vista acceda directamente al mock.
+  */
+  useEffect(() => {
     let componenteMontado = true
 
     async function cargarEstudiante() {
-        setCargando(true)
-        setError('')
-        setEstudiante(null)
+      setCargando(true)
+      setError('')
+      setEstudiante(null)
 
-        try {
-            const estudianteObtenido =
-                await obtenerEstudiante(
-                    numeroCuenta,
-                )
+      try {
+        const estudianteObtenido =
+          await obtenerEstudiante(
+            numeroCuenta,
+          )
 
-            if (!componenteMontado) {
-                return
-            }
-
-            if (!estudianteObtenido) {
-                setError(
-                    'No encontramos un estudiante con ese número de cuenta.',
-                )
-
-                return
-            }
-
-            setEstudiante(
-                estudianteObtenido,
-            )
-        } catch (errorCarga) {
-            if (!componenteMontado) {
-                return
-            }
-
-            setError(
-                errorCarga instanceof Error
-                    ? errorCarga.message
-                    : 'No fue posible cargar la información del estudiante.',
-            )
-        } finally {
-            if (componenteMontado) {
-                setCargando(false)
-            }
+        if (!componenteMontado) {
+          return
         }
+
+        if (!estudianteObtenido) {
+          setError(
+            'No encontramos un estudiante con ese número de cuenta.',
+          )
+
+          return
+        }
+
+        setEstudiante(
+          estudianteObtenido,
+        )
+      } catch (errorCarga) {
+
+        if (!componenteMontado) {
+          return
+        }
+
+        setError(
+          errorCarga instanceof Error
+            ? errorCarga.message
+            : 'No fue posible cargar la información del estudiante.',
+        )
+      } finally {
+        if (componenteMontado) {
+          setCargando(false)
+        }
+      }
     }
 
     cargarEstudiante()
 
     return () => {
-        componenteMontado = false
+      componenteMontado = false
     }
-   }, [
-        numeroCuenta,
-        recarga,
-   ])
+  }, [
+    numeroCuenta,
+    recarga,
+  ])
 
-   /* El historial muestra todas las aportaciones.
-   - La segunda pestaña conserva unicamente las pendientes.
-   */
+  /* El historial muestra todas las aportaciones.
+  - La segunda pestaña conserva unicamente las pendientes.
+  */
   const aportacionesMostradas =
-   useMemo(() => {
-    const aportaciones = Array.isArray(
+    useMemo(() => {
+      const aportaciones = Array.isArray(
         estudiante?.aportaciones,
-    )
+      )
         ? estudiante.aportaciones
         : []
-    
-    if (
+
+      if (
         filtroAportaciones === 'pendientes'
-    ) {
+      ) {
         return aportaciones.filter(
-            (aportacion) =>
-                aportacion.estado === 'pendiente',
+          (aportacion) =>
+            aportacion.estado === 'pendiente',
         )
-    }
+      }
 
-    return aportaciones
-   }, [
-    estudiante,
-    filtroAportaciones,
-   ])
+      return aportaciones
+    }, [
+      estudiante,
+      filtroAportaciones,
+    ])
 
-   function reintentarCarga() {
+  function reintentarCarga() {
     setRecarga(
-        (valorActual) => valorActual + 1,
+      (valorActual) => valorActual + 1,
     )
-   }
+  }
 
-   function mostrarEdicionPendiente() {
+  function mostrarEdicionPendiente() {
     const nombre = estudiante?.datosPersonales
-        ?.nombreCompleto || 'este estudiante'
+      ?.nombreCompleto || 'este estudiante'
 
     notificarInformacion({
-        id: `editar-detalle-estudiante-${estudiante?.id}`,
-        titulo: 'Edición disponible próximamente',
-        descripcion: `La información de ${nombre} podrá editarse en un siguiente avance.`,
+      id: `editar-detalle-estudiante-${estudiante?.id}`,
+      titulo: 'Edición disponible próximamente',
+      descripcion: `La información de ${nombre} podrá editarse en un siguiente avance.`,
     })
-   }
+  }
 
-   if (cargando) {
+  if (cargando) {
     return (
-        <div className="admin-student-detail-page">
-            <section className="admin-student-detail-state" role="status" aria-live="polite">
-                <LoaderCircle className="admin-student-detail-state__loader" aria-hidden="true" />
+      <div className="admin-student-detail-page">
+        <section className="admin-student-detail-state" role="status" aria-live="polite">
+          <LoaderCircle className="admin-student-detail-state__loader" aria-hidden="true" />
 
-                <h1>Cargando estudiante</h1>
+          <h1>Cargando estudiante</h1>
 
-                <p>
-                    Estamos preparando la información
-                    académica y administrativa.
-                </p>
-            </section>
-        </div>
+          <p>
+            Estamos preparando la información
+            académica y administrativa.
+          </p>
+        </section>
+      </div>
     )
-   }
+  }
 
-   if ( error || !estudiante) {
+  if (error || !estudiante) {
     return (
-        <div className="admin-student-detail-page">
-            <section className="admin-student-detail-state admin-student-detail-state--error" role="alert">
-                <TriangleAlert aria-hidden="true" />
+      <div className="admin-student-detail-page">
+        <section className="admin-student-detail-state admin-student-detail-state--error" role="alert">
+          <TriangleAlert aria-hidden="true" />
 
-                <h1>
-                    No fue posible mostrar al estudiante
-                </h1>
+          <h1>
+            No fue posible mostrar al estudiante
+          </h1>
 
-                <p>
-                    {error || 'La información solicitada no está disponible.'}
-                </p>
+          <p>
+            {error || 'La información solicitada no está disponible.'}
+          </p>
 
-                <div className="admin-student-detail-state__actions">
-                    <button type="button" onClick={reintentarCarga} >
-                        Intentar nuevamente
-                    </button>
+          <div className="admin-student-detail-state__actions">
+            <button type="button" onClick={reintentarCarga} >
+              Intentar nuevamente
+            </button>
 
-                    <Link to="/admin-principal/estudiantes">
-                        <ArrowLeft aria-hidden="true" />
-                        Volver a estudiantes
-                    </Link>
-                </div>
-            </section>
-        </div>
+            <Link to="/admin-principal/estudiantes">
+              <ArrowLeft aria-hidden="true" />
+              Volver a estudiantes
+            </Link>
+          </div>
+        </section>
+      </div>
     )
-   }
+  }
 
-   const datosPersonales = estudiante.datosPersonales ?? {}
-   const datosBecario = estudiante.datosBecario ?? {}
-   const actividadesRecientes = Array.isArray(
-        estudiante.actividadesRecientes,
-   )
+  const datosPersonales = estudiante.datosPersonales ?? {}
+  const datosBecario = estudiante.datosBecario ?? {}
+  const actividadesRecientes = Array.isArray(
+    estudiante.actividadesRecientes,
+  )
     ? estudiante.actividadesRecientes
     : []
 
-   const activo = estudiante.crendenciales?.activo !== false
-   const nombreCompleto = datosPersonales.nombreCompleto || 'Estudiante sin nombre'
-   
-   const periodoInicio = construirPeriodoInicio(
+  const activo = estudiante.crendenciales?.activo !== false
+  const nombreCompleto = datosPersonales.nombreCompleto || 'Estudiante sin nombre'
+
+  const periodoInicio = construirPeriodoInicio(
     datosBecario,
-   )
+  )
 
-   const horasAcumuladas = prepararCantidad(
+  const horasAcumuladas = prepararCantidad(
     datosBecario.horasAcumuladas,
-   )
+  )
 
-   const horasFaltantes = prepararCantidad(
+  const horasFaltantes = prepararCantidad(
     datosBecario.horasFaltantes,
-   )
+  )
 
-   const mesesSinPagar = prepararCantidad(
+  const mesesSinPagar = prepararCantidad(
     datosBecario.mesesSinPagar,
-   )
+  )
 
-   const saldoPendiente = prepararCantidad(
+  const saldoPendiente = prepararCantidad(
     estudiante.saldoAportacionesPendientes,
-   )
+  )
 
-   /*
-   * El servicio ordena las actividades desde la mas
-   * reciente, por eso el primer elemento representa la ultima actividad registrada.
-   */
+  /*
+  * El servicio ordena las actividades desde la mas
+  * reciente, por eso el primer elemento representa la ultima actividad registrada.
+  */
 
-   const ultimaActividad = actividadesRecientes[0] ?? null
+  const ultimaActividad = actividadesRecientes[0] ?? null
 
-   return (
+  return (
     <div className="admin-student-detail-page">
       <nav
         className="admin-student-detail-breadcrumb"
@@ -571,7 +572,7 @@ function AdminPrincipalStudentDetail() {
             </header>
 
             {actividadesRecientes.length ===
-            0 ? (
+              0 ? (
               <div className="admin-student-detail-empty">
                 <CalendarDays aria-hidden="true" />
 
@@ -678,7 +679,7 @@ function AdminPrincipalStudentDetail() {
                 aria-controls="student-contributions-panel"
                 className={
                   filtroAportaciones ===
-                  'historial'
+                    'historial'
                     ? 'admin-student-contribution-tab admin-student-contribution-tab--active'
                     : 'admin-student-contribution-tab'
                 }
@@ -702,7 +703,7 @@ function AdminPrincipalStudentDetail() {
                 aria-controls="student-contributions-panel"
                 className={
                   filtroAportaciones ===
-                  'pendientes'
+                    'pendientes'
                     ? 'admin-student-contribution-tab admin-student-contribution-tab--active'
                     : 'admin-student-contribution-tab'
                 }
@@ -722,19 +723,19 @@ function AdminPrincipalStudentDetail() {
               role="tabpanel"
               aria-labelledby={
                 filtroAportaciones ===
-                'historial'
+                  'historial'
                   ? 'student-contributions-history-tab'
                   : 'student-contributions-pending-tab'
               }
             >
               {aportacionesMostradas.length ===
-              0 ? (
+                0 ? (
                 <div className="admin-student-detail-empty">
                   <ReceiptText aria-hidden="true" />
 
                   <p>
                     {filtroAportaciones ===
-                    'pendientes'
+                      'pendientes'
                       ? 'El estudiante no tiene aportaciones pendientes.'
                       : 'No hay aportaciones registradas.'}
                   </p>
@@ -787,9 +788,9 @@ function AdminPrincipalStudentDetail() {
                             <td>
                               {aportacion.fechaPago
                                 ? formatearFecha(
-                                    aportacion
-                                      .fechaPago,
-                                  )
+                                  aportacion
+                                    .fechaPago,
+                                )
                                 : 'Pendiente'}
                             </td>
 
@@ -849,9 +850,9 @@ function AdminPrincipalStudentDetail() {
                 >
                   {formatearEstado(
                     datosBecario.estadoBeca ||
-                      (activo
-                        ? 'activo'
-                        : 'inactivo'),
+                    (activo
+                      ? 'activo'
+                      : 'inactivo'),
                   )}
                 </strong>
               </div>
@@ -894,8 +895,8 @@ function AdminPrincipalStudentDetail() {
                 <strong>
                   {ultimaActividad
                     ? formatearFecha(
-                        ultimaActividad.fecha,
-                      )
+                      ultimaActividad.fecha,
+                    )
                     : 'Sin actividad'}
                 </strong>
 
