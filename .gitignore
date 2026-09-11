@@ -46,3 +46,7 @@ Thumbs.db
 
 # Archivos temporales de editores
 *.sw?
+
+package-lock.json
+.pnpm-store/
+.pnpm-store/
