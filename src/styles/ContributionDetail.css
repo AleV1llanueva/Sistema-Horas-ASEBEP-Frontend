@@ -1,13 +1,3 @@
-/*
- * VISTA DE DETALLE DE UNA APORTACIÓN
- *
- * Este archivo cubre:
- * - Comprobantes individuales.
- * - Comprobantes de varios meses.
- * - Estados pendiente, aprobado y requiere corrección.
- * - Estados de carga, error y registro no encontrado.
- */
-
 /* CONTENEDOR PRINCIPAL */
 .contribution-detail-main {
   width: min(100%, 1260px);
@@ -73,7 +63,7 @@
   line-height: 1.6;
 }
 
-/* TARJETA PRINCIPAL DEL RESUMEN */
+/* TARJETA PRINCIPAL */
 .contribution-detail-card {
   margin-top: 24px;
   overflow: hidden;
@@ -88,7 +78,7 @@
     560ms 70ms ease-out both;
 }
 
-/* ENCABEZADO DE LA TARJETA */
+/* Encabezado con referencia y estado. */
 .contribution-detail-card__header {
   min-height: 82px;
   display: flex;
@@ -96,13 +86,12 @@
   justify-content: space-between;
   gap: 18px;
   padding: 19px 24px;
-  border-bottom:
-    1px solid #dce4ea;
+  border-bottom: 1px solid #dce4ea;
   background:
     linear-gradient(
       135deg,
       #ffffff 0%,
-      #fbfdff 100%
+      #f7fbfe 100%
     );
 }
 
@@ -115,7 +104,7 @@
   letter-spacing: -0.015em;
 }
 
-/* ESTADO PRINCIPAL DEL COMPROBANTE */
+/* ESTADO PRINCIPAL */
 .contribution-detail-status {
   width: fit-content;
   max-width: 100%;
@@ -148,12 +137,16 @@
   background: #dff1e7;
 }
 
+/*
+ * Esta variante roja representa actualmente
+ * el estado Rechazado del backend.
+ */
 .contribution-detail-status--correction {
   color: #ae303d;
   background: #fde3e5;
 }
 
-/* CUADRÍCULA DE INFORMACIÓN */
+/* INFORMACIÓN DEL CONTRATO */
 .contribution-detail-data {
   display: grid;
   grid-template-columns:
@@ -164,23 +157,21 @@
 
 /*
  * Cada elemento contiene una etiqueta dt
- * y el valor correspondiente dentro de dd.
+ * y su valor correspondiente dentro de dd.
  */
 .contribution-detail-data__item {
   min-width: 0;
+  min-height: 88px;
   display: grid;
   align-content: center;
   gap: 7px;
-  min-height: 88px;
   margin: 0;
   padding: 17px 18px;
-  border-bottom:
-    1px solid #e1e7ec;
+  border-bottom: 1px solid #e1e7ec;
 }
 
 .contribution-detail-data__item:nth-child(odd) {
-  border-right:
-    1px solid #e1e7ec;
+  border-right: 1px solid #e1e7ec;
 }
 
 .contribution-detail-data__item:nth-last-child(-n + 2) {
@@ -204,7 +195,7 @@
   line-height: 1.45;
 }
 
-/* VARIANTES DEL VALOR DE ESTADO */
+/* Colores de estado dentro de la cuadrícula. */
 .contribution-detail-data__value--pending {
   color: #c36e00 !important;
 }
@@ -217,49 +208,14 @@
   color: #bb3442 !important;
 }
 
-/* OBSERVACIONES Y MENSAJE SEGÚN EL ESTADO */
+/* RESULTADO LA REVISION */
 .contribution-detail-review {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(310px, 0.95fr);
-  align-items: stretch;
-  gap: 24px;
   padding: 22px 24px;
-  border-top:
-    1px solid #dce4ea;
+  border-top: 1px solid #dce4ea;
   background: #ffffff;
 }
 
-/* TEXTO ENVIADO POR ASEBEP */
-.contribution-detail-observations {
-  min-width: 0;
-}
-
-.contribution-detail-observations h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: #10283e;
-  font-size: 0.86rem;
-}
-
-.contribution-detail-observations h3 svg {
-  width: 18px;
-  height: 18px;
-  color: #4b91c4;
-}
-
-.contribution-detail-observations p {
-  max-width: 620px;
-  margin: 9px 0 0;
-  color: #526575;
-  font-size: 0.72rem;
-  line-height: 1.65;
-}
-
-/* MENSAJE INFORMATIVO DEL ESTADO */
+/* MENSAJE DEL ESTADO */
 .contribution-detail-notice {
   min-width: 0;
   display: flex;
@@ -293,7 +249,7 @@
   margin: 0;
 }
 
-/* MENSAJE PARA REVISIÓN PENDIENTE */
+/* Aportación pendiente. */
 .contribution-detail-notice--pending {
   color: #315d7c;
   border-color: #b9d9ee;
@@ -309,7 +265,7 @@
   color: #1683cc;
 }
 
-/* MENSAJE PARA COMPROBANTE APROBADO */
+/* Aportación aprobada. */
 .contribution-detail-notice--approved {
   color: #286044;
   border-color: #b9dfca;
@@ -325,7 +281,7 @@
   color: #218455;
 }
 
-/* MENSAJE PARA COMPROBANTE CON CORRECCIÓN */
+/* Aportación rechazada. */
 .contribution-detail-notice--correction {
   color: #843640;
   border-color: #efc2c7;
@@ -348,8 +304,7 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 18px 24px;
-  border-top:
-    1px solid #e1e7ec;
+  border-top: 1px solid #e1e7ec;
   background: #fbfcfd;
 }
 
@@ -381,7 +336,7 @@
   flex-shrink: 0;
 }
 
-/* BOTÓN PARA VOLVER AL HISTORIAL */
+/* Botón para volver al historial. */
 .contribution-detail-button--secondary {
   min-width: 176px;
   color: #0b5688;
@@ -396,26 +351,9 @@
   transform: translateY(-1px);
 }
 
-/* BOTÓN PRINCIPAL PARA ESTADOS SIN CORRECCIÓN */
-.contribution-detail-button--primary {
-  min-width: 176px;
-  color: #ffffff;
-  border: 1px solid #002b4f;
-  background: #002b4f;
-  box-shadow:
-    0 7px 16px
-    rgb(0 43 79 / 14%);
-}
-
-.contribution-detail-button--primary:hover {
-  border-color: #063d68;
-  background: #063d68;
-  transform: translateY(-1px);
-}
-
 /*
- * Botón que lleva al formulario para crear
- * un comprobante nuevo.
+ * Botón mostrado cuando el comprobante fue rechazado
+ * y el estudiante debe registrar una aportación nueva.
  */
 .contribution-detail-button--correction {
   min-width: 220px;
@@ -433,7 +371,7 @@
   transform: translateY(-1px);
 }
 
-/* ESTADOS DE CARGA, ERROR Y REGISTRO NO ENCONTRADO */
+/* CARGA, ERROR Y REGISTRO NO ENCONTRADO */
 .contribution-detail-state {
   min-height: 330px;
   display: flex;
@@ -513,21 +451,13 @@
   color: #aa4450;
 }
 
-/* TEXTO EXCLUSIVO PARA LECTORES DE PANTALLA */
-.contribution-detail-sr-only {
-  width: 1px;
-  height: 1px;
-  position: absolute;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* ACCESIBILIDAD POR TECLADO */
+/* ACCESIBILIDAD */
 .contribution-detail-back:focus-visible,
 .contribution-detail-button:focus-visible,
-.contribution-detail-state button:focus-visible,
-.contribution-detail-state a:focus-visible {
+.contribution-detail-state
+  button:focus-visible,
+.contribution-detail-state
+  a:focus-visible {
   outline:
     3px solid
     rgb(75 145 196 / 28%);
@@ -549,11 +479,6 @@
 
 /* TABLETAS Y COMPUTADORAS PEQUEÑAS */
 @media (max-width: 980px) {
-  .contribution-detail-review {
-    grid-template-columns: 1fr;
-    gap: 17px;
-  }
-
   .contribution-detail-notice {
     min-height: 78px;
   }
@@ -605,7 +530,7 @@
   }
 
   /*
-   * En móvil cada dato ocupa una fila completa
+   * En móvil cada dato ocupa una fila
    * para evitar columnas demasiado estrechas.
    */
   .contribution-detail-data {
@@ -617,8 +542,7 @@
     min-height: 75px;
     padding: 14px 3px;
     border-right: 0;
-    border-bottom:
-      1px solid #e1e7ec;
+    border-bottom: 1px solid #e1e7ec;
   }
 
   .contribution-detail-data__item:nth-child(odd) {
@@ -626,8 +550,7 @@
   }
 
   .contribution-detail-data__item:nth-last-child(-n + 2) {
-    border-bottom:
-      1px solid #e1e7ec;
+    border-bottom: 1px solid #e1e7ec;
   }
 
   .contribution-detail-data__item:last-child {
@@ -643,12 +566,7 @@
   }
 
   .contribution-detail-review {
-    gap: 16px;
     padding: 19px 16px;
-  }
-
-  .contribution-detail-observations p {
-    font-size: 0.69rem;
   }
 
   .contribution-detail-notice {

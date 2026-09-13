@@ -1,5 +1,6 @@
 import {
   apiFetch,
+  apiFetchBlob,
   ApiError,
 } from '../../../services/api.js'
 
@@ -9,20 +10,14 @@ import {
   estudiantesAdminMock,
 } from '../mocks/adminPrincipalMock.js'
 
+import {
+  inscripcionesEstudianteMock,
+} from '../../../mocks/estudianteActividadesMock.js'
+
 /*
- * SERVICIO ADMINISTRATIVO DE ACTIVIDADES
- *
- * Este servicio expone el mismo contrato a los componentes
- * independientemente del origen de la información:
- *
- * - VITE_USAR_DATOS_ADMIN_SIMULADOS=true:
- *   utiliza los mocks y conserva los cambios en localStorage.
- *
- * - VITE_USAR_DATOS_ADMIN_SIMULADOS=false:
- *   consume exclusivamente el backend mediante apiFetch.
- *
- * La variable no depende de import.meta.env.DEV. Su valor
- * determina explícitamente cuál origen debe utilizarse.
+ * Servicio administrativo de Actividades:
+ * true  -> usuario mock y localStorage.
+ * false -> backend.
  */
 
 // Claves utilizadas por el escenario administrativo simulado.
@@ -46,10 +41,7 @@ const ESTADOS_PERMITIDOS = [
   'cancelada',
 ]
 
-/*
- * Tipos de marcación que puede habilitar el administrador.
- * Se congelan para impedir modificaciones accidentales.
- */
+// Tipos de marcacion utilizados por los codigos QR de entrada y salida.
 const TIPOS_MARCACION = Object.freeze({
   entrada: 'entrada',
   salida: 'salida',
@@ -63,9 +55,6 @@ const DURACION_QR_MINUTOS = Object.freeze({
 
 const PREFIJO_TOKEN_QR_SIMULADO =
   'asebep-mock.'
-
-// Cada QR permite una generación inicial y una reactivación.
-const MAXIMO_GENERACIONES_QR = 2
 
 /*
  * true  = localStorage y mocks.
@@ -168,8 +157,39 @@ async function peticionApi(
 }
 
 /*
+ * Centraliza las solicitudes que devuelven archivos binarios.
+ * Los endpoints administrativos del QR responden con una
+ * imagen PNG en lugar de utilizar una respuesta JSON.
+ */
+async function peticionApiBlob(
+  endpoint,
+  opciones = {},
+) {
+  try {
+    return await apiFetchBlob(
+      endpoint,
+      opciones,
+    )
+  } catch (error) {
+    /*
+     * Conservamos el mensaje que FastAPI haya enviado,
+     * pero evitamos que la vista dependa directamente
+     * de la clase ApiError.
+     */
+    if (error instanceof ApiError) {
+      throw new ActividadAdminError(
+        error.message,
+      )
+    }
+
+    throw new ActividadAdminError(
+      'No fue posible obtener el código QR desde el servidor.',
+    )
+  }
+}
+
+/*
  * Convierte un valor en un entero no negativo.
- *
  * Se usa al normalizar respuestas existentes. Las validaciones
  * estrictas para formularios se realizan más adelante.
  */
@@ -219,10 +239,10 @@ function normalizarBooleano(valor) {
   )
 }
 
-/* NORMALIZACIÓN DE ACTIVIDADES */
-/*
- * Convierte los estados del backend y del mock al formato
- * interno utilizado por los componentes.
+/* 
+* NORMALIZACIÓN DE ACTIVIDADES
+* Convierte los estados del backend y del mock al formato
+* interno utilizado por los componentes.
  */
 function normalizarEstadoActividad(
   estado,
@@ -244,6 +264,83 @@ function normalizarEstadoActividad(
     equivalencias[estadoPreparado] ??
     estadoPreparado
   )
+}
+
+function calcularEstadoTemporalActividad(
+  actividad,
+  ahora = new Date(),
+) {
+  const estadoGuardado =
+    normalizarEstadoActividad(
+      actividad?.estado,
+    )
+
+  /*
+   * Una actividad cancelada conserva su estado.
+   * El reloj no debe volver a convertirla en programada.
+   */
+  if (estadoGuardado === 'cancelada') {
+    return 'cancelada'
+  }
+
+  const instanteActual =
+    ahora instanceof Date &&
+    Number.isFinite(ahora.getTime())
+      ? ahora
+      : new Date()
+
+  const {
+    inicio,
+    finalizacion,
+  } = obtenerHorarioActividad(
+    actividad,
+  )
+
+  /*
+   * Si el horario está incompleto conservamos el
+   * estado recibido para no clasificarlo incorrectamente.
+   */
+  if (!inicio || !finalizacion) {
+    return (
+      estadoGuardado ||
+      'programada'
+    )
+  }
+
+  if (
+    instanteActual.getTime() <
+    inicio.getTime()
+  ) {
+    return 'programada'
+  }
+
+  if (
+    instanteActual.getTime() <=
+    finalizacion.getTime()
+  ) {
+    return 'en-curso'
+  }
+
+  return 'finalizada'
+}
+
+/*
+ * Devuelve una copia de la actividad con su estado
+ * actualizado sin modificar el objeto original.
+ */
+function aplicarEstadoTemporalActividad(
+  actividad,
+  ahora = new Date(),
+) {
+  return {
+    ...actividad,
+
+    estado:
+      calcularEstadoTemporalActividad(
+        actividad,
+        ahora,
+      ),
+  }
 }
 
 /*
@@ -390,28 +487,7 @@ function normalizarActividadInicial(
         actividad.tokenEntradaSimulado,
       ) || null,
 
-    generacionesQrEntrada:
-      normalizarCantidadGeneracionesQr(
-        actividad.generacionesQrEntrada,
-
-        Boolean(
-          actividad.entradaHabilitada ===
-            true ||
-          prepararTexto(
-            actividad.tokenEntradaSimulado,
-          ) ||
-          prepararTexto(
-            actividad.entradaHabilitadaEn,
-          ) ||
-          prepararTexto(
-            actividad.entradaHabilitadaHasta,
-          ),
-        ),
-      ),
-
-    /*
-     * Información simulada del QR de salida.
-     */
+    // Información simulada del QR de salida.
     salidaHabilitada:
       actividad.salidaHabilitada ===
       true,
@@ -430,25 +506,6 @@ function normalizarActividadInicial(
       prepararTexto(
         actividad.tokenSalidaSimulado,
       ) || null,
-
-    generacionesQrSalida:
-      normalizarCantidadGeneracionesQr(
-        actividad.generacionesQrSalida,
-
-        Boolean(
-          actividad.salidaHabilitada ===
-            true ||
-          prepararTexto(
-            actividad.tokenSalidaSimulado,
-          ) ||
-          prepararTexto(
-            actividad.salidaHabilitadaEn,
-          ) ||
-          prepararTexto(
-            actividad.salidaHabilitadaHasta,
-          ),
-        ),
-      ),
 
     // Información de eliminación lógica del mock.
     desactivadaEn:
@@ -580,13 +637,17 @@ function normalizarAsistencia(
   const checkIn =
     normalizarBooleano(
       asistencia.checkIn ??
-        asistencia.check_in,
+        asistencia.check_in ??
+        asistencia.entradaRegistrada ??
+        asistencia.entrada_registrada,
     )
 
   const checkOut =
     normalizarBooleano(
       asistencia.checkOut ??
-        asistencia.check_out,
+        asistencia.check_out ??
+        asistencia.salidaRegistrada ??
+        asistencia.salida_registrada,
     )
 
   const horasRegistradas =
@@ -611,10 +672,139 @@ function normalizarAsistencia(
      * Si no existe, lo deducimos únicamente para el mock.
      */
     estado:
-      prepararTexto(asistencia.estado) ||
+      prepararTexto(
+        asistencia.estado ??
+          asistencia.estadoAsistencia ??
+          asistencia.estado_asistencia,
+      ) ||
       (checkIn
         ? 'Asistió'
         : 'Inscrito'),
+  }
+}
+
+/*
+ * Combina las asistencias administrativas con las
+ * inscripciones creadas desde el portal estudiantil.
+ *
+ * La actividad y el número de cuenta forman una clave
+ * única para impedir filas duplicadas.
+ */
+function unificarAsistenciasSimuladas(
+  registros,
+) {
+  const asistenciasPorEstudiante =
+    new Map()
+
+  for (const registro of registros) {
+    const asistencia =
+      normalizarAsistencia(registro)
+
+    const clave =
+      `${asistencia.actividadId}:` +
+      `${asistencia.numeroCuenta}`
+
+    const asistenciaExistente =
+      asistenciasPorEstudiante.get(
+        clave,
+      )
+
+    if (!asistenciaExistente) {
+      asistenciasPorEstudiante.set(
+        clave,
+        asistencia,
+      )
+
+      continue
+    }
+
+    /*
+     * Si una marcación existe en cualquiera de las
+     * colecciones, debe considerarse registrada.
+     */
+    const checkIn =
+      asistenciaExistente.checkIn ||
+      asistencia.checkIn
+
+    const checkOut =
+      asistenciaExistente.checkOut ||
+      asistencia.checkOut
+
+    const horasRegistradas = Math.max(
+      normalizarNumeroNoNegativo(
+        asistenciaExistente
+          .horasRegistradas,
+      ),
+
+      normalizarNumeroNoNegativo(
+        asistencia.horasRegistradas,
+      ),
+    )
+
+    asistenciasPorEstudiante.set(
+      clave,
+      {
+        /*
+         * Conservamos primero la información administrativa,
+         * pero completamos las marcaciones con la inscripción
+         * proveniente del estudiante.
+         */
+        ...asistenciaExistente,
+
+        checkIn,
+        checkOut,
+        horasRegistradas,
+
+        estado:
+          checkIn || checkOut
+            ? 'Asistió'
+            : prepararTexto(
+                asistenciaExistente
+                  .estado,
+              ) ||
+              prepararTexto(
+                asistencia.estado,
+              ) ||
+              'Inscrito',
+      },
+    )
+  }
+
+  return [
+    ...asistenciasPorEstudiante.values(),
+  ]
+}
+
+// Combina una asistencia con la informacion de su actividad.
+function construirRegistroHistorialEstudiante(
+  asistencia,
+  actividad,
+) {
+  const fecha = prepararTexto(
+    actividad?.fecha ?? actividad?.fecha_actividad,
+  )
+
+  const titulo =
+    prepararTexto(
+      actividad?.titulo ?? actividad?.nombre,
+    ) || 'Actividad no disponible.'
+
+  return {
+    id: asistencia.id,
+    actividadId: asistencia.actividadId,
+    fecha,
+    titulo,
+
+    horasAcreditadas: normalizarNumeroNoNegativo(
+      asistencia.horasRegistradas,
+    ),
+
+    estado: prepararTexto(
+        asistencia.estado,
+    ) || 'Sin estado',
+
+    checkIn: asistencia.checkIn === true,
+    checkOut: asistencia.checkOut === true,
   }
 }
 
@@ -1409,12 +1599,22 @@ function ordenarActividades(
 
 /* FUNCIONES PÚBLICAS DE CONSULTA */
 export async function listarActividades() {
+  const ahora = new Date()
+
   if (usarDatosAdminSimulados) {
     const actividades =
-      leerActividades().filter(
-        (actividad) =>
-          actividad.eliminada !== true,
-      )
+      leerActividades()
+        .filter(
+          (actividad) =>
+            actividad.eliminada !==
+            true,
+        )
+        .map((actividad) =>
+          aplicarEstadoTemporalActividad(
+            actividad,
+            ahora,
+          ),
+        )
 
     return clonarDatos(
       ordenarActividades(
@@ -1434,17 +1634,23 @@ export async function listarActividades() {
     )
   }
 
+  const actividades =
+    respuesta
+      .map(
+        normalizarActividadBackend,
+      )
+      .map((actividad) =>
+        aplicarEstadoTemporalActividad(
+          actividad,
+          ahora,
+        ),
+      )
+
   return ordenarActividades(
-    respuesta.map(
-      normalizarActividadBackend,
-    ),
+    actividades,
   )
 }
 
-/*
- * El backend actual no expone GET /actividades/{id}.
- * En modo API buscamos el registro dentro de GET /actividades
- */
 export async function obtenerActividad(
   identificador,
 ) {
@@ -1478,8 +1684,12 @@ export async function obtenerActividad(
         elemento.eliminada !== true,
     )
 
-  return actividad
-    ? clonarDatos(actividad)
+    return actividad
+    ? clonarDatos(
+      aplicarEstadoTemporalActividad(
+        actividad,
+      ),
+    )
     : null
 }
 
@@ -1505,16 +1715,21 @@ export async function listarAsistenciasActividad(
   }
 
   if (usarDatosAdminSimulados) {
+    const asistenciasAdministrativas = leerAsistencias()
+    const inscripcionesEstudiante = leerInscripcionesEstudianteSimuladas() ?? []
+
     const asistencias =
-      leerAsistencias().filter(
+      unificarAsistenciasSimuladas([
+        ...asistenciasAdministrativas,
+        ...inscripcionesEstudiante,
+      ]).filter(
         (asistencia) =>
-          asistencia.actividadId ===
-          actividadId,
+          asistencia.actividadId === actividadId,
       )
 
-    return clonarDatos(
-      asistencias,
-    )
+      return clonarDatos(
+        asistencias,
+      )
   }
 
   const respuesta =
@@ -1537,6 +1752,200 @@ export async function listarAsistenciasActividad(
         actividadId,
       ),
   )
+}
+
+/*
+ * Devuelve el historial de actividades correspondiente
+ * a un estudiante específico.
+ */
+export async function listarHistorialActividadesPorEstudiante(
+  numeroCuenta,
+) {
+  const cuenta =
+    prepararTexto(numeroCuenta)
+
+  if (!/^\d{11}$/.test(cuenta)) {
+    throw new ActividadAdminError(
+      'El número de cuenta del estudiante no es válido.',
+    )
+  }
+
+  if (!usarDatosAdminSimulados) {
+    throw new ActividadAdminError(
+      'El backend todavía no permite consultar el historial de actividades por estudiante.',
+    )
+  }
+
+  /*
+   * Creamos un índice para localizar rápidamente
+   * la información de cada actividad.
+   */
+  const actividades =
+    leerActividades()
+
+  const actividadesPorId =
+    new Map(
+      actividades.map(
+        (actividad) => [
+          prepararTexto(actividad.id),
+          actividad,
+        ],
+      ),
+    )
+
+  /*
+   * Asistencias registradas desde el módulo
+   * administrativo de actividades.
+   */
+  const registrosAdministrativos =
+    leerAsistencias()
+      .filter(
+        (asistencia) =>
+          asistencia.numeroCuenta ===
+          cuenta,
+      )
+      .map((asistencia) =>
+        construirRegistroHistorialEstudiante(
+          asistencia,
+
+          actividadesPorId.get(
+            asistencia.actividadId,
+          ),
+        ),
+      )
+
+  /*
+   * Si el portal estudiantil todavía no ha creado
+   * su localStorage, utilizamos el mock inicial.
+   */
+  const inscripcionesGuardadas =
+    leerInscripcionesEstudianteSimuladas()
+
+  const inscripcionesEstudiante =
+    Array.isArray(
+      inscripcionesGuardadas,
+    )
+      ? inscripcionesGuardadas
+      : clonarDatos(
+          inscripcionesEstudianteMock,
+        )
+
+  const registrosPortal =
+    inscripcionesEstudiante
+      .map((inscripcion) => {
+        const cuentaInscripcion =
+          prepararTexto(
+            inscripcion.numeroCuenta ??
+              inscripcion.num_cuenta,
+          )
+
+        if (
+          cuentaInscripcion !== cuenta
+        ) {
+          return null
+        }
+
+        const actividadId =
+          prepararTexto(
+            inscripcion.actividadId ??
+              inscripcion.actividad_id ??
+              inscripcion.actividad?.id,
+          )
+
+        if (!actividadId) {
+          return null
+        }
+
+        const asistencia =
+          normalizarAsistencia(
+            {
+              id: inscripcion.id,
+              actividadId,
+              numeroCuenta: cuenta,
+
+              checkIn:
+                inscripcion
+                  .entradaRegistrada ??
+                inscripcion.checkIn ??
+                inscripcion.check_in,
+
+              checkOut:
+                inscripcion
+                  .salidaRegistrada ??
+                inscripcion.checkOut ??
+                inscripcion.check_out,
+
+              horasRegistradas:
+                inscripcion
+                  .horasRegistradas ??
+                inscripcion
+                  .horas_registradas,
+
+              estado:
+                inscripcion
+                  .estadoAsistencia ??
+                inscripcion.estado,
+            },
+
+            actividadId,
+          )
+
+        const actividad =
+          inscripcion.actividad ??
+          actividadesPorId.get(
+            actividadId,
+          )
+
+        return construirRegistroHistorialEstudiante(
+          asistencia,
+          actividad,
+        )
+      })
+      .filter(Boolean)
+
+  /*
+   * Una misma asistencia puede encontrarse en ambas
+   * colecciones. El identificador de la actividad evita
+   * mostrarla dos veces.
+   */
+  const registrosPorActividad =
+    new Map()
+
+  for (
+    const registro of [
+      ...registrosAdministrativos,
+      ...registrosPortal,
+    ]
+  ) {
+    registrosPorActividad.set(
+      registro.actividadId,
+      registro,
+    )
+  }
+
+  /*
+   * El historial se entrega desde la actividad
+   * más reciente hacia la más antigua.
+   */
+  const historial =
+    [
+      ...registrosPorActividad.values(),
+    ].sort((registroA, registroB) => {
+      const comparacionFecha =
+        registroB.fecha.localeCompare(
+          registroA.fecha,
+        )
+
+      if (comparacionFecha !== 0) {
+        return comparacionFecha
+      }
+
+      return registroB.id.localeCompare(
+        registroA.id,
+      )
+    })
+
+  return clonarDatos(historial)
 }
 
 /* CREACIÓN, ACTUALIZACIÓN Y ELIMINACIÓN */
@@ -1592,13 +2001,11 @@ export async function crearActividad(
     entradaHabilitadaEn: null,
     entradaHabilitadaHasta: null,
     tokenEntradaSimulado: null,
-    generacionesQrEntrada: 0,
 
     salidaHabilitada: false,
     salidaHabilitadaEn: null,
     salidaHabilitadaHasta: null,
     tokenSalidaSimulado: null,
-    generacionesQrSalida: 0,
 
     desactivadaEn: null,
     eliminadaEn: null,
@@ -2034,10 +2441,12 @@ export async function eliminarActividad(
   })
 }
 
-/* ENTRADA Y SALIDA MANUAL DE ESTUDIANTES */
 /*
  * Recupera en una sola operación los elementos necesarios
  * para una marcación manual simulada.
+ *
+ * Se combinan las asistencias administrativas con las
+ * inscripciones creadas desde el portal del estudiante.
  */
 function obtenerContextoMarcacionSimulada({
   actividadId,
@@ -2059,8 +2468,20 @@ function obtenerContextoMarcacionSimulada({
     )
   }
 
+  /*
+   * El administrador y el estudiante utilizan colecciones
+   * diferentes en localStorage. Las unificamos para que una
+   * inscripción realizada por el estudiante pueda recibir
+   * marcaciones manuales desde el panel administrativo.
+   */
   const asistencias =
-    leerAsistencias()
+    unificarAsistenciasSimuladas([
+      ...leerAsistencias(),
+      ...(
+        leerInscripcionesEstudianteSimuladas() ??
+        []
+      ),
+    ])
 
   const indiceAsistencia =
     asistencias.findIndex(
@@ -2084,6 +2505,108 @@ function obtenerContextoMarcacionSimulada({
     asistencia:
       asistencias[indiceAsistencia],
   }
+}
+
+/*
+ * Refleja una marcación manual en la inscripción almacenada
+ * por el portal del estudiante.
+ *
+ * Si la asistencia pertenece solamente a los mocks
+ * administrativos, la función no realiza ningún cambio.
+ */
+function actualizarInscripcionEstudianteSimulada({
+  actividadId,
+  numeroCuenta,
+  tipo,
+  horasRegistradas = null,
+}) {
+  const inscripciones =
+    leerInscripcionesEstudianteSimuladas()
+
+  if (!Array.isArray(inscripciones)) {
+    return
+  }
+
+  const indiceInscripcion =
+    inscripciones.findIndex(
+      (inscripcion) => {
+        const idActividad =
+          prepararTexto(
+            inscripcion.actividadId ??
+              inscripcion.actividad_id ??
+              inscripcion.actividad?.id,
+          )
+
+        const cuentaEstudiante =
+          prepararTexto(
+            inscripcion.numeroCuenta ??
+              inscripcion.num_cuenta,
+          )
+
+        return (
+          idActividad === actividadId &&
+          cuentaEstudiante === numeroCuenta
+        )
+      },
+    )
+
+  /*
+   * Algunas asistencias forman parte exclusivamente de los
+   * datos administrativos iniciales y no tienen inscripción
+   * dentro del portal del estudiante.
+   */
+  if (indiceInscripcion === -1) {
+    return
+  }
+
+  const inscripcion =
+    inscripciones[indiceInscripcion]
+
+  const fechaMarcacion =
+    new Date().toISOString()
+
+  if (tipo === TIPOS_MARCACION.entrada) {
+    inscripciones[indiceInscripcion] = {
+      ...inscripcion,
+
+      estadoInscripcion: 'inscrita',
+      estadoAsistencia: 'Pendiente',
+
+      entradaRegistrada: true,
+
+      entradaRegistradaEn:
+        inscripcion.entradaRegistradaEn ??
+        inscripcion.entrada_registrada_en ??
+        fechaMarcacion,
+
+      actualizadaEn: fechaMarcacion,
+    }
+  } else {
+    inscripciones[indiceInscripcion] = {
+      ...inscripcion,
+
+      estadoInscripcion: 'completada',
+      estadoAsistencia: 'Asistió',
+
+      salidaRegistrada: true,
+
+      salidaRegistradaEn:
+        inscripcion.salidaRegistradaEn ??
+        inscripcion.salida_registrada_en ??
+        fechaMarcacion,
+
+      horasRegistradas:
+        normalizarNumeroNoNegativo(
+          horasRegistradas,
+        ),
+
+      actualizadaEn: fechaMarcacion,
+    }
+  }
+
+  guardarInscripcionesEstudianteSimuladas(
+    inscripciones,
+  )
 }
 
 /*
@@ -2171,6 +2694,12 @@ export async function registrarEntradaManualActividad(
   guardarAsistencias(
     asistencias,
   )
+
+  actualizarInscripcionEstudianteSimulada({
+    actividadId,
+    numeroCuenta,
+    tipo: TIPOS_MARCACION.entrada,
+  })
 
   return {
     mensaje:
@@ -2293,6 +2822,14 @@ export async function registrarSalidaManualActividad(
     asistencias,
   )
 
+  actualizarInscripcionEstudianteSimulada({
+    actividadId,
+    numeroCuenta,
+    tipo: TIPOS_MARCACION.salida,
+
+    horasRegistradas: actividad.horasAcreditables,
+  })
+
   return {
     mensaje:
       'La salida y las horas fueron registradas correctamente.',
@@ -2304,9 +2841,10 @@ export async function registrarSalidaManualActividad(
   }
 }
 
-/* GENERACIÓN SIMULADA DE CÓDIGOS QR */
+/* GENERACIÓN DE CÓDIGOS QR */
+
 /*
- * Construye una fecha local usando los valores del formulario.
+ * Construye una fecha local usando los valores de la actividad.
  * Evitamos Date.parse para impedir cambios por zona horaria.
  */
 function crearFechaHoraLocalActividad(
@@ -2362,6 +2900,10 @@ function crearFechaHoraLocalActividad(
     : null
 }
 
+/*
+ * Obtiene las horas de inicio y finalización
+ * utilizando fechas locales.
+ */
 function obtenerHorarioActividad(
   actividad,
 ) {
@@ -2380,6 +2922,116 @@ function obtenerHorarioActividad(
   }
 }
 
+/*
+ * Construye la ventana automática de veinte minutos.
+ *
+ * Entrada: comienza a la hora de inicio.
+ * Salida: comienza a la hora de finalización.
+ */
+function obtenerVentanaQrActividad(
+  actividad,
+  tipo,
+) {
+  const duracionMinutos =
+    DURACION_QR_MINUTOS[tipo]
+
+  if (!duracionMinutos) {
+    throw new ActividadAdminError(
+      'El tipo de marcación solicitado no es válido.',
+    )
+  }
+
+  const {
+    inicio,
+    finalizacion,
+  } = obtenerHorarioActividad(
+    actividad,
+  )
+
+  if (!inicio || !finalizacion) {
+    throw new ActividadAdminError(
+      'No fue posible comprobar el horario de la actividad.',
+    )
+  }
+
+  const comienzaEn =
+    tipo === TIPOS_MARCACION.entrada
+      ? inicio
+      : finalizacion
+
+  const expiraEn = new Date(
+    comienzaEn.getTime() +
+      duracionMinutos * 60 * 1000,
+  )
+
+  return {
+    comienzaEn,
+    expiraEn,
+    duracionMinutos,
+  }
+}
+
+/*
+ * Comprueba que la solicitud se realice dentro
+ * de la ventana correspondiente.
+ */
+function validarDisponibilidadQrActividad({
+  actividad,
+  tipo,
+  ahora,
+}) {
+  if (actividad?.activa === false) {
+    throw new ActividadAdminError(
+      'No puedes generar el QR de una actividad desactivada.',
+    )
+  }
+
+  const estado =
+    normalizarEstadoActividad(
+      actividad?.estado,
+    )
+
+  if (estado === 'cancelada') {
+    throw new ActividadAdminError(
+      'No puedes generar el QR de una actividad cancelada.',
+    )
+  }
+
+  const ventana =
+    obtenerVentanaQrActividad(
+      actividad,
+      tipo,
+    )
+
+  if (
+    ahora.getTime() <
+    ventana.comienzaEn.getTime()
+  ) {
+    throw new ActividadAdminError(
+      tipo === TIPOS_MARCACION.entrada
+        ? 'El QR de entrada estará disponible cuando comience la actividad.'
+        : 'El QR de salida estará disponible cuando finalice la actividad.',
+    )
+  }
+
+  if (
+    ahora.getTime() >=
+    ventana.expiraEn.getTime()
+  ) {
+    throw new ActividadAdminError(
+      tipo === TIPOS_MARCACION.entrada
+        ? 'La ventana de veinte minutos para registrar entradas ya finalizó.'
+        : 'La ventana de veinte minutos para registrar salidas ya finalizó.',
+    )
+  }
+
+  return ventana
+}
+
+/*
+ * Genera un identificador único para impedir que dos
+ * códigos simulados compartan exactamente el mismo token.
+ */
 function crearIdentificadorTokenQr() {
   if (
     typeof crypto !== 'undefined' &&
@@ -2396,8 +3048,8 @@ function crearIdentificadorTokenQr() {
 }
 
 /*
- * Convierte el contenido del token a Base64 URL y agrega un
- * prefijo que permite reconocer los códigos simulados.
+ * Convierte el contenido del token a Base64 URL y agrega
+ * un prefijo reconocido por el portal del estudiante.
  */
 function codificarTokenQrSimulado(
   contenido,
@@ -2436,8 +3088,8 @@ function codificarTokenQrSimulado(
 }
 
 /*
- * Construye la URL que abrirá la ruta de asistencia
- * correspondiente al tipo de marcación.
+ * Construye la dirección que abrirá el estudiante
+ * al escanear el QR simulado.
  */
 function crearUrlAsistenciaSimulada(
   tipo,
@@ -2465,49 +3117,30 @@ function crearUrlAsistenciaSimulada(
   return url.toString()
 }
 
+/*
+ * Genera un QR local respetando la misma ventana
+ * utilizada por el backend.
+ */
 function crearQrSimulado({
   actividadId,
   tipo,
   ahora,
-  generacion,
+  ventana,
 }) {
-  const duracionMinutos =
-    DURACION_QR_MINUTOS[tipo]
-
-  if (!duracionMinutos) {
-    throw new ActividadAdminError(
-      'El tipo de marcación solicitado no es válido.',
-    )
-  }
-
-  if (
-    !Number.isInteger(generacion) ||
-    generacion < 1 ||
-    generacion >
-      MAXIMO_GENERACIONES_QR
-  ) {
-    throw new ActividadAdminError(
-      'La generación del código QR no es válida.',
-    )
-  }
-
   const habilitadaEn =
     ahora.toISOString()
 
   const expiraEn =
-    new Date(
-      ahora.getTime() +
-        duracionMinutos * 60 * 1000,
-    ).toISOString()
+    ventana.expiraEn.toISOString()
 
   const token =
     codificarTokenQrSimulado({
       version: 1,
       actividadId,
       tipo,
-      generacion,
       habilitadaEn,
       expiraEn,
+
       nonce:
         crearIdentificadorTokenQr(),
     })
@@ -2522,132 +3155,53 @@ function crearQrSimulado({
         token,
       ),
 
+    // El mock genera el dibujo desde la URL.
+    imagenUrl: null,
+
     habilitadaEn,
-    expiraEn,
-    duracionMinutos,
-    generacion,
-  }
-}
-
-function normalizarCantidadGeneracionesQr(
-  valor,
-  tieneQrGuardado,
-) {
-  const cantidad = Number(valor)
-
-  if (
-    Number.isInteger(cantidad) &&
-    cantidad >= 0
-  ) {
-    return Math.min(
-      cantidad,
-      MAXIMO_GENERACIONES_QR,
-    )
-  }
-
-  return tieneQrGuardado
-    ? 1
-    : 0
-}
-
-/*
- * Recupera el último QR cuando todavía está vigente.
- * Abrir nuevamente el diálogo no genera otro token.
- */
-function obtenerQrVigenteSimulado(
-  actividad,
-  tipo,
-  ahora,
-) {
-  const esEntrada =
-    tipo === TIPOS_MARCACION.entrada
-
-  const habilitada = esEntrada
-    ? actividad.entradaHabilitada ===
-      true
-    : actividad.salidaHabilitada ===
-      true
-
-  const habilitadaEn =
-    prepararTexto(
-      esEntrada
-        ? actividad.entradaHabilitadaEn
-        : actividad.salidaHabilitadaEn,
-    )
-
-  const expiraEn =
-    prepararTexto(
-      esEntrada
-        ? actividad.entradaHabilitadaHasta
-        : actividad.salidaHabilitadaHasta,
-    )
-
-  const token =
-    prepararTexto(
-      esEntrada
-        ? actividad.tokenEntradaSimulado
-        : actividad.tokenSalidaSimulado,
-    )
-
-  const generacion =
-    normalizarCantidadGeneracionesQr(
-      esEntrada
-        ? actividad.generacionesQrEntrada
-        : actividad.generacionesQrSalida,
-      Boolean(token),
-    )
-
-  const fechaExpiracion =
-    Date.parse(expiraEn)
-
-  const qrVigente =
-    habilitada &&
-    Boolean(token) &&
-    Number.isFinite(fechaExpiracion) &&
-    fechaExpiracion > ahora.getTime()
-
-  if (!qrVigente) {
-    return null
-  }
-
-  return {
-    tipo,
-    token,
-
-    url:
-      crearUrlAsistenciaSimulada(
-        tipo,
-        token,
-      ),
-
-    habilitadaEn:
-      habilitadaEn || null,
-
     expiraEn,
 
     duracionMinutos:
-      DURACION_QR_MINUTOS[tipo],
-
-    generacion:
-      generacion || 1,
+      ventana.duracionMinutos,
   }
 }
 
 /*
- * La generación API permanece deshabilitada porque el backend
- * devuelve una imagen PNG y apiFetch trabaja con respuestas
- * JSON. No simulamos compatibilidad inexistente.
+ * Convierte el archivo PNG recibido desde la API
+ * en una dirección temporal que pueda utilizar <img>.
  */
-async function habilitarMarcacionActividad(
-  identificador,
-  tipoSolicitado,
+function crearUrlImagenQr(
+  imagen,
 ) {
-  if (!usarDatosAdminSimulados) {
+  if (
+    typeof URL === 'undefined' ||
+    typeof URL.createObjectURL !==
+      'function'
+  ) {
     throw new ActividadAdminError(
-      'La generación del QR mediante la API todavía no está disponible en esta vista.',
+      'El navegador no permite mostrar la imagen del código QR.',
     )
   }
 
+  return URL.createObjectURL(
+    imagen,
+  )
+}
+
+/*
+ * Solicita un QR de entrada o salida.
+ *
+ * API:
+ * POST /asistencias/entrada/actividades/{actividad_id}
+ * POST /asistencias/salida/actividades/{actividad_id}
+ *
+ * Simulación:
+ * genera un token local y reemplaza cualquier token anterior.
+ */
+async function generarQrActividad(
+  identificador,
+  tipoSolicitado,
+) {
   const id =
     prepararTexto(identificador)
 
@@ -2672,6 +3226,76 @@ async function habilitarMarcacionActividad(
     )
   }
 
+  const ahora = new Date()
+
+  /*
+   * En modo API obtenemos la actividad actual para validar
+   * el horario antes de solicitar la imagen al backend.
+   */
+  if (!usarDatosAdminSimulados) {
+    const actividad =
+      await obtenerActividad(id)
+
+    if (!actividad) {
+      throw new ActividadAdminError(
+        'La actividad seleccionada no existe o ya no está disponible.',
+      )
+    }
+
+    const ventana =
+      validarDisponibilidadQrActividad({
+        actividad,
+        tipo,
+        ahora,
+      })
+
+    const imagen =
+      await peticionApiBlob(
+        `/asistencias/${tipo}/actividades/${encodeURIComponent(
+          id,
+        )}`,
+        {
+          method: 'POST',
+        },
+      )
+
+    return {
+      actividad:
+        aplicarEstadoTemporalActividad(
+          actividad,
+          ahora,
+        ),
+
+      qr: {
+        tipo,
+
+        /*
+         * La API entrega el QR ya dibujado.
+         * Por eso url permanece nula y utilizamos imagenUrl.
+         */
+        url: null,
+
+        imagenUrl:
+          crearUrlImagenQr(
+            imagen,
+          ),
+
+        habilitadaEn:
+          ahora.toISOString(),
+
+        expiraEn:
+          ventana.expiraEn.toISOString(),
+
+        duracionMinutos:
+          ventana.duracionMinutos,
+      },
+    }
+  }
+
+  /*
+   * En modo simulado recuperamos la colección compartida
+   * con el portal del estudiante.
+   */
   const actividades =
     leerActividades()
 
@@ -2684,131 +3308,35 @@ async function habilitarMarcacionActividad(
 
   if (indiceActividad === -1) {
     throw new ActividadAdminError(
-      'La actividad que deseas habilitar no existe.',
+      'La actividad seleccionada no existe.',
     )
   }
 
-  const actividadActual =
-    actividades[indiceActividad]
-
-  if (actividadActual.activa === false) {
-    throw new ActividadAdminError(
-      'No puedes habilitar la asistencia de una actividad desactivada.',
-    )
-  }
-
-  const estadoActual =
-    normalizarEstadoActividad(
-      actividadActual.estado,
-    )
-
-  if (estadoActual === 'cancelada') {
-    throw new ActividadAdminError(
-      'No puedes habilitar la asistencia de una actividad cancelada.',
-    )
-  }
-
-  if (estadoActual === 'finalizada') {
-    throw new ActividadAdminError(
-      'No puedes habilitar la asistencia de una actividad finalizada.',
-    )
-  }
-
-  const ahora = new Date()
-
-  const qrVigente =
-    obtenerQrVigenteSimulado(
-      actividadActual,
-      tipo,
+  const actividad =
+    aplicarEstadoTemporalActividad(
+      actividades[indiceActividad],
       ahora,
     )
 
-  const generacionesActuales =
-    normalizarCantidadGeneracionesQr(
-      tipo === TIPOS_MARCACION.entrada
-        ? actividadActual
-            .generacionesQrEntrada
-        : actividadActual
-            .generacionesQrSalida,
-      false,
-    )
-
-  if (qrVigente) {
-    return clonarDatos({
-      actividad:
-        actividadActual,
-
-      qr:
-        qrVigente,
-
-      reutilizado: true,
-
-      generacionesRestantes:
-        Math.max(
-          0,
-          MAXIMO_GENERACIONES_QR -
-            generacionesActuales,
-        ),
+  const ventana =
+    validarDisponibilidadQrActividad({
+      actividad,
+      tipo,
+      ahora,
     })
-  }
-
-  const {
-    inicio,
-    finalizacion,
-  } = obtenerHorarioActividad(
-    actividadActual,
-  )
-
-  if (!inicio || !finalizacion) {
-    throw new ActividadAdminError(
-      'No fue posible comprobar el horario de la actividad.',
-    )
-  }
-
-  if (
-    ahora.getTime() <
-    inicio.getTime()
-  ) {
-    throw new ActividadAdminError(
-      tipo === TIPOS_MARCACION.entrada
-        ? 'La entrada podrá habilitarse cuando comience la actividad.'
-        : 'La salida no puede habilitarse antes de que comience la actividad.',
-    )
-  }
-
-  if (
-    tipo === TIPOS_MARCACION.entrada &&
-    ahora.getTime() >=
-      finalizacion.getTime()
-  ) {
-    throw new ActividadAdminError(
-      'La entrada no puede habilitarse porque la actividad ya terminó.',
-    )
-  }
-
-  if (
-    generacionesActuales >=
-    MAXIMO_GENERACIONES_QR
-  ) {
-    throw new ActividadAdminError(
-      tipo === TIPOS_MARCACION.entrada
-        ? 'La entrada ya utilizó su generación inicial y su única reactivación.'
-        : 'La salida ya utilizó su generación inicial y su única reactivación.',
-    )
-  }
-
-  const nuevaGeneracion =
-    generacionesActuales + 1
 
   const qr =
     crearQrSimulado({
       actividadId: id,
       tipo,
       ahora,
-      generacion:
-        nuevaGeneracion,
+      ventana,
     })
 
+  /*
+   * Guardamos siempre el último token generado.
+   * Esto invalida cualquier QR simulado anterior.
+   */
   const camposMarcacion =
     tipo === TIPOS_MARCACION.entrada
       ? {
@@ -2822,9 +3350,6 @@ async function habilitarMarcacionActividad(
 
           tokenEntradaSimulado:
             qr.token,
-
-          generacionesQrEntrada:
-            nuevaGeneracion,
         }
       : {
           salidaHabilitada: true,
@@ -2837,19 +3362,11 @@ async function habilitarMarcacionActividad(
 
           tokenSalidaSimulado:
             qr.token,
-
-          generacionesQrSalida:
-            nuevaGeneracion,
         }
 
   const actividadActualizada = {
-    ...actividadActual,
+    ...actividad,
     ...camposMarcacion,
-
-    estado:
-      estadoActual === 'programada'
-        ? 'en-curso'
-        : estadoActual,
 
     actualizadaEn:
       ahora.toISOString(),
@@ -2867,48 +3384,35 @@ async function habilitarMarcacionActividad(
       actividadActualizada,
 
     qr,
-
-    reutilizado: false,
-
-    generacionesRestantes:
-      MAXIMO_GENERACIONES_QR -
-      nuevaGeneracion,
   })
 }
 
-export async function habilitarEntradaActividad(
+// Nombres definitivos de las operaciones.
+export async function obtenerQrEntradaActividad(
   identificador,
 ) {
-  return habilitarMarcacionActividad(
+  return generarQrActividad(
     identificador,
     TIPOS_MARCACION.entrada,
   )
 }
 
-export async function habilitarSalidaActividad(
+export async function obtenerQrSalidaActividad(
   identificador,
 ) {
-  return habilitarMarcacionActividad(
+  return generarQrActividad(
     identificador,
     TIPOS_MARCACION.salida,
   )
 }
 
-/* RESTABLECIMIENTO DEL ESCENARIO SIMULADO */
-/*
- * Restaura las actividades, asistencias y estudiantes del mock.
- *
- * También se restauran los estudiantes porque registrar una
- * salida simulada acredita horas en su perfil local.
- */
+/* Restablecimiento del escenario simulado */
 export async function restablecerActividades() {
   comprobarModoSimulado()
 
-  const actividadesIniciales =
-    obtenerActividadesIniciales()
+  const actividadesIniciales = obtenerActividadesIniciales()
 
-  const asistenciasIniciales =
-    obtenerAsistenciasIniciales()
+  const asistenciasIniciales = obtenerAsistenciasIniciales()
 
   const estudiantesIniciales =
     clonarDatos(

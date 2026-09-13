@@ -9,11 +9,12 @@ import {
   Send,
   WalletCards,
 } from 'lucide-react'
+
 import {
   useEffect,
-  useMemo,
   useState,
 } from 'react'
+
 import {
   Link,
   useParams,
@@ -21,117 +22,61 @@ import {
 
 import AppSidebar from '../components/AppSidebar.jsx'
 import MobileNavigation from '../components/MobileNavigation.jsx'
+
 import {
   ESTADOS_APORTACION,
   obtenerAportacionEstudiante,
-  TIPOS_APORTACION,
 } from '../services/estudianteAportacionesService.js'
+
 import '../styles/AppLayout.css'
 import '../styles/ContributionDetail.css'
 
-/* Nombres utilizados para mostrar el periodo individual. */
-const MESES = Object.freeze([
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-])
-
+/* CONFIGURACIÓN GENERAL */
 /*
- * Configuración visual y textual de cada estado.
- *
- * Los mensajes cambian automáticamente según el resultado
- * de la revisión realizada por ASEBEP.
+ * Permite actualizar el detalle cuando el administrador
+ * revisa una aportación desde otra pestaña del navegador.
  */
+const CLAVE_APORTACIONES_COMPARTIDAS =
+  'asebep_aportaciones_simuladas_v1'
+
 const INFORMACION_ESTADOS =
   Object.freeze({
     [
-      ESTADOS_APORTACION
-        .PENDIENTE_APROBACION
+      ESTADOS_APORTACION.PENDIENTE
     ]: {
-      texto: 'Pendiente de aprobación',
+      texto: 'Pendiente',
 
-      claseEstado:
-        'contribution-detail-status--pending',
-
-      claseValor:
-        'contribution-detail-data__value--pending',
-
-      claseAviso:
-        'contribution-detail-notice--pending',
-
-      tituloAviso:
-        'Comprobante recibido',
-
-      mensajeAviso:
-        'La revisión puede tomar un par de días.',
-
-      observacionPredeterminada:
-        'Tu aportación fue recibida correctamente y se encuentra en proceso de revisión.',
-
+      claseEstado: 'contribution-detail-status--pending',
+      claseValor: 'contribution-detail-data__value--pending',
+      claseAviso: 'contribution-detail-notice--pending',
+      tituloAviso: 'Comprobante recibido',
+      mensajeAviso: 'La aportación se encuentra pendiente de revisión. Los meses se acreditarán únicamente si el administrador la aprueba.',
       IconoEstado: Clock3,
       IconoAviso: Info,
     },
 
     [
-      ESTADOS_APORTACION.APROBADA
+      ESTADOS_APORTACION.APROBADO
     ]: {
       texto: 'Aprobada',
-
-      claseEstado:
-        'contribution-detail-status--approved',
-
-      claseValor:
-        'contribution-detail-data__value--approved',
-
-      claseAviso:
-        'contribution-detail-notice--approved',
-
-      tituloAviso:
-        'Aportación aprobada',
-
-      mensajeAviso:
-        'Tu comprobante fue revisado y la aportación quedó registrada correctamente.',
-
-      observacionPredeterminada:
-        'El comprobante fue revisado y la aportación quedó aprobada.',
-
+      claseEstado: 'contribution-detail-status--approved',
+      claseValor: 'contribution-detail-data__value--approved',
+      claseAviso: 'contribution-detail-notice--approved',
+      tituloAviso: 'Aportación aprobada',
+      mensajeAviso: 'El comprobante fue revisado y los meses aprobados quedaron acreditados en tu cuenta.',
       IconoEstado: CircleCheck,
       IconoAviso: CircleCheck,
     },
 
     [
-      ESTADOS_APORTACION
-        .REQUIERE_CORRECCION
+      ESTADOS_APORTACION.RECHAZADO
     ]: {
-      texto: 'Requiere corrección',
-
-      claseEstado:
-        'contribution-detail-status--correction',
-
-      claseValor:
-        'contribution-detail-data__value--correction',
-
-      claseAviso:
-        'contribution-detail-notice--correction',
-
-      tituloAviso:
-        'Debes enviar un comprobante nuevo',
-
-      mensajeAviso:
-        'Corrige lo indicado por ASEBEP y envía un comprobante nuevo. El registro anterior permanecerá en tu historial.',
-
-      observacionPredeterminada:
-        'El comprobante necesita una corrección antes de poder ser aprobado.',
-
+      texto: 'Rechazada',
+      claseEstado: 'contribution-detail-status--correction',
+      claseValor: 'contribution-detail-data__value--correction',
+      claseAviso: 'contribution-detail-notice--correction',
+      tituloAviso: 'Aportación rechazada',
+      mensajeAviso: 'Este comprobante no fue aprobado. Para realizar otro intento debes registrar una aportación nueva.',
       IconoEstado: CircleAlert,
       IconoAviso: CircleAlert,
     },
@@ -140,117 +85,40 @@ const INFORMACION_ESTADOS =
 /*
  * Configuración de respaldo.
  *
- * Normalmente no se utilizará porque el servicio solamente
- * entrega estados reconocidos por el módulo.
+ * Normalmente no se utiliza porque el servicio valida
+ * todos los estados recibidos desde el backend.
  */
 const ESTADO_NO_DISPONIBLE =
   Object.freeze({
     texto: 'Estado no disponible',
-
-    claseEstado:
-      'contribution-detail-status--pending',
-
-    claseValor:
-      'contribution-detail-data__value--pending',
-
-    claseAviso:
-      'contribution-detail-notice--pending',
-
-    tituloAviso:
-      'Estado pendiente de actualización',
-
-    mensajeAviso:
-      'Todavía no existe información disponible sobre la revisión del comprobante.',
-
-    observacionPredeterminada:
-      'No hay observaciones disponibles.',
-
+    claseEstado: 'contribution-detail-status--pending',
+    claseValor: 'contribution-detail-data__value--pending',
+    claseAviso: 'contribution-detail-notice--pending',
+    tituloAviso: 'Estado no disponible',
+    mensajeAviso: 'Todavía no existe información disponible sobre la revisión del comprobante.',
     IconoEstado: Info,
     IconoAviso: Info,
   })
 
-// Convierte un monto al formato utilizado por el portal.
-function formatearMoneda(
-  valor,
-) {
-  const monto = Number(valor)
-
-  if (!Number.isFinite(monto)) {
-    return 'L 0.00'
-  }
-
-  return (
-    `L ${monto.toLocaleString(
-      'es-HN',
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      },
-    )}`
-  )
-}
-
-/*
- * Convierte una fecha YYYY-MM-DD sin desplazarla
- * por diferencias de zona horaria.
- */
-function formatearFechaPago(
-  fecha,
-) {
+// FUNCIONES GENERALES
+function prepararTexto(valor) {
   if (
-    typeof fecha !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(
-      fecha,
-    )
+    valor === null ||
+    valor === undefined
   ) {
-    return 'Fecha no disponible'
+    return ''
   }
 
-  const [
-    anio,
-    mes,
-    dia,
-  ] = fecha
-    .split('-')
-    .map(Number)
-
-  const fechaLocal =
-    new Date(
-      anio,
-      mes - 1,
-      dia,
-    )
-
-  const fechaValida =
-    fechaLocal.getFullYear() ===
-      anio &&
-    fechaLocal.getMonth() ===
-      mes - 1 &&
-    fechaLocal.getDate() === dia
-
-  if (!fechaValida) {
-    return 'Fecha no disponible'
-  }
-
-  return new Intl.DateTimeFormat(
-    'es-HN',
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    },
-  ).format(fechaLocal)
+  return String(valor).trim()
 }
 
 /*
- * Convierte el instante del envío a la fecha y hora
- * local del dispositivo del estudiante.
+ * Convierte fecha_subida al formato utilizado
+ * en el portal del estudiante.
  */
-function formatearFechaEnvio(
-  fechaEnvio,
-) {
+function formatearFechaSubida(valor) {
   const fecha =
-    new Date(fechaEnvio)
+    new Date(valor)
 
   if (
     Number.isNaN(
@@ -260,212 +128,125 @@ function formatearFechaEnvio(
     return 'Fecha no disponible'
   }
 
-  const fechaFormateada =
-    new Intl.DateTimeFormat(
-      'es-HN',
-      {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      },
-    ).format(fecha)
-
-  const horaFormateada =
-    new Intl.DateTimeFormat(
-      'es-HN',
-      {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      },
-    ).format(fecha)
-
-  return (
-    `${fechaFormateada} · ` +
-    `${horaFormateada}`
-  )
-}
-
-// Obtiene el nombre del mes asociado con un pago individual.
-function obtenerNombreMes(
-  numeroMes,
-) {
-  const indice =
-    Number(numeroMes) - 1
-
-  return (
-    MESES[indice] ||
-    'Mes no disponible'
-  )
-}
-
-// Agrega la forma singular o plural correspondiente.
-function obtenerTextoCantidadMeses(
-  cantidad,
-) {
-  const numero =
-    Number(cantidad)
-
-  if (
-    !Number.isInteger(numero) ||
-    numero < 1
-  ) {
-    return 'Cantidad no disponible'
-  }
-
-  return (
-    `${numero} ${
-      numero === 1
-        ? 'mes'
-        : 'meses'
-    }`
-  )
+  return new Intl.DateTimeFormat(
+    'es-HN',
+    {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    },
+  ).format(fecha)
 }
 
 /*
- * Construye el título interno de la tarjeta.
- *
- * Los pagos individuales muestran el periodo elegido.
- * Los pagos múltiples muestran la cantidad total de meses.
+ * Muestra los meses según el estado de revisión.
+ * Una aportación pendiente o rechazada no acredita meses.
  */
-function obtenerTituloAportacion(
+function obtenerTextoMesesAprobados(
   aportacion,
 ) {
   if (
-    aportacion.tipo ===
-    TIPOS_APORTACION
-      .VARIOS_MESES
+    aportacion.estado ===
+    ESTADOS_APORTACION.PENDIENTE
   ) {
-    return (
-      `Aportación de ${
-        obtenerTextoCantidadMeses(
-          aportacion.cantidadMeses,
-        )
-      }`
-    )
+    return 'Pendiente de revisión'
   }
 
-  const nombreMes =
-    obtenerNombreMes(
-      aportacion.mesAportacion,
+  if (
+    aportacion.estado ===
+    ESTADOS_APORTACION.RECHAZADO
+  ) {
+    return '0 meses acreditados'
+  }
+
+  const meses =
+    Number(
+      aportacion.meses_aprobados,
     )
 
-  const anio =
-    aportacion.anioAportacion ||
-    'Año no disponible'
+  if (
+    !Number.isInteger(meses) ||
+    meses <= 0
+  ) {
+    return 'Sin meses acreditados'
+  }
 
   return (
-    `Aportación de ${
-      nombreMes.toLocaleLowerCase(
-        'es',
-      )
-    } ${anio}`
+    meses === 1
+      ? '1 mes acreditado'
+      : `${meses} meses acreditados`
   )
 }
 
 /*
- * Prepara los campos que se mostrarán en la cuadrícula.
- *
- * El comienzo cambia dependiendo de si el comprobante
- * corresponde a un mes o a varios meses.
+ * Construye exclusivamente los campos disponibles
+ * dentro de AportacionResponse.
  */
 function construirDatosDetalle({
   aportacion,
   informacionEstado,
 }) {
-  const esPagoMultiple =
-    aportacion.tipo ===
-    TIPOS_APORTACION
-      .VARIOS_MESES
-
-  const datosPeriodo =
-    esPagoMultiple
-      ? [
-          {
-            etiqueta:
-              'Tipo de aportación',
-            valor:
-              'Pago de varios meses',
-          },
-
-          {
-            etiqueta:
-              'Cantidad de meses pagados',
-            valor:
-              obtenerTextoCantidadMeses(
-                aportacion
-                  .cantidadMeses,
-              ),
-          },
-        ]
-      : [
-          {
-            etiqueta:
-              'Mes de aportación',
-            valor:
-              obtenerNombreMes(
-                aportacion
-                  .mesAportacion,
-              ),
-          },
-
-          {
-            etiqueta: 'Año',
-            valor:
-              aportacion
-                .anioAportacion ||
-              'No disponible',
-          },
-        ]
-
   return [
-    ...datosPeriodo,
-
-    {
-      etiqueta: 'Monto pagado',
-      valor:
-        formatearMoneda(
-          aportacion.monto,
-        ),
-    },
-
-    {
-      etiqueta: 'Fecha de pago',
-      valor:
-        formatearFechaPago(
-          aportacion.fechaPago,
-        ),
-    },
-
     {
       etiqueta:
         'Número de referencia',
 
       valor:
-        aportacion
-          .numeroReferencia ||
+        prepararTexto(
+          aportacion
+            .num_referencia,
+        ) ||
         'No disponible',
     },
 
     {
-      etiqueta: 'Fecha de envío',
+      etiqueta: 'Descripción',
+
       valor:
-        formatearFechaEnvio(
-          aportacion.fechaEnvio,
+        prepararTexto(
+          aportacion.descripcion,
+        ) ||
+        'Sin descripción',
+    },
+
+    {
+      etiqueta: 'Fecha de envío',
+
+      valor:
+        formatearFechaSubida(
+          aportacion
+            .fecha_subida,
         ),
     },
 
     {
       etiqueta: 'Número de cuenta',
+
       valor:
-        aportacion.numeroCuenta ||
+        prepararTexto(
+          aportacion.num_cuenta,
+        ) ||
         'No disponible',
     },
 
     {
       etiqueta: 'Estado',
+
       valor:
         informacionEstado.texto,
+
+      claseValor:
+        informacionEstado
+          .claseValor,
+    },
+
+    {
+      etiqueta:
+        'Meses aprobados',
+
+      valor:
+        obtenerTextoMesesAprobados(
+          aportacion,
+        ),
 
       claseValor:
         informacionEstado
@@ -474,6 +255,7 @@ function construirDatosDetalle({
   ]
 }
 
+// COMPONENTE PRINCIPAL
 function ContributionDetail() {
   const {
     aportacionId,
@@ -494,18 +276,14 @@ function ContributionDetail() {
     setErrorCarga,
   ] = useState('')
 
-  /*
-   * Incrementar este valor repite la consulta
-   * cuando el estudiante presiona reintentar.
-   */
   const [
     intentoCarga,
     setIntentoCarga,
   ] = useState(0)
 
   /*
-   * Busca únicamente una aportación perteneciente
-   * a la cuenta autenticada.
+   * Obtiene una aportación perteneciente exclusivamente
+   * al estudiante autenticado.
    */
   useEffect(() => {
     let componenteActivo = true
@@ -525,10 +303,6 @@ function ContributionDetail() {
           return
         }
 
-        /*
-         * Un valor null representa un identificador válido
-         * que no pertenece al historial del estudiante.
-         */
         setAportacion(
           resultado ?? null,
         )
@@ -559,53 +333,55 @@ function ContributionDetail() {
     intentoCarga,
   ])
 
-  const informacionEstado =
-    aportacion
-      ? INFORMACION_ESTADOS[
-          aportacion.estado
-        ] ??
-        ESTADO_NO_DISPONIBLE
-      : ESTADO_NO_DISPONIBLE
-
-  const tituloAportacion =
-    useMemo(
-      () =>
-        aportacion
-          ? obtenerTituloAportacion(
-              aportacion,
-            )
-          : '',
-      [aportacion],
-    )
-
-  const datosDetalle =
-    useMemo(
-      () =>
-        aportacion
-          ? construirDatosDetalle({
-              aportacion,
-              informacionEstado,
-            })
-          : [],
-      [
-        aportacion,
-        informacionEstado,
-      ],
-    )
-
   /*
-   * Si requiere corrección, la nueva aportación abre
-   * el formulario apropiado según el tipo original.
-   *
-   * El registro anterior no se modifica ni se elimina.
+   * Actualiza la aportación cuando el estudiante vuelve
+   * a la pestaña o el administrador modifica localStorage.
    */
-  const vistaFormularioCorreccion =
-    aportacion?.tipo ===
-    TIPOS_APORTACION
-      .VARIOS_MESES
-      ? TIPOS_APORTACION
-          .VARIOS_MESES
-      : TIPOS_APORTACION.UN_MES
+  useEffect(() => {
+    function actualizarAlEnfocar() {
+      setIntentoCarga(
+        (intentoActual) =>
+          intentoActual + 1,
+      )
+    }
+
+    function actualizarPorAlmacenamiento(
+      evento,
+    ) {
+      if (
+        evento.key ===
+          CLAVE_APORTACIONES_COMPARTIDAS ||
+        evento.key === null
+      ) {
+        setIntentoCarga(
+          (intentoActual) =>
+            intentoActual + 1,
+        )
+      }
+    }
+
+    window.addEventListener(
+      'focus',
+      actualizarAlEnfocar,
+    )
+
+    window.addEventListener(
+      'storage',
+      actualizarPorAlmacenamiento,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        actualizarAlEnfocar,
+      )
+
+      window.removeEventListener(
+        'storage',
+        actualizarPorAlmacenamiento,
+      )
+    }
+  }, [])
 
   function reintentarCarga() {
     setIntentoCarga(
@@ -614,10 +390,25 @@ function ContributionDetail() {
     )
   }
 
-  const mostrarCorreccion =
+  const informacionEstado =
+    aportacion
+      ? INFORMACION_ESTADOS[
+          aportacion.estado
+        ] ??
+        ESTADO_NO_DISPONIBLE
+      : ESTADO_NO_DISPONIBLE
+
+  const datosDetalle =
+    aportacion
+      ? construirDatosDetalle({
+          aportacion,
+          informacionEstado,
+        })
+      : []
+
+  const aportacionRechazada =
     aportacion?.estado ===
-    ESTADOS_APORTACION
-      .REQUIERE_CORRECCION
+    ESTADOS_APORTACION.RECHAZADO
 
   const {
     IconoEstado,
@@ -630,7 +421,7 @@ function ContributionDetail() {
       <AppSidebar />
 
       <section className="app-content">
-        {/* Barra superior del portal personal. */}
+        {/* Barra superior del portal estudiantil. */}
         <header className="app-topbar">
           <div className="app-topbar__brand">
             <GraduationCap
@@ -646,16 +437,19 @@ function ContributionDetail() {
         </header>
 
         <main className="contribution-detail-main">
-          {/* Ruta de navegación hacia el historial. */}
+          {/* Regreso al historial. */}
           <Link
             className="contribution-detail-back"
             to="/aportaciones"
-            >
-                <ArrowLeft aria-hidden="true" />
-                Volver a aportaciones
-            </Link>
+          >
+            <ArrowLeft
+              aria-hidden="true"
+            />
 
-          {/* Estado mostrado mientras se consulta el servicio. */}
+            Volver a aportaciones
+          </Link>
+
+          {/* Estado de carga. */}
           {cargando && (
             <section
               className="contribution-detail-state"
@@ -677,7 +471,7 @@ function ContributionDetail() {
             </section>
           )}
 
-          {/* Estado mostrado si la consulta falla. */}
+          {/* Error de comunicación o validación. */}
           {!cargando &&
             errorCarga && (
               <section
@@ -710,10 +504,7 @@ function ContributionDetail() {
               </section>
             )}
 
-          {/*
-           * El servicio devuelve null si el identificador
-           * no pertenece a la cuenta autenticada.
-           */}
+          {/* Registro inexistente o perteneciente a otra cuenta. */}
           {!cargando &&
             !errorCarga &&
             !aportacion && (
@@ -742,7 +533,7 @@ function ContributionDetail() {
               </section>
             )}
 
-          {/* Contenido completo del comprobante encontrado. */}
+          {/* Detalle completo de la aportación. */}
           {!cargando &&
             !errorCarga &&
             aportacion && (
@@ -758,16 +549,21 @@ function ContributionDetail() {
 
                   <span>
                     Consulta la información
-                    registrada y el estado de
-                    revisión de tu comprobante.
+                    enviada y el resultado de
+                    la revisión realizada por
+                    ASEBEP.
                   </span>
                 </header>
 
                 <article className="contribution-detail-card">
-                  {/* Título y estado principal. */}
+                  {/* Referencia y estado principal. */}
                   <header className="contribution-detail-card__header">
                     <h2>
-                      {tituloAportacion}
+                      Aportación{' '}
+                      {
+                        aportacion
+                          .num_referencia
+                      }
                     </h2>
 
                     <span
@@ -786,7 +582,7 @@ function ContributionDetail() {
                     </span>
                   </header>
 
-                  {/* Información registrada por el estudiante. */}
+                  {/* Campos exactos del contrato. */}
                   <dl className="contribution-detail-data">
                     {datosDetalle.map(
                       (dato) => (
@@ -800,7 +596,8 @@ function ContributionDetail() {
 
                           <dd
                             className={
-                              dato.claseValor
+                              dato.claseValor ||
+                              undefined
                             }
                           >
                             {dato.valor}
@@ -810,26 +607,9 @@ function ContributionDetail() {
                     )}
                   </dl>
 
-                  {/* Observaciones y mensaje correspondiente al estado. */}
                   <section className="contribution-detail-review">
-                    <div className="contribution-detail-observations">
-                      <h3>
-                        <Info
-                          aria-hidden="true"
-                        />
-
-                        Observaciones de ASEBEP
-                      </h3>
-
-                      <p>
-                        {aportacion
-                          .observacionAsebep ||
-                          informacionEstado
-                            .observacionPredeterminada}
-                      </p>
-                    </div>
-
-                    <div
+                    {/* Mensaje correspondiente al estado. */}
+                    <aside
                       className={
                         `contribution-detail-notice ${informacionEstado.claseAviso}`
                       }
@@ -853,10 +633,10 @@ function ContributionDetail() {
                           }
                         </p>
                       </div>
-                    </div>
+                    </aside>
                   </section>
 
-                  {/* Acciones disponibles según el estado. */}
+                  {/* Acciones permitidas para el estudiante. */}
                   <footer className="contribution-detail-actions">
                     <Link
                       className="contribution-detail-button contribution-detail-button--secondary"
@@ -869,33 +649,16 @@ function ContributionDetail() {
                       Volver al historial
                     </Link>
 
-                    {mostrarCorreccion ? (
+                    {aportacionRechazada && (
                       <Link
                         className="contribution-detail-button contribution-detail-button--correction"
-                        to={
-                          `/aportaciones?vista=${
-                            encodeURIComponent(
-                              vistaFormularioCorreccion,
-                            )
-                          }`
-                        }
+                        to="/aportaciones?vista=enviar"
                       >
                         <Send
                           aria-hidden="true"
                         />
 
-                        Enviar comprobante nuevo
-                      </Link>
-                    ) : (
-                      <Link
-                        className="contribution-detail-button contribution-detail-button--primary"
-                        to="/aportaciones"
-                      >
-                        <CircleCheck
-                          aria-hidden="true"
-                        />
-
-                        Entendido
+                        Enviar nueva aportación
                       </Link>
                     )}
                   </footer>
@@ -904,7 +667,6 @@ function ContributionDetail() {
             )}
         </main>
 
-        {/* Navegación y menú de perfil para móvil. */}
         <MobileNavigation />
       </section>
     </div>

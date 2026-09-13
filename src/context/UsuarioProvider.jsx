@@ -26,6 +26,7 @@ export function UsuarioProvider({ children }) {
   // Esto indica que ya revisamos si existia una sesion guardada en la aplicacion
   const [sesionComprobada, setSesionComprobada,
   ] = useState(false)
+  
   // Evita ejecutar 2 veces la restauracion inicial
   const restauracionIniciada = useRef(false)
 

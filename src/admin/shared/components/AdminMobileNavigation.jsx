@@ -1,5 +1,6 @@
 import {
     CalendarDays,
+    FileText,
     LayoutDashboard,
     LogOut,
     UsersRound,
@@ -67,6 +68,16 @@ function AdminMobileNavigation() {
         />
 
         <span>Estudiantes</span>
+      </NavLink>
+
+      {/* Accesp a la revision de aportaciones estudiantiles. */}
+      <NavLink
+        className={obtenerClase}
+        to="/admin-principal/aportaciones"
+      >
+        <FileText aria-hidden="true" />
+        
+        <span>Aportes </span>
       </NavLink>
 
       {/* Utiliza la misma confirmación global de cierre de sesión. */}

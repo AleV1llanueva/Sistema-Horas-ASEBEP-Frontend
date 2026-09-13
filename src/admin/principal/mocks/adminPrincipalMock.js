@@ -14,7 +14,7 @@ export const administradorPrincipalMock = {
   },
 
   datosPersonales: {
-    numeroCuenta: '20249999999',
+    numeroCuenta: '20260000001',
     primerNombre: 'Administrador',
     segundoNombre: '',
     primerApellido: 'Principal',

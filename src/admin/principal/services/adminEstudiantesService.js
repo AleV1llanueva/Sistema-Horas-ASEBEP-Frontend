@@ -8,11 +8,15 @@ import {
   estudiantesAdminMock,
 } from '../mocks/adminPrincipalMock.js'
 
+import {
+  usuarioMock,
+} from '../../../mocks/usuarioMock.js'
+
 /*
  * Servicio administrativo de estudiantes.
  *
- * true utiliza datos guardados en localStorage.
- * false consume el contrato disponible en el backend.
+ * true  -> usuario mock y localStorage.
+ * false -> backend.
  */
 
 const CLAVE_ESTUDIANTES =
@@ -676,8 +680,7 @@ function normalizarEstudiante(
   }
 }
 
-/* Almacenamiento utilizado por el modo simulado. */
-
+// Construye la colección inicial de estudiantes simulados.
 function obtenerEstudiantesIniciales() {
   if (
     !Array.isArray(
@@ -686,8 +689,18 @@ function obtenerEstudiantesIniciales() {
   ) {
     return []
   }
+  const estudiantePortalMock = {
+    ...usuarioMock,
+    actividadesRecientes: [],
+    aportaciones: [],
+  }
 
-  return estudiantesAdminMock.map(
+  const estudiantesIniciales = [
+    estudiantePortalMock,
+    ...estudiantesAdminMock,
+  ]
+
+  return estudiantesIniciales.map(
     normalizarEstudiante,
   )
 }

@@ -750,6 +750,13 @@ function AdminPrincipalActivityDetail() {
       estadoNormalizado,
     )
 
+  const actividadEsEditable = [
+    'programada',
+    'en-curso',
+  ].includes(
+    estadoNormalizado,
+  )
+
   const horasAcreditables =
     prepararCantidad(
       actividad.horasAcreditables,
@@ -802,16 +809,18 @@ function AdminPrincipalActivityDetail() {
           </p>
         </div>
 
-        <button
-          className="admin-activity-detail-edit-button"
-          type="button"
-          onClick={
-            abrirEdicionActividad
-          }
-        >
-          <Pencil aria-hidden="true" />
-          Editar actividad
-        </button>
+        {actividadEsEditable && (
+          <button
+            className="admin-activity-detail-edit-button"
+            type="button"
+            onClick={
+              abrirEdicionActividad
+            }
+          >
+            <Pencil aria-hidden="true" />
+            Editar actividad
+          </button>
+        )}
       </header>
 
       <div className="admin-activity-detail-overview">

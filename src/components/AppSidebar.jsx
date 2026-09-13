@@ -6,19 +6,14 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  ShieldCheck,
   UserRound,
   WalletCards,
 } from 'lucide-react'
 import { NavLink } from 'react-router'
 
 import {
-  obtenerRutaAdministrativaPorRol,
-} from '../config/rutasPorRol.js'
-import {
   useCerrarSesion,
 } from '../hooks/useCerrarSesion.js'
-import { useUsuario } from '../hooks/useUsuario.js'
 
 // Esta clave conserva la preferencia del usuario.
 const CLAVE_SIDEBAR_OCULTO = 'asebep-sidebar-usuario-oculto'
@@ -49,8 +44,6 @@ function AppSidebar() {
     solicitarCierreSesion,
   } = useCerrarSesion()
 
-  const { rol } = useUsuario()
-
   // Controla si el menu lateral esta desplegado.
   const [
     sidebarVisible,
@@ -58,9 +51,6 @@ function AppSidebar() {
   ] = useState(
     obtenerVisibilidadInicialSidebar,
   )
-
-  // Devuelve la ruta administrativa correspondiente al rol incluido dentro del JWT.
-  const rutaAdministrativa = obtenerRutaAdministrativaPorRol(rol)
 
   // Agrega la clase visual correspondiente al enlace que representa la pagina actual.
   function obtenerClase({ isActive }) {
@@ -178,25 +168,6 @@ function AppSidebar() {
 
             <span>Perfil</span>
           </NavLink>
-
-          {/*
-           * Este enlace solamente existe cuando el JWT
-           * pertenece a un administrador reconocido.
-           *
-           * No cambia la sesión ni genera otro token.
-           */}
-          {rutaAdministrativa && (
-            <NavLink
-              className={obtenerClase}
-              to={rutaAdministrativa}
-            >
-              <ShieldCheck aria-hidden="true" />
-
-              <span>
-                Volver al panel administrativo
-              </span>
-            </NavLink>
-          )}
         </nav>
 
         {/* Acción para cerrar la sesión actual. */}

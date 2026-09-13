@@ -36,6 +36,9 @@ const TIPOS_MARCACION_ASISTENCIA =
     salida: 'salida',
   })
 
+// Entrada y salida permancen disponibles durante veinte minutos
+const DURACION_VENTANA_QR_MINUTOS = 20
+
 /*
  * Los QR locales utilizan este prefijo para distinguirlos
  * de los JWT firmados que genera el backend.
@@ -298,6 +301,144 @@ function crearFechaHoraLocalActividad(
   return fechaHoraValida
     ? fechaHora
     : null
+}
+
+/*
+ * Construye la ventana oficial de una marcación.
+ *
+ * Entrada: comienza a la hora de inicio.
+ * Salida: comienza a la hora de finalización.
+ */
+function obtenerVentanaMarcacionActividad(
+  actividad,
+  tipo,
+) {
+  const inicio =
+    crearFechaHoraLocalActividad(
+      actividad?.fecha,
+      actividad?.horaInicio,
+    )
+
+  const finalizacion =
+    crearFechaHoraLocalActividad(
+      actividad?.fecha,
+      actividad?.horaFinalizacion,
+    )
+
+  if (!inicio || !finalizacion) {
+    return null
+  }
+
+  const comienzaEn =
+    tipo ===
+    TIPOS_MARCACION_ASISTENCIA.entrada
+      ? inicio
+      : tipo ===
+          TIPOS_MARCACION_ASISTENCIA.salida
+        ? finalizacion
+        : null
+
+  if (!comienzaEn) {
+    return null
+  }
+
+  const expiraEn = new Date(
+    comienzaEn.getTime() +
+      DURACION_VENTANA_QR_MINUTOS *
+        60 *
+        1000,
+  )
+
+  return {
+    comienzaEn,
+    expiraEn,
+  }
+}
+
+/*
+ * Evalúa la ventana sin depender de campos de habilitación.
+ * Esta comprobación se comparte entre la vista y el registro.
+ */
+function evaluarVentanaMarcacionActividad({
+  actividad,
+  tipo,
+  ahora,
+}) {
+  if (
+    !(ahora instanceof Date) ||
+    !Number.isFinite(ahora.getTime())
+  ) {
+    return {
+      disponible: false,
+      mensaje:
+        'No fue posible comprobar el horario de la marcación.',
+      expiraEn: null,
+    }
+  }
+
+  const ventana =
+    obtenerVentanaMarcacionActividad(
+      actividad,
+      tipo,
+    )
+
+  if (!ventana) {
+    return {
+      disponible: false,
+      mensaje:
+        'No fue posible comprobar el horario de la actividad.',
+      expiraEn: null,
+    }
+  }
+
+  if (
+    ahora.getTime() <
+    ventana.comienzaEn.getTime()
+  ) {
+    return {
+      disponible: false,
+
+      mensaje:
+        tipo ===
+        TIPOS_MARCACION_ASISTENCIA.entrada
+          ? 'La entrada estará disponible cuando comience la actividad.'
+          : 'La salida estará disponible cuando finalice la actividad.',
+
+      expiraEn:
+        ventana.expiraEn.toISOString(),
+    }
+  }
+
+  if (
+    ahora.getTime() >=
+    ventana.expiraEn.getTime()
+  ) {
+    return {
+      disponible: false,
+
+      mensaje:
+        tipo ===
+        TIPOS_MARCACION_ASISTENCIA.entrada
+          ? 'La ventana de veinte minutos para registrar la entrada ya finalizó.'
+          : 'La ventana de veinte minutos para registrar la salida ya finalizó.',
+
+      expiraEn:
+        ventana.expiraEn.toISOString(),
+    }
+  }
+
+  return {
+    disponible: true,
+
+    mensaje:
+      tipo ===
+      TIPOS_MARCACION_ASISTENCIA.entrada
+        ? 'Escanea el QR de entrada mostrado por el administrador.'
+        : 'Escanea el QR de salida mostrado por el administrador.',
+
+    expiraEn:
+      ventana.expiraEn.toISOString(),
+  }
 }
 
 /*
@@ -633,8 +774,8 @@ function obtenerMensajeMarcacionExitosa(
 }
 
 /*
- * Valida la estructura y la vigencia del token local.
- * También comprueba que el QR corresponda al botón elegido.
+ * Valida la estructura y vigencia interna del token local.
+ * La ventana oficial también se verificará con la actividad.
  */
 function validarTokenQrSimulado({
   token,
@@ -644,32 +785,39 @@ function validarTokenQrSimulado({
   const contenido =
     decodificarTokenQrSimulado(token)
 
-  const actividadId = prepararTexto(
-    contenido.actividadId,
-  )
+  const actividadId =
+    prepararTexto(
+      contenido.actividadId,
+    )
 
-  const tipoToken = normalizarEstado(
-    contenido.tipo,
-  )
+  const tipoToken =
+    normalizarEstado(
+      contenido.tipo,
+    )
 
-  const nonce = prepararTexto(
-    contenido.nonce,
-  )
+  const nonce =
+    prepararTexto(
+      contenido.nonce,
+    )
 
-  const habilitadaEn = prepararTexto(
-    contenido.habilitadaEn,
-  )
+  /*
+   * Conservamos el nombre habilitadaEn para leer tokens
+   * simulados ya existentes, aunque ahora representa
+   * simplemente el momento de generación.
+   */
+  const generadoEn =
+    prepararTexto(
+      contenido.habilitadaEn ??
+        contenido.generadoEn,
+    )
 
-  const expiraEn = prepararTexto(
-    contenido.expiraEn,
-  )
+  const expiraEn =
+    prepararTexto(
+      contenido.expiraEn,
+    )
 
-  const generacion = Number(
-    contenido.generacion,
-  )
-
-  const habilitadaEnMilisegundos =
-    Date.parse(habilitadaEn)
+  const generadoEnMilisegundos =
+    Date.parse(generadoEn)
 
   const expiraEnMilisegundos =
     Date.parse(expiraEn)
@@ -679,16 +827,14 @@ function validarTokenQrSimulado({
     !actividadId ||
     !nonce ||
     tipoToken !== tipo ||
-    !Number.isInteger(generacion) ||
-    generacion < 1 ||
     !Number.isFinite(
-      habilitadaEnMilisegundos,
+      generadoEnMilisegundos,
     ) ||
     !Number.isFinite(
       expiraEnMilisegundos,
     ) ||
     expiraEnMilisegundos <=
-      habilitadaEnMilisegundos
+      generadoEnMilisegundos
   ) {
     throw new EstudianteActividadesError(
       'El código QR simulado no contiene información válida.',
@@ -697,10 +843,10 @@ function validarTokenQrSimulado({
 
   if (
     ahora.getTime() <
-    habilitadaEnMilisegundos
+    generadoEnMilisegundos
   ) {
     throw new EstudianteActividadesError(
-      'El código QR todavía no se encuentra habilitado.',
+      'El código QR todavía no se encuentra disponible.',
     )
   }
 
@@ -709,22 +855,23 @@ function validarTokenQrSimulado({
     expiraEnMilisegundos
   ) {
     throw new EstudianteActividadesError(
-      'El código QR ha vencido. Solicita al administrador que lo reactive.',
+      'El código QR ya venció.',
     )
   }
 
   return {
     actividadId,
     tipo: tipoToken,
-    generacion,
-    habilitadaEn,
+    generadoEn,
     expiraEn,
   }
 }
 
 /*
- * Obtiene los campos administrativos de la marcación elegida.
- * Esta función evita repetir condiciones para entrada y salida.
+ * Recupera el último token simulado guardado.
+ *
+ * Esta comparación permite invalidar un código anterior
+ * cuando el administrador solicita uno nuevo.
  */
 function obtenerConfiguracionQrActividad(
   actividad,
@@ -735,20 +882,6 @@ function obtenerConfiguracionQrActividad(
     TIPOS_MARCACION_ASISTENCIA.entrada
 
   return {
-    habilitada: esEntrada
-      ? actividad?.entradaHabilitada ===
-        true
-      : actividad?.salidaHabilitada ===
-        true,
-
-    expiraEn: prepararTexto(
-      esEntrada
-        ? actividad
-            ?.entradaHabilitadaHasta
-        : actividad
-            ?.salidaHabilitadaHasta,
-    ),
-
     token: prepararTexto(
       esEntrada
         ? actividad
@@ -760,9 +893,8 @@ function obtenerConfiguracionQrActividad(
 }
 
 /*
- * Expone a la vista el estado actual de cada botón de asistencia.
- * La disponibilidad se vuelve a calcular con el reloj del navegador
- * para que un QR vencido deje de estar habilitado automáticamente.
+ * Expone a la vista la disponibilidad automática
+ * de entrada o salida.
  */
 export function obtenerDisponibilidadMarcacionActividad(
   actividad,
@@ -788,18 +920,6 @@ export function obtenerDisponibilidadMarcacionActividad(
   }
 
   if (
-    !(ahora instanceof Date) ||
-    !Number.isFinite(ahora.getTime())
-  ) {
-    return {
-      disponible: false,
-      mensaje:
-        'No fue posible comprobar la vigencia de la marcación.',
-      expiraEn: null,
-    }
-  }
-
-  if (
     !actividad ||
     actividad.inscrito !== true
   ) {
@@ -807,6 +927,21 @@ export function obtenerDisponibilidadMarcacionActividad(
       disponible: false,
       mensaje:
         'Debes estar inscrito para registrar asistencia.',
+      expiraEn: null,
+    }
+  }
+
+  if (
+    actividad.activa === false ||
+    actividad.eliminada === true ||
+    normalizarEstado(
+      actividad.estado,
+    ) === 'cancelada'
+  ) {
+    return {
+      disponible: false,
+      mensaje:
+        'La actividad ya no se encuentra activa.',
       expiraEn: null,
     }
   }
@@ -823,9 +958,7 @@ export function obtenerDisponibilidadMarcacionActividad(
       disponible: false,
       mensaje:
         'Tu hora de entrada ya fue registrada.',
-      expiraEn:
-        actividad.entradaHabilitadaHasta ??
-        null,
+      expiraEn: null,
     }
   }
 
@@ -837,9 +970,7 @@ export function obtenerDisponibilidadMarcacionActividad(
       disponible: false,
       mensaje:
         'Tu hora de salida ya fue registrada.',
-      expiraEn:
-        actividad.salidaHabilitadaHasta ??
-        null,
+      expiraEn: null,
     }
   }
 
@@ -851,55 +982,15 @@ export function obtenerDisponibilidadMarcacionActividad(
       disponible: false,
       mensaje:
         'Primero debes registrar tu hora de entrada.',
-      expiraEn:
-        actividad.salidaHabilitadaHasta ??
-        null,
+      expiraEn: null,
     }
   }
 
-  const configuracion =
-    obtenerConfiguracionQrActividad(
-      actividad,
-      tipoPreparado,
-    )
-
-  if (!configuracion.habilitada) {
-    return {
-      disponible: false,
-      mensaje: esEntrada
-        ? 'El administrador todavía no ha habilitado la entrada.'
-        : 'El administrador todavía no ha habilitado la salida.',
-      expiraEn:
-        configuracion.expiraEn || null,
-    }
-  }
-
-  const expiraEnMilisegundos =
-    Date.parse(configuracion.expiraEn)
-
-  if (
-    !Number.isFinite(
-      expiraEnMilisegundos,
-    ) ||
-    ahora.getTime() >=
-      expiraEnMilisegundos
-  ) {
-    return {
-      disponible: false,
-      mensaje:
-        'El código QR habilitado ya venció.',
-      expiraEn:
-        configuracion.expiraEn || null,
-    }
-  }
-
-  return {
-    disponible: true,
-    mensaje: esEntrada
-      ? 'Escanea el QR de entrada mostrado por el administrador.'
-      : 'Escanea el QR de salida mostrado por el administrador.',
-    expiraEn: configuracion.expiraEn,
-  }
+  return evaluarVentanaMarcacionActividad({
+    actividad,
+    tipo: tipoPreparado,
+    ahora,
+  })
 }
 
 function obtenerCuposIniciales(
@@ -1578,7 +1669,7 @@ async function listarActividadesDesdeApi() {
 }
 
 /*
- * Convierte la respuesta plana de GET /becario/inscripciones
+ * Convierte la respuesta plana de GET /asistencias
  * en una actividad compatible con las tarjetas del portal.
  *
  * Cuando GET /actividades también contiene el registro, esa
@@ -1631,7 +1722,7 @@ async function listarInscripcionesDesdeApi(
   numeroCuenta,
 ) {
   const respuesta = await apiFetch(
-    '/becario/inscripciones',
+    '/asistencias',
   )
 
   const coleccion =
@@ -2194,9 +2285,9 @@ export async function inscribirEstudianteEnActividad(
 
   if (!usarDatosSimulados) {
     const respuesta = await apiFetch(
-      `/actividades/${encodeURIComponent(
+      `/asistencias/actividades/${encodeURIComponent(
         id,
-      )}/inscripcion`,
+      )}`,
       {
         method: 'POST',
       },
@@ -2331,9 +2422,9 @@ export async function cancelarInscripcionActividad(
 
   if (!usarDatosSimulados) {
     const respuesta = await apiFetch(
-      `/actividades/${encodeURIComponent(
+      `/asistencias/actividades/${encodeURIComponent(
         id,
-      )}/inscripcion`,
+      )}`,
       {
         method: 'DELETE',
       },
@@ -2500,7 +2591,7 @@ export async function registrarAsistenciaPorQr({
 
   if (!usarDatosSimulados) {
     const respuesta = await apiFetch(
-      `/asistencia/${tipoPreparado}` +
+        `/asistencias/${tipoPreparado}` +
         `?token=${encodeURIComponent(
           tokenPreparado,
         )}`,
@@ -2581,15 +2672,37 @@ export async function registrarAsistenciaPorQr({
     )
   }
 
-  if (
+    if (
     actividadActual &&
     (
       actividadActual.eliminada === true ||
-      actividadActual.activa === false
+      actividadActual.activa === false ||
+      normalizarEstado(
+        actividadActual.estado,
+      ) === 'cancelada'
     )
-  ) {
+    ) {
     throw new EstudianteActividadesError(
       'La actividad asociada al código QR ya no se encuentra activa.',
+    )
+  }
+
+  /*
+   * Comprobamos nuevamente la ventana oficial.
+   * No confiamos únicamente en la fecha incluida en el token.
+   */
+  const disponibilidadVentana =
+    evaluarVentanaMarcacionActividad({
+      actividad,
+      tipo: tipoPreparado,
+      ahora: instanteActual,
+    })
+
+  if (
+    !disponibilidadVentana.disponible
+  ) {
+    throw new EstudianteActividadesError(
+      disponibilidadVentana.mensaje,
     )
   }
 
@@ -2600,46 +2713,17 @@ export async function registrarAsistenciaPorQr({
     )
 
   /*
-   * Si el navegador posee la actividad administrativa,
-   * exigimos que el token sea exactamente el último generado.
-   * Esto invalida localmente el QR de la generación anterior.
-   *
-   * En una prueba desde otro dispositivo no existe ese mismo
-   * localStorage; en ese caso se utilizan los datos y la fecha
-   * de expiración contenidos dentro del token simulado.
+   * Si existe una actividad administrativa compartida,
+   * el token escaneado debe ser exactamente el último generado.
    */
-  if (configuracionActual.token) {
-    if (
-      configuracionActual.token !==
+  if (
+    configuracionActual.token &&
+    configuracionActual.token !==
       tokenPreparado
-    ) {
-      throw new EstudianteActividadesError(
-        'Este código QR fue reemplazado por una habilitación más reciente.',
-      )
-    }
-
-    if (!configuracionActual.habilitada) {
-      throw new EstudianteActividadesError(
-        'La marcación ya no se encuentra habilitada.',
-      )
-    }
-
-    const expiracionGuardada =
-      Date.parse(
-        configuracionActual.expiraEn,
-      )
-
-    if (
-      !Number.isFinite(
-        expiracionGuardada,
-      ) ||
-      instanteActual.getTime() >=
-        expiracionGuardada
-    ) {
-      throw new EstudianteActividadesError(
-        'El código QR ha vencido. Solicita al administrador que lo reactive.',
-      )
-    }
+  ) {
+    throw new EstudianteActividadesError(
+      'Este código QR fue reemplazado por uno más reciente.',
+    )
   }
 
   const esEntrada =

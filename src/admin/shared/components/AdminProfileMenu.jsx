@@ -1,6 +1,5 @@
 import {
   ChevronDown,
-  GraduationCap,
   LogOut,
   UserRound,
 } from 'lucide-react'
@@ -204,20 +203,6 @@ function AdminProfileMenu({
           </header>
 
           <div className="admin-profile-menu__actions">
-            {/*
-             * Cambia hacia el portal personal del mismo
-             * administrador sin cerrar la sesión.
-             */}
-            <Link
-              className="admin-profile-menu__action"
-              to="/dashboard"
-              role="menuitem"
-              onClick={cerrarMenu}
-            >
-              <GraduationCap aria-hidden="true" />
-              Ir a mi cuenta
-            </Link>
-
             <Link
               className="admin-profile-menu__action"
               to="/admin-principal/perfil"

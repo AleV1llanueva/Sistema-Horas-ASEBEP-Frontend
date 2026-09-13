@@ -5,21 +5,23 @@ import {
   CircleCheck,
   Clock3,
   Eye,
-  FileImage,
+  FileText,
   GraduationCap,
-  ImagePlus,
   Info,
   RotateCcw,
   Send,
+  UploadCloud,
   WalletCards,
   X,
 } from 'lucide-react'
+
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+
 import {
   useNavigate,
   useSearchParams,
@@ -27,128 +29,74 @@ import {
 
 import AppSidebar from '../components/AppSidebar.jsx'
 import MobileNavigation from '../components/MobileNavigation.jsx'
-import { useUsuario } from '../hooks/useUsuario.js'
+
 import {
-  calcularMontoAportacion,
+  useUsuario,
+} from '../hooks/useUsuario.js'
+
+import {
   calcularResumenDeuda,
   CUOTA_MENSUAL_APORTACION,
   ESTADOS_APORTACION,
   FORMATOS_COMPROBANTE_ACEPTADOS,
   listarAportacionesEstudiante,
-  registrarAportacionUnMes,
-  registrarAportacionVariosMeses,
-  validarComprobanteImagen,
+  registrarAportacionEstudiante,
+  validarComprobantePdf,
 } from '../services/estudianteAportacionesService.js'
+
 import {
   notificarError,
   notificarExito,
 } from '../services/notificationService.js'
+
 import '../styles/AppLayout.css'
 import '../styles/Contributions.css'
 
+/* =========================================================
+ * CONFIGURACIÓN GENERAL
+ * ======================================================= */
+
 /*
- * Identificadores internos de las tres vistas.
+ * El módulo ahora dispone solamente de dos vistas:
  *
- * También se utilizan en el parámetro "vista" de la URL
- * para poder abrir directamente un formulario.
+ * - Historial de aportaciones.
+ * - Formulario para enviar una aportación.
  */
-const VISTAS = Object.freeze({
-  HISTORIAL: 'historial',
-  UN_MES: 'un_mes',
-  VARIOS_MESES: 'varios_meses',
-})
+const VISTAS =
+  Object.freeze({
+    HISTORIAL: 'historial',
+    ENVIAR: 'enviar',
+  })
+
+const FILTRO_TODOS =
+  'todos'
 
 /*
- * Valor especial del selector de varios meses.
- *
- * Al elegirlo se habilita el campo donde el estudiante
- * puede ingresar una cantidad mayor a doce.
+ * Permite detectar cambios realizados por el administrador
+ * desde otra pestaña durante las pruebas con localStorage.
  */
-const OPCION_MAS_DE_DOCE =
-  'mas_de_12'
-
-const FILTRO_TODOS = 'todos'
-
-const MONTO_UN_MES =
-  calcularMontoAportacion(1)
+const CLAVE_APORTACIONES_COMPARTIDAS =
+  'asebep_aportaciones_simuladas_v1'
 
 /*
- * Meses utilizados por el formulario individual.
- *
- * El número se conserva porque es el formato aceptado
- * por el servicio de aportaciones.
- */
-const MESES = Object.freeze([
-  {
-    valor: 1,
-    nombre: 'Enero',
-  },
-  {
-    valor: 2,
-    nombre: 'Febrero',
-  },
-  {
-    valor: 3,
-    nombre: 'Marzo',
-  },
-  {
-    valor: 4,
-    nombre: 'Abril',
-  },
-  {
-    valor: 5,
-    nombre: 'Mayo',
-  },
-  {
-    valor: 6,
-    nombre: 'Junio',
-  },
-  {
-    valor: 7,
-    nombre: 'Julio',
-  },
-  {
-    valor: 8,
-    nombre: 'Agosto',
-  },
-  {
-    valor: 9,
-    nombre: 'Septiembre',
-  },
-  {
-    valor: 10,
-    nombre: 'Octubre',
-  },
-  {
-    valor: 11,
-    nombre: 'Noviembre',
-  },
-  {
-    valor: 12,
-    nombre: 'Diciembre',
-  },
-])
-
-/*
- * Información visual de cada estado.
- *
- * Mantenerla centralizada evita repetir clases, iconos
- * y textos en cada tarjeta del historial.
+ * Configuración visual de los estados exactos
+ * definidos actualmente por el backend.
  */
 const INFORMACION_ESTADOS =
   Object.freeze({
     [
       ESTADOS_APORTACION
-        .PENDIENTE_APROBACION
+        .PENDIENTE
     ]: {
-      texto: 'Pendiente de aprobación',
+      texto: 'Pendiente',
       clase:
         'student-contribution-status--pending',
       Icono: Clock3,
     },
 
     [
-      ESTADOS_APORTACION.APROBADA
+      ESTADOS_APORTACION
+        .APROBADO
     ]: {
       texto: 'Aprobada',
       clase:
@@ -158,79 +106,81 @@ const INFORMACION_ESTADOS =
 
     [
       ESTADOS_APORTACION
-        .REQUIERE_CORRECCION
+        .RECHAZADO
     ]: {
-      texto: 'Requiere corrección',
+      texto: 'Rechazada',
       clase:
         'student-contribution-status--correction',
       Icono: CircleAlert,
     },
   })
 
-// Obtiene una fecha local sin convertirla previamente a UTC.
-function obtenerFechaActual() {
-  const fecha = new Date()
+/* =========================================================
+ * FUNCIONES GENERALES
+ * ======================================================= */
 
-  const anio =
-    fecha.getFullYear()
-
-  const mes =
-    String(
-      fecha.getMonth() + 1,
-    ).padStart(2, '0')
-
-  const dia =
-    String(
-      fecha.getDate(),
-    ).padStart(2, '0')
-
-  return `${anio}-${mes}-${dia}`
-}
-
-// Crea el estado inicial del formulario de un solo mes.
-function crearFormularioUnMes() {
-  const fecha = new Date()
-
-  return {
-    mesAportacion:
-      String(
-        fecha.getMonth() + 1,
-      ),
-
-    anioAportacion:
-      String(
-        fecha.getFullYear(),
-      ),
-
-    fechaPago:
-      obtenerFechaActual(),
-
-    numeroReferencia: '',
-    archivo: null,
+function prepararTexto(valor) {
+  if (
+    valor === null ||
+    valor === undefined
+  ) {
+    return ''
   }
+
+  return String(valor).trim()
 }
 
-// Crea el estado inicial del formulario de varios meses.
-function crearFormularioVariosMeses() {
+/*
+ * Crea el estado limpio del formulario.
+ */
+function crearFormularioInicial() {
   return {
-    cantidadSeleccionada: '2',
-    cantidadPersonalizada: '',
-    fechaPago:
-      obtenerFechaActual(),
     numeroReferencia: '',
+    descripcion: '',
     archivo: null,
   }
 }
 
 /*
- * Convierte un monto numérico al formato visual utilizado
- * por el portal, por ejemplo: L 40.00.
+ * Crea el estado limpio de los errores.
+ */
+function crearErroresIniciales() {
+  return {
+    numeroReferencia: '',
+    descripcion: '',
+    archivo: '',
+  }
+}
+
+/*
+ * Acepta temporalmente los parámetros antiguos de la URL.
+ *
+ * Si otra vista todavía dirige a:
+ * ?vista=un_mes o ?vista=varios_meses
+ *
+ * ambos valores abrirán el único formulario nuevo.
+ */
+function normalizarVista(valor) {
+  if (
+    valor === VISTAS.ENVIAR ||
+    valor === 'un_mes' ||
+    valor === 'varios_meses'
+  ) {
+    return VISTAS.ENVIAR
+  }
+
+  return VISTAS.HISTORIAL
+}
+
+/*
+ * Convierte una cantidad numérica al formato monetario
+ * utilizado por el portal.
  */
 function formatearMoneda(valor) {
   const monto = Number(valor)
 
   if (!Number.isFinite(monto)) {
-    return 'L 0.00'
+    return 'No disponible'
   }
 
   return (
@@ -245,17 +195,30 @@ function formatearMoneda(valor) {
 }
 
 /*
- * Obtiene el mes, año y texto completo de fecha y hora
- * desde el instante en que fue enviado el comprobante.
- *
- * El distintivo del historial siempre representa la fecha
- * de envío, tanto en pagos individuales como múltiples.
+ * Devuelve el año de una fecha válida.
  */
-function obtenerPartesFechaEnvio(
-  fechaEnvio,
-) {
+function obtenerAnioFecha(valor) {
   const fecha =
-    new Date(fechaEnvio)
+    new Date(valor)
+
+  if (
+    Number.isNaN(
+      fecha.getTime(),
+    )
+  ) {
+    return null
+  }
+
+  return fecha.getFullYear()
+}
+
+/*
+ * Prepara las partes visuales de fecha y hora
+ * utilizadas dentro de cada tarjeta.
+ */
+function obtenerPartesFecha(valor) {
+  const fecha =
+    new Date(valor)
 
   if (
     Number.isNaN(
@@ -266,7 +229,7 @@ function obtenerPartesFechaEnvio(
       mes: '---',
       anio: '----',
       fechaHora:
-        'Fecha de envío no disponible',
+        'Fecha no disponible',
       dateTime: undefined,
     }
   }
@@ -280,68 +243,40 @@ function obtenerPartesFechaEnvio(
     )
       .format(fecha)
       .replace('.', '')
-      .toUpperCase()
+      .toLocaleUpperCase('es')
 
-  const anio =
-    String(
-      fecha.getFullYear(),
-    )
-
-  const fechaFormateada =
+  const fechaHora =
     new Intl.DateTimeFormat(
       'es-HN',
       {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      },
-    ).format(fecha)
-
-  const horaFormateada =
-    new Intl.DateTimeFormat(
-      'es-HN',
-      {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
+        dateStyle: 'medium',
+        timeStyle: 'short',
       },
     ).format(fecha)
 
   return {
     mes,
-    anio,
-    fechaHora:
-      `Subido el ${fechaFormateada} · ${horaFormateada}`,
+    anio:
+      String(
+        fecha.getFullYear(),
+      ),
+
+    fechaHora,
 
     dateTime:
       fecha.toISOString(),
   }
 }
 
-// Obtiene solamente el año local del envío para los filtros.
-function obtenerAnioFechaEnvio(
-  fechaEnvio,
-) {
-  const fecha =
-    new Date(fechaEnvio)
-
-  if (
-    Number.isNaN(
-      fecha.getTime(),
-    )
-  ) {
-    return null
-  }
-
-  return fecha.getFullYear()
-}
-
-// Convierte el tamaño del archivo a una unidad fácil de leer.
+/*
+ * Convierte el tamaño del PDF a una unidad
+ * fácil de interpretar.
+ */
 function formatearTamanioArchivo(
-  tamanioBytes,
+  cantidadBytes,
 ) {
   const bytes =
-    Number(tamanioBytes)
+    Number(cantidadBytes)
 
   if (
     !Number.isFinite(bytes) ||
@@ -350,144 +285,117 @@ function formatearTamanioArchivo(
     return 'Tamaño no disponible'
   }
 
-  const megabytes =
-    bytes / (1024 * 1024)
-
-  if (megabytes >= 1) {
-    return `${megabytes.toFixed(1)} MB`
+  if (bytes < 1024) {
+    return `${bytes} B`
   }
 
   const kilobytes =
     bytes / 1024
 
-  return `${kilobytes.toFixed(0)} KB`
+  if (kilobytes < 1024) {
+    return `${kilobytes.toFixed(1)} KB`
+  }
+
+  return (
+    `${(
+      kilobytes / 1024
+    ).toFixed(1)} MB`
+  )
 }
 
 /*
- * Calcula la cantidad definitiva del formulario múltiple.
- *
- * Entre 2 y 12 toma el valor del selector. Cuando se eligió
- * "Más de 12 meses", toma el valor escrito por el estudiante.
+ * Muestra la cantidad acreditada únicamente
+ * cuando la aportación fue aprobada.
  */
-function obtenerCantidadMesesMultiples(
-  formulario,
+function obtenerTextoMesesAprobados(
+  aportacion,
 ) {
   if (
-    formulario
-      .cantidadSeleccionada ===
-    OPCION_MAS_DE_DOCE
+    aportacion.estado !==
+    ESTADOS_APORTACION.APROBADO
   ) {
-    return Number(
-      formulario
-        .cantidadPersonalizada,
+    return 'Sin acreditar'
+  }
+
+  const meses =
+    Number(
+      aportacion.meses_aprobados,
     )
-  }
 
-  return Number(
-    formulario
-      .cantidadSeleccionada,
-  )
-}
-
-/*
- * Calcula el monto que se mostrará en el campo bloqueado.
- *
- * Mientras la cantidad personalizada esté incompleta,
- * la interfaz muestra L 0.00 sin enviar datos inválidos.
- */
-function calcularMontoVisible(
-  cantidadMeses,
-) {
   if (
-    !Number.isInteger(
-      cantidadMeses,
-    ) ||
-    cantidadMeses < 2
+    !Number.isInteger(meses) ||
+    meses <= 0
   ) {
-    return 0
+    return 'Sin acreditar'
   }
 
-  return calcularMontoAportacion(
-    cantidadMeses,
+  return (
+    meses === 1
+      ? '1 mes aprobado'
+      : `${meses} meses aprobados`
   )
 }
 
-/*
- * Selector reutilizable de imágenes.
- *
- * Administra:
- * - Selección manual.
- * - Arrastrar y soltar.
- * - Vista previa local.
- * - Eliminación del archivo.
- */
-function SelectorComprobante({
-  id,
+/* =========================================================
+ * SELECTOR DEL COMPROBANTE PDF
+ * ======================================================= */
+
+function SelectorComprobantePdf({
   archivo,
   error,
   deshabilitado,
   onSeleccionar,
   onQuitar,
+  onError,
 }) {
+  const referenciaInput =
+    useRef(null)
+
   const [
     arrastrando,
     setArrastrando,
   ] = useState(false)
 
-  const [
-    vistaPrevia,
-    setVistaPrevia,
-  ] = useState('')
-
   /*
-   * La URL temporal existe únicamente mientras el archivo
-   * se encuentra seleccionado. Después se libera para evitar
-   * conservar memoria innecesariamente.
+   * Valida el archivo antes de entregarlo
+   * al formulario principal.
    */
-  useEffect(() => {
-    if (
-      !archivo ||
-      typeof URL === 'undefined' ||
-      typeof URL.createObjectURL !==
-        'function'
-    ) {
-      setVistaPrevia('')
-      return undefined
+  function procesarArchivo(
+    archivoSeleccionado,
+  ) {
+    if (!archivoSeleccionado) {
+      return
     }
 
-    const urlTemporal =
-      URL.createObjectURL(
-        archivo,
+    try {
+      validarComprobantePdf(
+        archivoSeleccionado,
       )
 
-    setVistaPrevia(
-      urlTemporal,
-    )
-
-    return () => {
-      URL.revokeObjectURL(
-        urlTemporal,
+      onError('')
+      onSeleccionar(
+        archivoSeleccionado,
       )
+    } catch (errorValidacion) {
+      const mensaje =
+        errorValidacion instanceof Error
+          ? errorValidacion.message
+          : 'El archivo seleccionado no es válido.'
+
+      onSeleccionar(null)
+      onError(mensaje)
     }
-  }, [archivo])
+  }
 
-  function manejarSeleccion(
+  function manejarCambioArchivo(
     evento,
   ) {
     const archivoSeleccionado =
       evento.target.files?.[0]
 
-    /*
-     * Limpiar el valor permite seleccionar otra vez
-     * el mismo archivo si anteriormente fue removido.
-     */
-    evento.target.value = ''
-
-    if (archivoSeleccionado) {
-      onSeleccionar(
-        archivoSeleccionado,
-      )
-    }
+    procesarArchivo(
+      archivoSeleccionado,
+    )
   }
 
   function manejarArrastre(
@@ -521,14 +429,26 @@ function SelectorComprobante({
       evento.dataTransfer
         .files?.[0]
 
-    if (archivoSeleccionado) {
-      onSeleccionar(
-        archivoSeleccionado,
-      )
-    }
+    procesarArchivo(
+      archivoSeleccionado,
+    )
   }
 
-  const claseZonaCarga = [
+  function quitarArchivo() {
+    if (deshabilitado) {
+      return
+    }
+
+    if (referenciaInput.current) {
+      referenciaInput.current.value =
+        ''
+    }
+
+    onError('')
+    onQuitar()
+  }
+
+  const clasesZonaCarga = [
     'student-contributions-dropzone',
 
     arrastrando
@@ -544,63 +464,78 @@ function SelectorComprobante({
 
   return (
     <div className="student-contributions-upload-field">
-      <label htmlFor={id}>
-        Sube una imagen del comprobante
+      <label htmlFor="comprobante-aportacion">
+        Comprobante PDF
       </label>
 
-      <label
-        className={claseZonaCarga}
-        htmlFor={id}
-        onDragEnter={manejarArrastre}
-        onDragOver={manejarArrastre}
-        onDragLeave={
-          manejarSalidaArrastre
-        }
-        onDrop={
-          manejarArchivoSoltado
-        }
-      >
-        <ImagePlus aria-hidden="true" />
-
-        <strong>
-          Arrastra el archivo aquí o
-          selecciónalo desde tu equipo
-        </strong>
-
-        <span className="student-contributions-select-file">
-          Seleccionar imagen
-        </span>
-
-        <span>
-          JPG, JPEG, PNG o WEBP ·
-          Máximo 3 MB
-        </span>
-
-        <input
-          id={id}
-          className="student-contributions-file-input"
-          type="file"
-          accept={
-            FORMATOS_COMPROBANTE_ACEPTADOS
+      {!archivo && (
+        <label
+          className={clasesZonaCarga}
+          htmlFor="comprobante-aportacion"
+          onDragEnter={manejarArrastre}
+          onDragOver={manejarArrastre}
+          onDragLeave={
+            manejarSalidaArrastre
           }
-          disabled={deshabilitado}
-          aria-invalid={
-            Boolean(error)
+          onDrop={
+            manejarArchivoSoltado
           }
-          aria-describedby={
-            error
-              ? `${id}-error`
-              : undefined
-          }
-          onChange={
-            manejarSeleccion
-          }
-        />
-      </label>
+        >
+          <UploadCloud
+            aria-hidden="true"
+          />
+
+          <strong>
+            Arrastra el comprobante
+            aquí o selecciónalo
+          </strong>
+
+          <span>
+            El archivo debe estar en
+            formato PDF.
+          </span>
+
+          <span className="student-contributions-select-file">
+            Seleccionar PDF
+          </span>
+
+          <input
+            ref={referenciaInput}
+            id="comprobante-aportacion"
+            className="student-contributions-file-input"
+            type="file"
+            accept={
+              FORMATOS_COMPROBANTE_ACEPTADOS
+            }
+            disabled={deshabilitado}
+            aria-invalid={
+              Boolean(error)
+            }
+            aria-describedby={
+              error
+                ? 'error-comprobante-aportacion'
+                : 'ayuda-comprobante-aportacion'
+            }
+            onChange={
+              manejarCambioArchivo
+            }
+          />
+        </label>
+      )}
+
+      {!archivo && !error && (
+        <p
+          id="ayuda-comprobante-aportacion"
+          className="student-contributions-field__help"
+        >
+          Solo se aceptan
+          comprobantes con extensión PDF.
+        </p>
+      )}
 
       {error && (
         <p
-          id={`${id}-error`}
+          id="error-comprobante-aportacion"
           className="student-contributions-field__error"
           role="alert"
         >
@@ -608,36 +543,29 @@ function SelectorComprobante({
             aria-hidden="true"
           />
 
-          {error}
+          <span>{error}</span>
         </p>
       )}
 
       {archivo && (
         <div className="student-contributions-file-preview">
           <div className="student-contributions-file-thumbnail">
-            {vistaPrevia ? (
-              <img
-                src={vistaPrevia}
-                alt={`Vista previa de ${archivo.name}`}
-              />
-            ) : (
-              <FileImage
-                aria-hidden="true"
-              />
-            )}
+            <FileText
+              aria-hidden="true"
+            />
           </div>
 
           <div className="student-contributions-file-copy">
-            <strong>
+            <strong title={archivo.name}>
               {archivo.name}
             </strong>
 
             <span>
-              {formatearTamanioArchivo(
-                archivo.size,
-              )}
-              {' · '}
-              Imagen
+              {
+                formatearTamanioArchivo(
+                  archivo.size,
+                )
+              }
             </span>
 
             <small>
@@ -645,7 +573,7 @@ function SelectorComprobante({
                 aria-hidden="true"
               />
 
-              Archivo listo
+              PDF listo para enviar
             </small>
           </div>
 
@@ -653,9 +581,11 @@ function SelectorComprobante({
             className="student-contributions-remove-file"
             type="button"
             disabled={deshabilitado}
-            aria-label={`Quitar ${archivo.name}`}
-            title="Quitar imagen"
-            onClick={onQuitar}
+            aria-label={
+              `Quitar ${archivo.name}`
+            }
+            title="Quitar archivo"
+            onClick={quitarArchivo}
           >
             <X aria-hidden="true" />
           </button>
@@ -665,29 +595,17 @@ function SelectorComprobante({
   )
 }
 
-/*
- * Panel lateral compartido por ambos formularios.
- *
- * Los mensajes pueden cambiar dependiendo del tipo
- * de comprobante que se está registrando.
- */
-function InformacionAntesDeEnviar({
-  variosMeses,
-}) {
-  const recomendaciones =
-    variosMeses
-      ? [
-          'Verifica que el comprobante sea legible.',
-          'Confirma que la cantidad de meses sea correcta.',
-          'La imagen no debe superar los 3 MB.',
-          'Verifica que el número de referencia sea correcto.',
-        ]
-      : [
-          'Verifica que el comprobante sea legible.',
-          'Selecciona el mes correspondiente al pago.',
-          'La imagen no debe superar los 3 MB.',
-          'Verifica que el número de referencia sea correcto.',
-        ]
+/* =========================================================
+ * INFORMACIÓN LATERAL
+ * ======================================================= */
+
+function InformacionAntesDeEnviar() {
+  const recomendaciones = [
+    'Verifica que el número de referencia sea correcto.',
+    'Describe brevemente a qué corresponde el comprobante.',
+    'Confirma que el comprobante sea legible y esté en formato PDF.',
+    'Los meses serán determinados por el administrador durante la revisión.',
+  ]
 
   return (
     <aside className="student-contributions-form-aside">
@@ -716,15 +634,19 @@ function InformacionAntesDeEnviar({
 
         <span>
           Tu número de cuenta se
-          obtiene de la sesión y no
-          necesitas ingresarlo.
+          obtiene automáticamente de
+          la sesión y no se envía como
+          un campo editable.
         </span>
       </div>
     </aside>
   )
 }
 
-// Representa un comprobante dentro del historial.
+/* =========================================================
+ * TARJETA DEL HISTORIAL
+ * ======================================================= */
+
 function TarjetaAportacion({
   aportacion,
   onVerDetalle,
@@ -734,17 +656,20 @@ function TarjetaAportacion({
     anio,
     fechaHora,
     dateTime,
-  } = obtenerPartesFechaEnvio(
-    aportacion.fechaEnvio,
+  } = obtenerPartesFecha(
+    aportacion.fecha_subida,
   )
 
   const informacionEstado =
     INFORMACION_ESTADOS[
       aportacion.estado
     ] ?? {
-      texto: 'Estado no disponible',
+      texto:
+        'Estado no disponible',
+
       clase:
         'student-contribution-status--pending',
+
       Icono: Info,
     }
 
@@ -754,17 +679,13 @@ function TarjetaAportacion({
 
   return (
     <article className="student-contribution-card">
-      {/*
-       * Mes y año en que el comprobante fue enviado.
-       * No representa el periodo pagado.
-       */}
+      {/* Fecha real en que se envió el comprobante. */}
       <time
         className="student-contribution-date"
         dateTime={dateTime}
         aria-label={fechaHora}
       >
         <strong>{mes}</strong>
-
         <span>{anio}</span>
       </time>
 
@@ -776,27 +697,29 @@ function TarjetaAportacion({
         <span>{fechaHora}</span>
       </div>
 
+      {/* Los meses aparecen solamente después de aprobar. */}
       <strong className="student-contribution-amount">
-        {formatearMoneda(
-          aportacion.monto,
-        )}
+        {
+          obtenerTextoMesesAprobados(
+            aportacion,
+          )
+        }
       </strong>
 
-      {/*
-       * El historial muestra la referencia del comprobante
-       * en lugar del nombre de la imagen.
-       */}
       <div className="student-contribution-reference">
         <small>
           Número de referencia
         </small>
 
-        <strong title={
-          aportacion.numeroReferencia
-        }>
+        <strong
+          title={
+            aportacion
+              .num_referencia
+          }
+        >
           {
             aportacion
-              .numeroReferencia
+              .num_referencia
           }
         </strong>
       </div>
@@ -817,12 +740,12 @@ function TarjetaAportacion({
         className="student-contribution-view-button"
         type="button"
         aria-label={
-          `Ver detalle de la aportación con referencia ${aportacion.numeroReferencia}`
+          `Ver detalle de la aportación con referencia ${aportacion.num_referencia}`
         }
         title="Ver detalle"
         onClick={() =>
           onVerDetalle(
-            aportacion,
+            aportacion.id,
           )
         }
       >
@@ -832,41 +755,37 @@ function TarjetaAportacion({
   )
 }
 
+/* =========================================================
+ * COMPONENTE PRINCIPAL
+ * ======================================================= */
+
 function Contributions() {
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate()
 
   const [
     parametrosBusqueda,
     setParametrosBusqueda,
   ] = useSearchParams()
 
-  const { usuario } =
-    useUsuario()
+  const {
+    usuario,
+    cargarUsuario,
+  } = useUsuario()
 
-  /*
-   * La URL puede solicitar directamente uno de los formularios.
-   *
-   * Esto se utilizará después desde el botón de un comprobante
-   * que requiere corrección.
-   */
   const vistaSolicitada =
     parametrosBusqueda.get(
       'vista',
     )
 
-  const vistaInicial =
-    vistaSolicitada ===
-      VISTAS.UN_MES ||
-    vistaSolicitada ===
-      VISTAS.VARIOS_MESES
-      ? vistaSolicitada
-      : VISTAS.HISTORIAL
-
   const [
     vistaActiva,
     setVistaActiva,
   ] = useState(
-    vistaInicial,
+    () =>
+      normalizarVista(
+        vistaSolicitada,
+      ),
   )
 
   const [
@@ -892,7 +811,9 @@ function Contributions() {
   const [
     filtroAnio,
     setFiltroAnio,
-  ] = useState('')
+  ] = useState(
+    FILTRO_TODOS,
+  )
 
   const [
     filtroEstado,
@@ -902,58 +823,32 @@ function Contributions() {
   )
 
   const [
-    formularioUnMes,
-    setFormularioUnMes,
+    formulario,
+    setFormulario,
   ] = useState(
-    crearFormularioUnMes,
+    crearFormularioInicial,
   )
 
   const [
-    formularioVariosMeses,
-    setFormularioVariosMeses,
+    erroresFormulario,
+    setErroresFormulario,
   ] = useState(
-    crearFormularioVariosMeses,
+    crearErroresIniciales,
   )
 
   const [
-    errorArchivoUnMes,
-    setErrorArchivoUnMes,
+    errorGeneral,
+    setErrorGeneral,
   ] = useState('')
 
   const [
-    errorArchivoVarios,
-    setErrorArchivoVarios,
-  ] = useState('')
-
-  const [
-    errorFormularioUnMes,
-    setErrorFormularioUnMes,
-  ] = useState('')
-
-  const [
-    errorFormularioVarios,
-    setErrorFormularioVarios,
-  ] = useState('')
+    enviando,
+    setEnviando,
+  ] = useState(false)
 
   /*
-   * Guarda el formulario que se está procesando.
-   *
-   * Su valor también permite bloquear botones y campos
-   * para evitar envíos repetidos.
-   */
-  const [
-    formularioEnviando,
-    setFormularioEnviando,
-  ] = useState(null)
-
-  const referenciaCantidadPersonalizada =
-    useRef(null)
-
-  /*
-   * Obtiene el historial desde el servicio.
-   *
-   * En modo simulado será localStorage. Cuando exista
-   * el contrato real, la página conservará esta misma llamada.
+   * Carga el historial desde localStorage o desde
+   * GET /becario/aportaciones.
    */
   useEffect(() => {
     let componenteActivo = true
@@ -1001,58 +896,126 @@ function Contributions() {
     }
   }, [intentoCarga])
 
-  /*
-   * Si la URL cambia mientras la página está abierta,
-   * actualizamos la pestaña solicitada.
-   */
   useEffect(() => {
-    if (
-      vistaSolicitada ===
-        VISTAS.UN_MES ||
-      vistaSolicitada ===
-        VISTAS.VARIOS_MESES
-    ) {
-      setVistaActiva(
-        vistaSolicitada,
-      )
-    }
-  }, [vistaSolicitada])
-
-  /*
-   * Enfoca automáticamente el campo personalizado
-   * después de elegir "Más de 12 meses".
-   */
-  useEffect(() => {
-    if (
-      formularioVariosMeses
-        .cantidadSeleccionada !==
-      OPCION_MAS_DE_DOCE
-    ) {
-      return undefined
-    }
-
-    const identificadorAnimacion =
-      window.requestAnimationFrame(
-        () => {
-          referenciaCantidadPersonalizada
-            .current
-            ?.focus()
-        },
-      )
-
-    return () => {
-      window.cancelAnimationFrame(
-        identificadorAnimacion,
-      )
-    }
+    cargarUsuario()
+      .catch(() => undefined)
   }, [
-    formularioVariosMeses
-      .cantidadSeleccionada,
+    cargarUsuario,
+    intentoCarga,
   ])
 
   /*
-   * Años disponibles según la fecha real de envío
-   * de los comprobantes del historial.
+   * Mantiene sincronizada la pestaña con la URL.
+   */
+  useEffect(() => {
+    setVistaActiva(
+      normalizarVista(
+        vistaSolicitada,
+      ),
+    )
+  }, [vistaSolicitada])
+
+  /*
+   * Vuelve a consultar cuando el usuario regresa a la
+   * pestaña o el administrador modifica localStorage
+   * desde otra pestaña del navegador.
+   */
+  useEffect(() => {
+    function actualizarAlEnfocar() {
+      setIntentoCarga(
+        (intentoActual) =>
+          intentoActual + 1,
+      )
+    }
+
+    function actualizarPorAlmacenamiento(
+      evento,
+    ) {
+      if (
+        evento.key ===
+          CLAVE_APORTACIONES_COMPARTIDAS ||
+        evento.key === null
+      ) {
+        setIntentoCarga(
+          (intentoActual) =>
+            intentoActual + 1,
+        )
+      }
+    }
+
+    window.addEventListener(
+      'focus',
+      actualizarAlEnfocar,
+    )
+
+    window.addEventListener(
+      'storage',
+      actualizarPorAlmacenamiento,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        actualizarAlEnfocar,
+      )
+
+      window.removeEventListener(
+        'storage',
+        actualizarPorAlmacenamiento,
+      )
+    }
+  }, [])
+
+  /*
+   * Cambia la vista y actualiza el parámetro
+   * correspondiente de la URL.
+   */
+  function cambiarVista(
+    nuevaVista,
+  ) {
+    const vista =
+      normalizarVista(
+        nuevaVista,
+      )
+
+    const nuevosParametros =
+      new URLSearchParams(
+        parametrosBusqueda,
+      )
+
+    if (
+      vista ===
+      VISTAS.HISTORIAL
+    ) {
+      nuevosParametros.delete(
+        'vista',
+      )
+    } else {
+      nuevosParametros.set(
+        'vista',
+        VISTAS.ENVIAR,
+      )
+    }
+
+    setParametrosBusqueda(
+      nuevosParametros,
+      {
+        replace: true,
+      },
+    )
+
+    setVistaActiva(vista)
+  }
+
+  function reintentarCarga() {
+    setIntentoCarga(
+      (intentoActual) =>
+        intentoActual + 1,
+    )
+  }
+
+  /*
+   * Obtiene los años disponibles desde fecha_subida.
    */
   const aniosDisponibles =
     useMemo(() => {
@@ -1060,8 +1023,9 @@ function Contributions() {
         aportaciones
           .map(
             (aportacion) =>
-              obtenerAnioFechaEnvio(
-                aportacion.fechaEnvio,
+              obtenerAnioFecha(
+                aportacion
+                  .fecha_subida,
               ),
           )
           .filter(
@@ -1072,86 +1036,34 @@ function Contributions() {
       return [
         ...new Set(anios),
       ].sort(
-        (anioA, anioB) =>
-          anioB - anioA,
+        (primerAnio, segundoAnio) =>
+          segundoAnio - primerAnio,
       )
     }, [aportaciones])
 
-  /*
-   * Selecciona inicialmente el año actual si existe.
-   * Después respeta el filtro elegido por el estudiante.
-   */
-  useEffect(() => {
-    setFiltroAnio(
-      (filtroActual) => {
-        if (
-          filtroActual ===
-          FILTRO_TODOS
-        ) {
-          return filtroActual
-        }
-
-        if (
-          filtroActual &&
-          aniosDisponibles.includes(
-            Number(filtroActual),
-          )
-        ) {
-          return filtroActual
-        }
-
-        const anioActual =
-          new Date().getFullYear()
-
-        if (
-          aniosDisponibles.includes(
-            anioActual,
-          )
-        ) {
-          return String(
-            anioActual,
-          )
-        }
-
-        return aniosDisponibles[0]
-          ? String(
-              aniosDisponibles[0],
-            )
-          : FILTRO_TODOS
-      },
-    )
-  }, [aniosDisponibles])
-
-  const hayFiltrosHistorialActivos =
-    Boolean(
-      filtroAnio && filtroAnio !== FILTRO_TODOS,
-    ) || filtroEstado !== FILTRO_TODOS
-
-  // Restablece simultaneamente los dos filtros del historial y permite mostrar todos los registros.
-  function limpiarFiltrosHistorial() {
-    setFiltroAnio(FILTRO_TODOS)
-    setFiltroEstado(FILTRO_TODOS)
-  }
+  const hayFiltrosActivos =
+    filtroAnio !==
+      FILTRO_TODOS ||
+    filtroEstado !==
+      FILTRO_TODOS
 
   /*
-   * Filtra únicamente por:
-   * - Año de envío.
-   * - Estado de revisión.
+   * Filtra por año de envío y estado.
    */
   const aportacionesFiltradas =
     useMemo(() => {
       return aportaciones.filter(
         (aportacion) => {
-          const anioEnvio =
-            obtenerAnioFechaEnvio(
-              aportacion.fechaEnvio,
+          const anio =
+            obtenerAnioFecha(
+              aportacion
+                .fecha_subida,
             )
 
           const coincideAnio =
             filtroAnio ===
               FILTRO_TODOS ||
-            !filtroAnio ||
-            String(anioEnvio) ===
+            String(anio) ===
               filtroAnio
 
           const coincideEstado =
@@ -1172,20 +1084,34 @@ function Contributions() {
       filtroEstado,
     ])
 
+  function limpiarFiltros() {
+    setFiltroAnio(
+      FILTRO_TODOS,
+    )
+
+    setFiltroEstado(
+      FILTRO_TODOS,
+    )
+  }
+
   /*
-   * Resumen de la deuda del estudiante.
-   *
-   * El monto nunca se toma como un valor independiente:
-   * siempre se deriva de mesesSinPagar × L 20.
+   * Calcula el saldo visual desde los datos
+   * generales del becario.
    */
   const resumenDeuda =
     useMemo(() => {
+      const mesesSinPagar =
+        usuario
+          ?.datosBecario
+          ?.mesesSinPagar ??
+        usuario
+          ?.datos_becario
+          ?.meses_sin_pagar
+
       try {
         return {
           ...calcularResumenDeuda(
-            usuario
-              ?.datosBecario
-              ?.mesesSinPagar,
+            mesesSinPagar,
           ),
 
           disponible: true,
@@ -1197,493 +1123,260 @@ function Contributions() {
           disponible: false,
         }
       }
-    }, [
-      usuario
-        ?.datosBecario
-        ?.mesesSinPagar,
-    ])
-
-  const cantidadMesesMultiples =
-    useMemo(
-      () =>
-        obtenerCantidadMesesMultiples(
-          formularioVariosMeses,
-        ),
-      [formularioVariosMeses],
-    )
-
-  const montoVariosMeses =
-    useMemo(
-      () =>
-        calcularMontoVisible(
-          cantidadMesesMultiples,
-        ),
-      [cantidadMesesMultiples],
-    )
-
-  /*
-   * Conservamos un grupo pequeño de años alrededor
-   * del año actual para el formulario individual.
-   */
-  const aniosFormulario =
-    useMemo(() => {
-      const anioActual =
-        new Date().getFullYear()
-
-      return [
-        anioActual + 1,
-        anioActual,
-        anioActual - 1,
-        anioActual - 2,
-      ]
-    }, [])
-
-  function cambiarVista(
-    nuevaVista,
-  ) {
-    setVistaActiva(
-      nuevaVista,
-    )
-
-    setErrorFormularioUnMes('')
-    setErrorFormularioVarios('')
-
-    const nuevosParametros =
-      new URLSearchParams(
-        parametrosBusqueda,
-      )
-
-    if (
-      nuevaVista ===
-      VISTAS.HISTORIAL
-    ) {
-      nuevosParametros.delete(
-        'vista',
-      )
-    } else {
-      nuevosParametros.set(
-        'vista',
-        nuevaVista,
-      )
-    }
-
-    setParametrosBusqueda(
-      nuevosParametros,
-      {
-        replace: true,
-      },
-    )
-  }
-
-  function reintentarCarga() {
-    setIntentoCarga(
-      (intentoActual) =>
-        intentoActual + 1,
-    )
-  }
-
-  function abrirDetalle(
-    aportacion,
-  ) {
-    const identificador =
-      String(
-        aportacion?.id ?? '',
-      ).trim()
-
-    if (!identificador) {
-      return
-    }
-
-    navigate(
-      `/aportaciones/${
-        encodeURIComponent(
-          identificador,
-        )
-      }`,
-    )
-  }
-
-  /*
-   * Valida la imagen inmediatamente.
-   *
-   * Así el estudiante conoce el error antes de presionar
-   * el botón de envío.
-   */
-  function seleccionarArchivo(
-    archivo,
-    tipoFormulario,
-  ) {
-    try {
-      validarComprobanteImagen(
-        archivo,
-      )
-
-      if (
-        tipoFormulario ===
-        VISTAS.UN_MES
-      ) {
-        setFormularioUnMes(
-          (formularioActual) => ({
-            ...formularioActual,
-            archivo,
-          }),
-        )
-
-        setErrorArchivoUnMes('')
-        setErrorFormularioUnMes('')
-        return
-      }
-
-      setFormularioVariosMeses(
-        (formularioActual) => ({
-          ...formularioActual,
-          archivo,
-        }),
-      )
-
-      setErrorArchivoVarios('')
-      setErrorFormularioVarios('')
-    } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'El archivo seleccionado no es válido.'
-
-      if (
-        tipoFormulario ===
-        VISTAS.UN_MES
-      ) {
-        setFormularioUnMes(
-          (formularioActual) => ({
-            ...formularioActual,
-            archivo: null,
-          }),
-        )
-
-        setErrorArchivoUnMes(
-          mensaje,
-        )
-        return
-      }
-
-      setFormularioVariosMeses(
-        (formularioActual) => ({
-          ...formularioActual,
-          archivo: null,
-        }),
-      )
-
-      setErrorArchivoVarios(
-        mensaje,
-      )
-    }
-  }
-
-  function quitarArchivoUnMes() {
-    setFormularioUnMes(
-      (formularioActual) => ({
-        ...formularioActual,
-        archivo: null,
-      }),
-    )
-
-    setErrorArchivoUnMes('')
-  }
-
-  function quitarArchivoVarios() {
-    setFormularioVariosMeses(
-      (formularioActual) => ({
-        ...formularioActual,
-        archivo: null,
-      }),
-    )
-
-    setErrorArchivoVarios('')
-  }
-
-  function cancelarFormularioUnMes() {
-    setFormularioUnMes(
-      crearFormularioUnMes(),
-    )
-
-    setErrorArchivoUnMes('')
-    setErrorFormularioUnMes('')
-
-    cambiarVista(
-      VISTAS.HISTORIAL,
-    )
-  }
-
-  function cancelarFormularioVarios() {
-    setFormularioVariosMeses(
-      crearFormularioVariosMeses(),
-    )
-
-    setErrorArchivoVarios('')
-    setErrorFormularioVarios('')
-
-    cambiarVista(
-      VISTAS.HISTORIAL,
-    )
-  }
-
-  async function enviarAportacionUnMes(
-    evento,
-  ) {
-    evento.preventDefault()
-
-    setErrorFormularioUnMes('')
-
-    try {
-      validarComprobanteImagen(
-        formularioUnMes.archivo,
-      )
-    } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'Selecciona una imagen válida.'
-
-      setErrorArchivoUnMes(
-        mensaje,
-      )
-
-      setErrorFormularioUnMes(
-        mensaje,
-      )
-
-      return
-    }
-
-    setFormularioEnviando(
-      VISTAS.UN_MES,
-    )
-
-    try {
-      const nuevaAportacion =
-        await registrarAportacionUnMes({
-          mesAportacion:
-            formularioUnMes
-              .mesAportacion,
-
-          anioAportacion:
-            formularioUnMes
-              .anioAportacion,
-
-          fechaPago:
-            formularioUnMes
-              .fechaPago,
-
-          numeroReferencia:
-            formularioUnMes
-              .numeroReferencia,
-
-          archivo:
-            formularioUnMes.archivo,
-        })
-
-      setAportaciones(
-        (historialActual) => [
-          nuevaAportacion,
-          ...historialActual,
-        ],
-      )
-
-      setFormularioUnMes(
-        crearFormularioUnMes(),
-      )
-
-      setErrorArchivoUnMes('')
-      cambiarVista(
-        VISTAS.HISTORIAL,
-      )
-
-      notificarExito({
-        titulo:
-          'Comprobante enviado',
-        descripcion:
-          'La aportación quedó pendiente de aprobación por ASEBEP.',
-        id:
-          'aportacion-un-mes-enviada',
-      })
-    } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'No fue posible enviar el comprobante.'
-
-      setErrorFormularioUnMes(
-        mensaje,
-      )
-
-      notificarError({
-        titulo:
-          'No se pudo enviar el comprobante',
-        descripcion: mensaje,
-        id:
-          'error-aportacion-un-mes',
-      })
-    } finally {
-      setFormularioEnviando(
-        null,
-      )
-    }
-  }
-
-  async function enviarAportacionVariosMeses(
-    evento,
-  ) {
-    evento.preventDefault()
-
-    setErrorFormularioVarios('')
-
-    /*
-     * La opción personalizada debe representar
-     * estrictamente una cantidad superior a doce.
-     */
-    if (
-      formularioVariosMeses
-        .cantidadSeleccionada ===
-        OPCION_MAS_DE_DOCE &&
-      (
-        !Number.isInteger(
-          cantidadMesesMultiples,
-        ) ||
-        cantidadMesesMultiples <= 12
-      )
-    ) {
-      const mensaje =
-        'Ingresa una cantidad entera mayor a 12 meses.'
-
-      setErrorFormularioVarios(
-        mensaje,
-      )
-
-      referenciaCantidadPersonalizada
-        .current
-        ?.focus()
-
-      return
-    }
-
-    try {
-      validarComprobanteImagen(
-        formularioVariosMeses
-          .archivo,
-      )
-    } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'Selecciona una imagen válida.'
-
-      setErrorArchivoVarios(
-        mensaje,
-      )
-
-      setErrorFormularioVarios(
-        mensaje,
-      )
-
-      return
-    }
-
-    setFormularioEnviando(
-      VISTAS.VARIOS_MESES,
-    )
-
-    try {
-      const nuevaAportacion =
-        await registrarAportacionVariosMeses({
-          cantidadMeses:
-            cantidadMesesMultiples,
-
-          fechaPago:
-            formularioVariosMeses
-              .fechaPago,
-
-          numeroReferencia:
-            formularioVariosMeses
-              .numeroReferencia,
-
-          archivo:
-            formularioVariosMeses
-              .archivo,
-        })
-
-      /*
-       * El comprobante múltiple se agrega como un único
-       * registro sin crear una tarjeta por cada mes.
-       */
-      setAportaciones(
-        (historialActual) => [
-          nuevaAportacion,
-          ...historialActual,
-        ],
-      )
-
-      setFormularioVariosMeses(
-        crearFormularioVariosMeses(),
-      )
-
-      setErrorArchivoVarios('')
-      cambiarVista(
-        VISTAS.HISTORIAL,
-      )
-
-      notificarExito({
-        titulo:
-          'Comprobante enviado',
-        descripcion:
-          `Se registró un comprobante correspondiente a ${cantidadMesesMultiples} meses.`,
-
-        id:
-          'aportacion-varios-meses-enviada',
-      })
-    } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'No fue posible enviar el comprobante.'
-
-      setErrorFormularioVarios(
-        mensaje,
-      )
-
-      notificarError({
-        titulo:
-          'No se pudo enviar el comprobante',
-        descripcion: mensaje,
-        id:
-          'error-aportacion-varios-meses',
-      })
-    } finally {
-      setFormularioEnviando(
-        null,
-      )
-    }
-  }
-
-  const enviandoUnMes =
-    formularioEnviando ===
-    VISTAS.UN_MES
-
-  const enviandoVariosMeses =
-    formularioEnviando ===
-    VISTAS.VARIOS_MESES
+    }, [usuario])
 
   const textoCantidadPendiente =
-    resumenDeuda.mesesPendientes === 1
+    resumenDeuda
+      .mesesPendientes === 1
       ? '1 mes pendiente'
       : `${resumenDeuda.mesesPendientes} meses pendientes`
 
+  /*
+   * Actualiza los campos de texto.
+   */
+  function manejarCambioCampo(
+    evento,
+  ) {
+    const {
+      name,
+      value,
+    } = evento.target
+
+    setFormulario(
+      (formularioActual) => ({
+        ...formularioActual,
+        [name]: value,
+      }),
+    )
+
+    setErroresFormulario(
+      (erroresActuales) => ({
+        ...erroresActuales,
+        [name]: '',
+      }),
+    )
+
+    setErrorGeneral('')
+  }
+
+  function seleccionarArchivo(
+    archivo,
+  ) {
+    setFormulario(
+      (formularioActual) => ({
+        ...formularioActual,
+        archivo,
+      }),
+    )
+
+    setErrorGeneral('')
+  }
+
+  function establecerErrorArchivo(
+    mensaje,
+  ) {
+    setErroresFormulario(
+      (erroresActuales) => ({
+        ...erroresActuales,
+        archivo: mensaje,
+      }),
+    )
+  }
+
+  function quitarArchivo() {
+    setFormulario(
+      (formularioActual) => ({
+        ...formularioActual,
+        archivo: null,
+      }),
+    )
+
+    establecerErrorArchivo('')
+  }
+
+  /*
+   * Limpia el formulario y regresa al historial.
+   */
+  function cancelarFormulario() {
+    if (enviando) {
+      return
+    }
+
+    setFormulario(
+      crearFormularioInicial(),
+    )
+
+    setErroresFormulario(
+      crearErroresIniciales(),
+    )
+
+    setErrorGeneral('')
+
+    cambiarVista(
+      VISTAS.HISTORIAL,
+    )
+  }
+
+  /*
+   * Valida los tres únicos campos aceptados
+   * por POST /aportaciones.
+   */
+  function validarFormulario() {
+    const nuevosErrores =
+      crearErroresIniciales()
+
+    const numeroReferencia =
+      prepararTexto(
+        formulario
+          .numeroReferencia,
+      )
+
+    const descripcion =
+      prepararTexto(
+        formulario.descripcion,
+      )
+
+    if (!numeroReferencia) {
+      nuevosErrores
+        .numeroReferencia =
+        'Ingresa el número de referencia.'
+    }
+
+    if (!descripcion) {
+      nuevosErrores.descripcion =
+        'Escribe una descripción para la aportación.'
+    }
+
+    try {
+      validarComprobantePdf(
+        formulario.archivo,
+      )
+    } catch (error) {
+      nuevosErrores.archivo =
+        error instanceof Error
+          ? error.message
+          : 'Selecciona un comprobante PDF válido.'
+    }
+
+    setErroresFormulario(
+      nuevosErrores,
+    )
+
+    return (
+      !nuevosErrores
+        .numeroReferencia &&
+      !nuevosErrores.descripcion &&
+      !nuevosErrores.archivo
+    )
+  }
+
+  /*
+   * Envía exclusivamente:
+   *
+   * - num_referencia
+   * - descripcion
+   * - archivo_pdf
+   */
+  async function enviarAportacion(
+    evento,
+  ) {
+    evento.preventDefault()
+
+    if (
+      enviando ||
+      !validarFormulario()
+    ) {
+      return
+    }
+
+    setEnviando(true)
+    setErrorGeneral('')
+
+    try {
+      const nuevaAportacion =
+        await registrarAportacionEstudiante({
+          numeroReferencia:
+            formulario
+              .numeroReferencia,
+
+          descripcion:
+            formulario.descripcion,
+
+          archivo:
+            formulario.archivo,
+        })
+
+      setAportaciones(
+        (historialActual) => [
+          nuevaAportacion,
+
+          ...historialActual.filter(
+            (aportacion) =>
+              aportacion.id !==
+              nuevaAportacion.id,
+          ),
+        ],
+      )
+
+      setFormulario(
+        crearFormularioInicial(),
+      )
+
+      setErroresFormulario(
+        crearErroresIniciales(),
+      )
+
+      cambiarVista(
+        VISTAS.HISTORIAL,
+      )
+
+      notificarExito({
+        titulo:
+          'Comprobante enviado',
+
+        descripcion:
+          'La aportación quedó pendiente de revisión por ASEBEP.',
+
+        id:
+          'aportacion-enviada',
+      })
+    } catch (error) {
+      const mensaje =
+        error instanceof Error
+          ? error.message
+          : 'No fue posible enviar el comprobante.'
+
+      setErrorGeneral(mensaje)
+
+      notificarError({
+        titulo:
+          'No se pudo enviar el comprobante',
+
+        descripcion: mensaje,
+
+        id:
+          'error-aportacion-enviada',
+      })
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  function abrirDetalle(
+    aportacionId,
+  ) {
+    navigate(
+      `/aportaciones/${aportacionId}`,
+    )
+  }
+
   return (
     <div className="app-layout">
-      {/* Navegación lateral compartida en escritorio. */}
+      {/* Navegación lateral de escritorio. */}
       <AppSidebar />
 
       <section className="app-content">
-        {/* Encabezado actual del área del estudiante. */}
+        {/* Barra superior del portal estudiantil. */}
         <header className="app-topbar">
           <div className="app-topbar__brand">
             <GraduationCap
@@ -1699,7 +1392,7 @@ function Contributions() {
         </header>
 
         <main className="student-contributions-main">
-          {/* Presentación general del módulo. */}
+          {/* Presentación principal del módulo. */}
           <header className="student-contributions-heading">
             <p>
               Gestión de aportaciones
@@ -1708,16 +1401,14 @@ function Contributions() {
             <h1>Aportaciones</h1>
 
             <span>
-              Sube tus comprobantes mensuales
-              y consulta el estado de cada
+              Envía tu comprobante en
+              formato PDF y consulta el
+              estado de revisión de cada
               aportación.
             </span>
           </header>
 
-          {/*
-           * Resumen calculado con mesesSinPagar × L 20.
-           * Esta tarjeta no acepta un monto independiente.
-           */}
+          {/* Resumen informativo del saldo pendiente. */}
           <section
             className={
               resumenDeuda.disponible &&
@@ -1756,7 +1447,7 @@ function Contributions() {
                   ? resumenDeuda
                       .mesesPendientes === 0
                     ? 'Actualmente no tienes meses pendientes de pago.'
-                    : `El saldo se calcula según los ${textoCantidadPendiente} registrados en tu cuenta.`
+                    : `Tu cuenta registra ${textoCantidadPendiente}.`
                   : 'No fue posible calcular el saldo pendiente con la información disponible.'}
               </p>
             </div>
@@ -1780,18 +1471,20 @@ function Contributions() {
                   {textoCantidadPendiente}
                   {' · '}
                   Cuota mensual de{' '}
-                  {formatearMoneda(
-                    CUOTA_MENSUAL_APORTACION,
-                  )}
+                  {
+                    formatearMoneda(
+                      CUOTA_MENSUAL_APORTACION,
+                    )
+                  }
                 </small>
               )}
             </div>
           </section>
 
           <section className="student-contributions-panel">
-            {/* Navegación interna del módulo. */}
+            {/* Navegación interna con solo dos opciones. */}
             <div
-              className="student-contributions-tabs"
+              className="student-contributions-tabs student-contributions-tabs--two"
               role="tablist"
               aria-label="Vistas de aportaciones"
             >
@@ -1824,10 +1517,10 @@ function Contributions() {
               </button>
 
               <button
-                id="tab-aportaciones-un-mes"
+                id="tab-aportaciones-enviar"
                 className={
                   vistaActiva ===
-                  VISTAS.UN_MES
+                  VISTAS.ENVIAR
                     ? 'student-contributions-tab student-contributions-tab--active'
                     : 'student-contributions-tab'
                 }
@@ -1835,59 +1528,29 @@ function Contributions() {
                 role="tab"
                 aria-selected={
                   vistaActiva ===
-                  VISTAS.UN_MES
+                  VISTAS.ENVIAR
                 }
                 aria-controls="panel-aportaciones"
                 onClick={() =>
                   cambiarVista(
-                    VISTAS.UN_MES,
+                    VISTAS.ENVIAR,
                   )
                 }
               >
-                Subir comprobante
-              </button>
-
-              <button
-                id="tab-aportaciones-varios-meses"
-                className={
-                  vistaActiva ===
-                  VISTAS.VARIOS_MESES
-                    ? 'student-contributions-tab student-contributions-tab--active'
-                    : 'student-contributions-tab'
-                }
-                type="button"
-                role="tab"
-                aria-selected={
-                  vistaActiva ===
-                  VISTAS.VARIOS_MESES
-                }
-                aria-controls="panel-aportaciones"
-                onClick={() =>
-                  cambiarVista(
-                    VISTAS.VARIOS_MESES,
-                  )
-                }
-              >
-                Comprobante de varios meses
+                Enviar aportación
               </button>
             </div>
 
-            {/*
-             * El contenido cambia completamente entre pestañas.
-             * La key reinicia la animación visual de cada vista.
-             */}
             <div
               key={vistaActiva}
               id="panel-aportaciones"
               className="student-contributions-view"
               role="tabpanel"
               aria-labelledby={
-                `tab-aportaciones-${vistaActiva === VISTAS.HISTORIAL
-                  ? 'historial'
-                  : vistaActiva === VISTAS.UN_MES
-                    ? 'un-mes'
-                    : 'varios-meses'
-                }`
+                vistaActiva ===
+                VISTAS.HISTORIAL
+                  ? 'tab-aportaciones-historial'
+                  : 'tab-aportaciones-enviar'
               }
             >
               {vistaActiva ===
@@ -1903,10 +1566,7 @@ function Contributions() {
                       <div className="student-contributions-select">
                         <select
                           id="filtro-anio-aportaciones"
-                          value={
-                            filtroAnio ||
-                            FILTRO_TODOS
-                          }
+                          value={filtroAnio}
                           onChange={(evento) =>
                             setFiltroAnio(
                               evento
@@ -1963,28 +1623,28 @@ function Contributions() {
                           <option
                             value={
                               ESTADOS_APORTACION
-                                .PENDIENTE_APROBACION
+                                .PENDIENTE
                             }
                           >
-                            Pendiente de aprobación
+                            Pendientes
                           </option>
 
                           <option
                             value={
                               ESTADOS_APORTACION
-                                .APROBADA
+                                .APROBADO
                             }
                           >
-                            Aprobada
+                            Aprobadas
                           </option>
 
                           <option
                             value={
                               ESTADOS_APORTACION
-                                .REQUIERE_CORRECCION
+                                .RECHAZADO
                             }
                           >
-                            Requiere corrección
+                            Rechazadas
                           </option>
                         </select>
 
@@ -1994,17 +1654,22 @@ function Contributions() {
                       </div>
                     </div>
 
-                    {/* Restablece Año y Esatdo */}
-                    <button className="student-contributions-clear"
-                            type="button"
-                            onClick={limpiarFiltrosHistorial}
-                            disabled={
-                              !hayFiltrosHistorialActivos
-                            }
-                          >
-                            <RotateCcw aria-hidden="true" />
-                            <span>Limpiar filtros</span>
-                      </button>
+                    <button
+                      className="student-contributions-clear"
+                      type="button"
+                      disabled={
+                        !hayFiltrosActivos
+                      }
+                      onClick={
+                        limpiarFiltros
+                      }
+                    >
+                      <RotateCcw
+                        aria-hidden="true"
+                      />
+
+                      Limpiar filtros
+                    </button>
                   </div>
 
                   <section className="student-contributions-history">
@@ -2026,10 +1691,13 @@ function Contributions() {
                             {
                               aportacionesFiltradas.length
                             }{' '}
-                            {aportacionesFiltradas.length ===
-                            1
-                              ? 'registro'
-                              : 'registros'}
+
+                            {
+                              aportacionesFiltradas.length ===
+                              1
+                                ? 'registro'
+                                : 'registros'
+                            }
                           </span>
                         )}
                     </header>
@@ -2140,632 +1808,198 @@ function Contributions() {
               )}
 
               {vistaActiva ===
-                VISTAS.UN_MES && (
+                VISTAS.ENVIAR && (
                 <section className="student-contributions-form-view">
                   <div className="student-contributions-form-layout">
                     <div className="student-contributions-form-column">
                       <header className="student-contributions-form-heading">
                         <h2>
-                          Subir nuevo comprobante
+                          Enviar aportación
                         </h2>
 
                         <p>
-                          Registra la aportación
-                          correspondiente al mes
-                          seleccionado.
+                          Completa los datos
+                          definidos y adjunta el comprobante
+                          en formato PDF.
                         </p>
                       </header>
 
                       <form
                         className="student-contributions-form"
+                        noValidate
                         onSubmit={
-                          enviarAportacionUnMes
+                          enviarAportacion
                         }
                       >
                         <div className="student-contributions-form-grid">
-                          <div className="student-contributions-field">
-                            <label htmlFor="mes-aportacion">
-                              Mes de aportación
-                            </label>
-
-                            <div className="student-contributions-select">
-                              <select
-                                id="mes-aportacion"
-                                value={
-                                  formularioUnMes
-                                    .mesAportacion
-                                }
-                                disabled={
-                                  enviandoUnMes
-                                }
-                                required
-                                onChange={(evento) =>
-                                  setFormularioUnMes(
-                                    (
-                                      formularioActual,
-                                    ) => ({
-                                      ...formularioActual,
-
-                                      mesAportacion:
-                                        evento
-                                          .target
-                                          .value,
-                                    }),
-                                  )
-                                }
-                              >
-                                {MESES.map(
-                                  (mes) => (
-                                    <option
-                                      key={
-                                        mes.valor
-                                      }
-                                      value={
-                                        mes.valor
-                                      }
-                                    >
-                                      {
-                                        mes.nombre
-                                      }
-                                    </option>
-                                  ),
-                                )}
-                              </select>
-
-                              <ChevronDown
-                                aria-hidden="true"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="student-contributions-field">
-                            <label htmlFor="anio-aportacion">
-                              Año
-                            </label>
-
-                            <div className="student-contributions-select">
-                              <select
-                                id="anio-aportacion"
-                                value={
-                                  formularioUnMes
-                                    .anioAportacion
-                                }
-                                disabled={
-                                  enviandoUnMes
-                                }
-                                required
-                                onChange={(evento) =>
-                                  setFormularioUnMes(
-                                    (
-                                      formularioActual,
-                                    ) => ({
-                                      ...formularioActual,
-
-                                      anioAportacion:
-                                        evento
-                                          .target
-                                          .value,
-                                    }),
-                                  )
-                                }
-                              >
-                                {aniosFormulario.map(
-                                  (anio) => (
-                                    <option
-                                      key={anio}
-                                      value={anio}
-                                    >
-                                      {anio}
-                                    </option>
-                                  ),
-                                )}
-                              </select>
-
-                              <ChevronDown
-                                aria-hidden="true"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="student-contributions-field">
-                            <label htmlFor="monto-un-mes">
-                              Monto pagado
-                            </label>
-
-                            <div className="student-contributions-money">
-                              <span>
-                                L
-                              </span>
-
-                              <input
-                                id="monto-un-mes"
-                                type="text"
-                                value={
-                                  MONTO_UN_MES.toFixed(
-                                    2,
-                                  )
-                                }
-                                readOnly
-                                aria-readonly="true"
-                                title="Monto calculado automáticamente"
-                              />
-                            </div>
-
-                            <p className="student-contributions-field__help">
-                              El monto corresponde
-                              a una cuota mensual.
-                            </p>
-                          </div>
-
-                          <div className="student-contributions-field">
-                            <label htmlFor="fecha-pago-un-mes">
-                              Fecha de pago
-                            </label>
-
-                            <input
-                              id="fecha-pago-un-mes"
-                              type="date"
-                              value={
-                                formularioUnMes
-                                  .fechaPago
-                              }
-                              disabled={
-                                enviandoUnMes
-                              }
-                              required
-                              onChange={(evento) =>
-                                setFormularioUnMes(
-                                  (
-                                    formularioActual,
-                                  ) => ({
-                                    ...formularioActual,
-
-                                    fechaPago:
-                                      evento
-                                        .target
-                                        .value,
-                                  }),
-                                )
-                              }
-                            />
-                          </div>
-
-                          <div className="student-contributions-field student-contributions-field--full">
-                            <label htmlFor="referencia-un-mes">
+                          <div
+                            className={
+                              erroresFormulario
+                                .numeroReferencia
+                                ? 'student-contributions-field student-contributions-field--full student-contributions-field--invalid'
+                                : 'student-contributions-field student-contributions-field--full'
+                            }
+                          >
+                            <label htmlFor="numero-referencia-aportacion">
                               Número de referencia
-                              del comprobante
                             </label>
 
                             <input
-                              id="referencia-un-mes"
+                              id="numero-referencia-aportacion"
+                              name="numeroReferencia"
                               type="text"
                               value={
-                                formularioUnMes
+                                formulario
                                   .numeroReferencia
                               }
-                              placeholder="Ej. 847291"
-                              maxLength="80"
-                              disabled={
-                                enviandoUnMes
-                              }
-                              required
-                              onChange={(evento) =>
-                                setFormularioUnMes(
-                                  (
-                                    formularioActual,
-                                  ) => ({
-                                    ...formularioActual,
-
-                                    numeroReferencia:
-                                      evento
-                                        .target
-                                        .value,
-                                  }),
+                              disabled={enviando}
+                              autoComplete="off"
+                              aria-invalid={
+                                Boolean(
+                                  erroresFormulario
+                                    .numeroReferencia,
                                 )
                               }
-                            />
-
-                            <p className="student-contributions-field__help">
-                              Ingresa el número que
-                              aparece en tu comprobante
-                              de pago.
-                            </p>
-                          </div>
-                        </div>
-
-                        <SelectorComprobante
-                          id="comprobante-un-mes"
-                          archivo={
-                            formularioUnMes
-                              .archivo
-                          }
-                          error={
-                            errorArchivoUnMes
-                          }
-                          deshabilitado={
-                            enviandoUnMes
-                          }
-                          onSeleccionar={(
-                            archivo,
-                          ) =>
-                            seleccionarArchivo(
-                              archivo,
-                              VISTAS.UN_MES,
-                            )
-                          }
-                          onQuitar={
-                            quitarArchivoUnMes
-                          }
-                        />
-
-                        {errorFormularioUnMes && (
-                          <div
-                            className="student-contributions-form-error"
-                            role="alert"
-                          >
-                            <CircleAlert
-                              aria-hidden="true"
-                            />
-
-                            <span>
-                              {
-                                errorFormularioUnMes
+                              aria-describedby={
+                                erroresFormulario
+                                  .numeroReferencia
+                                  ? 'error-numero-referencia-aportacion'
+                                  : 'ayuda-numero-referencia-aportacion'
                               }
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="student-contributions-form-actions">
-                          <button
-                            className="student-contributions-button student-contributions-button--secondary"
-                            type="button"
-                            disabled={
-                              enviandoUnMes
-                            }
-                            onClick={
-                              cancelarFormularioUnMes
-                            }
-                          >
-                            Cancelar
-                          </button>
-
-                          <button
-                            className="student-contributions-button student-contributions-button--primary"
-                            type="submit"
-                            disabled={
-                              enviandoUnMes
-                            }
-                          >
-                            <Send
-                              aria-hidden="true"
+                              placeholder="Ejemplo: AP-2026-0004"
+                              onChange={
+                                manejarCambioCampo
+                              }
                             />
 
-                            {enviandoUnMes
-                              ? 'Enviando...'
-                              : 'Enviar comprobante'}
-                          </button>
-                        </div>
-
-                        <p className="student-contributions-submit-note">
-                          El comprobante quedará
-                          pendiente de aprobación
-                          por ASEBEP.
-                        </p>
-                      </form>
-                    </div>
-
-                    <InformacionAntesDeEnviar
-                      variosMeses={false}
-                    />
-                  </div>
-                </section>
-              )}
-
-              {vistaActiva ===
-                VISTAS.VARIOS_MESES && (
-                <section className="student-contributions-form-view">
-                  <div className="student-contributions-form-layout">
-                    <div className="student-contributions-form-column">
-                      <header className="student-contributions-form-heading">
-                        <h2>
-                          Registrar pago de
-                          varios meses
-                        </h2>
-
-                        <p>
-                          Sube un solo comprobante
-                          cuando realices el pago
-                          de más de un mes.
-                        </p>
-                      </header>
-
-                      <form
-                        className="student-contributions-form"
-                        onSubmit={
-                          enviarAportacionVariosMeses
-                        }
-                      >
-                        <div className="student-contributions-form-grid">
-                          <div className="student-contributions-field">
-                            <label htmlFor="cantidad-meses">
-                              Cantidad de meses
-                              que pagas
-                            </label>
-
-                            <div className="student-contributions-select">
-                              <select
-                                id="cantidad-meses"
-                                value={
-                                  formularioVariosMeses
-                                    .cantidadSeleccionada
-                                }
-                                disabled={
-                                  enviandoVariosMeses
-                                }
-                                required
-                                onChange={(evento) =>
-                                  setFormularioVariosMeses(
-                                    (
-                                      formularioActual,
-                                    ) => ({
-                                      ...formularioActual,
-
-                                      cantidadSeleccionada:
-                                        evento
-                                          .target
-                                          .value,
-
-                                      cantidadPersonalizada:
-                                        evento
-                                          .target
-                                          .value ===
-                                        OPCION_MAS_DE_DOCE
-                                          ? formularioActual
-                                              .cantidadPersonalizada
-                                          : '',
-                                    }),
-                                  )
-                                }
+                            {erroresFormulario
+                              .numeroReferencia ? (
+                              <p
+                                id="error-numero-referencia-aportacion"
+                                className="student-contributions-field__error"
+                                role="alert"
                               >
-                                {Array.from(
+                                <CircleAlert
+                                  aria-hidden="true"
+                                />
+
+                                <span>
                                   {
-                                    length: 11,
-                                  },
-                                  (
-                                    _elemento,
-                                    indice,
-                                  ) =>
-                                    indice + 2,
-                                ).map(
-                                  (
-                                    cantidad,
-                                  ) => (
-                                    <option
-                                      key={
-                                        cantidad
-                                      }
-                                      value={
-                                        cantidad
-                                      }
-                                    >
-                                      {cantidad}{' '}
-                                      meses
-                                    </option>
-                                  ),
-                                )}
-
-                                <option
-                                  value={
-                                    OPCION_MAS_DE_DOCE
+                                    erroresFormulario
+                                      .numeroReferencia
                                   }
-                                >
-                                  Más de 12 meses
-                                </option>
-                              </select>
-
-                              <ChevronDown
-                                aria-hidden="true"
-                              />
-                            </div>
-
-                            <p className="student-contributions-field__help">
-                              El pago múltiple
-                              comienza desde dos
-                              meses.
-                            </p>
-                          </div>
-
-                          <div className="student-contributions-field">
-                            <label htmlFor="monto-varios-meses">
-                              Monto pagado
-                            </label>
-
-                            <div className="student-contributions-money">
-                              <span>
-                                L
-                              </span>
-
-                              <input
-                                id="monto-varios-meses"
-                                type="text"
-                                value={
-                                  montoVariosMeses.toFixed(
-                                    2,
-                                  )
-                                }
-                                readOnly
-                                aria-readonly="true"
-                                title="Monto calculado automáticamente"
-                              />
-                            </div>
-
-                            <p className="student-contributions-field__help">
-                              Calculado automáticamente:
-                              {' '}
-                              {Number.isInteger(
-                                cantidadMesesMultiples,
-                              ) &&
-                              cantidadMesesMultiples >
-                                0
-                                ? `${cantidadMesesMultiples} × ${formatearMoneda(CUOTA_MENSUAL_APORTACION)}`
-                                : 'ingresa la cantidad de meses'}
-                            </p>
-                          </div>
-
-                          {formularioVariosMeses
-                            .cantidadSeleccionada ===
-                            OPCION_MAS_DE_DOCE && (
-                            <div className="student-contributions-field student-contributions-field--full student-contributions-custom-months">
-                              <label htmlFor="cantidad-personalizada">
-                                Cantidad exacta
-                                de meses pagados
-                              </label>
-
-                              <input
-                                ref={
-                                  referenciaCantidadPersonalizada
-                                }
-                                id="cantidad-personalizada"
-                                type="number"
-                                min="13"
-                                step="1"
-                                inputMode="numeric"
-                                value={
-                                  formularioVariosMeses
-                                    .cantidadPersonalizada
-                                }
-                                placeholder="Ej. 15"
-                                disabled={
-                                  enviandoVariosMeses
-                                }
-                                required
-                                onChange={(evento) =>
-                                  setFormularioVariosMeses(
-                                    (
-                                      formularioActual,
-                                    ) => ({
-                                      ...formularioActual,
-
-                                      cantidadPersonalizada:
-                                        evento
-                                          .target
-                                          .value,
-                                    }),
-                                  )
-                                }
-                              />
-
-                              <p className="student-contributions-field__help">
-                                Ingresa un número
-                                entero mayor a 12.
-                                El monto se actualizará
-                                automáticamente.
+                                </span>
                               </p>
-                            </div>
-                          )}
-
-                          <div className="student-contributions-field">
-                            <label htmlFor="fecha-pago-varios">
-                              Fecha de pago
-                            </label>
-
-                            <input
-                              id="fecha-pago-varios"
-                              type="date"
-                              value={
-                                formularioVariosMeses
-                                  .fechaPago
-                              }
-                              disabled={
-                                enviandoVariosMeses
-                              }
-                              required
-                              onChange={(evento) =>
-                                setFormularioVariosMeses(
-                                  (
-                                    formularioActual,
-                                  ) => ({
-                                    ...formularioActual,
-
-                                    fechaPago:
-                                      evento
-                                        .target
-                                        .value,
-                                  }),
-                                )
-                              }
-                            />
+                            ) : (
+                              <p
+                                id="ayuda-numero-referencia-aportacion"
+                                className="student-contributions-field__help"
+                              >
+                                Debe coincidir con
+                                la referencia visible
+                                en el comprobante.
+                              </p>
+                            )}
                           </div>
 
-                          <div className="student-contributions-field">
-                            <label htmlFor="referencia-varios">
-                              Número de referencia
-                              del comprobante
+                          <div
+                            className={
+                              erroresFormulario
+                                .descripcion
+                                ? 'student-contributions-field student-contributions-field--full student-contributions-field--invalid'
+                                : 'student-contributions-field student-contributions-field--full'
+                            }
+                          >
+                            <label htmlFor="descripcion-aportacion">
+                              Descripción
                             </label>
 
-                            <input
-                              id="referencia-varios"
-                              type="text"
+                            <textarea
+                              id="descripcion-aportacion"
+                              className="student-contributions-textarea"
+                              name="descripcion"
+                              rows="5"
                               value={
-                                formularioVariosMeses
-                                  .numeroReferencia
+                                formulario
+                                  .descripcion
                               }
-                              placeholder="Ej. 847291"
-                              maxLength="80"
-                              disabled={
-                                enviandoVariosMeses
-                              }
-                              required
-                              onChange={(evento) =>
-                                setFormularioVariosMeses(
-                                  (
-                                    formularioActual,
-                                  ) => ({
-                                    ...formularioActual,
-
-                                    numeroReferencia:
-                                      evento
-                                        .target
-                                        .value,
-                                  }),
+                              disabled={enviando}
+                              aria-invalid={
+                                Boolean(
+                                  erroresFormulario
+                                    .descripcion,
                                 )
+                              }
+                              aria-describedby={
+                                erroresFormulario
+                                  .descripcion
+                                  ? 'error-descripcion-aportacion'
+                                  : 'ayuda-descripcion-aportacion'
+                              }
+                              placeholder="Describe brevemente a qué corresponde el comprobante."
+                              onChange={
+                                manejarCambioCampo
                               }
                             />
 
-                            <p className="student-contributions-field__help">
-                              Ingresa el número que
-                              aparece en tu comprobante
-                              de pago.
-                            </p>
+                            {erroresFormulario
+                              .descripcion ? (
+                              <p
+                                id="error-descripcion-aportacion"
+                                className="student-contributions-field__error"
+                                role="alert"
+                              >
+                                <CircleAlert
+                                  aria-hidden="true"
+                                />
+
+                                <span>
+                                  {
+                                    erroresFormulario
+                                      .descripcion
+                                  }
+                                </span>
+                              </p>
+                            ) : (
+                              <p
+                                id="ayuda-descripcion-aportacion"
+                                className="student-contributions-field__help"
+                              >
+                                No es necesario indicar
+                                la cantidad de meses pagados;
+                                el administrador lo
+                                establecera conforme al monto que aparezca
+                                en el comprobante.
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="student-contributions-field--full">
+                            <SelectorComprobantePdf
+                              archivo={
+                                formulario.archivo
+                              }
+                              error={
+                                erroresFormulario
+                                  .archivo
+                              }
+                              deshabilitado={
+                                enviando
+                              }
+                              onSeleccionar={
+                                seleccionarArchivo
+                              }
+                              onQuitar={
+                                quitarArchivo
+                              }
+                              onError={
+                                establecerErrorArchivo
+                              }
+                            />
                           </div>
                         </div>
 
-                        <SelectorComprobante
-                          id="comprobante-varios-meses"
-                          archivo={
-                            formularioVariosMeses
-                              .archivo
-                          }
-                          error={
-                            errorArchivoVarios
-                          }
-                          deshabilitado={
-                            enviandoVariosMeses
-                          }
-                          onSeleccionar={(
-                            archivo,
-                          ) =>
-                            seleccionarArchivo(
-                              archivo,
-                              VISTAS.VARIOS_MESES,
-                            )
-                          }
-                          onQuitar={
-                            quitarArchivoVarios
-                          }
-                        />
-
-                        {errorFormularioVarios && (
+                        {errorGeneral && (
                           <div
                             className="student-contributions-form-error"
                             role="alert"
@@ -2775,9 +2009,7 @@ function Contributions() {
                             />
 
                             <span>
-                              {
-                                errorFormularioVarios
-                              }
+                              {errorGeneral}
                             </span>
                           </div>
                         )}
@@ -2786,11 +2018,9 @@ function Contributions() {
                           <button
                             className="student-contributions-button student-contributions-button--secondary"
                             type="button"
-                            disabled={
-                              enviandoVariosMeses
-                            }
+                            disabled={enviando}
                             onClick={
-                              cancelarFormularioVarios
+                              cancelarFormulario
                             }
                           >
                             Cancelar
@@ -2799,37 +2029,40 @@ function Contributions() {
                           <button
                             className="student-contributions-button student-contributions-button--primary"
                             type="submit"
-                            disabled={
-                              enviandoVariosMeses
-                            }
+                            disabled={enviando}
                           >
-                            <Send
-                              aria-hidden="true"
-                            />
+                            {enviando ? (
+                              <Clock3
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Send
+                                aria-hidden="true"
+                              />
+                            )}
 
-                            {enviandoVariosMeses
+                            {enviando
                               ? 'Enviando...'
-                              : 'Enviar comprobante'}
+                              : 'Enviar aportación'}
                           </button>
                         </div>
 
                         <p className="student-contributions-submit-note">
-                          El comprobante quedará
-                          pendiente de aprobación
-                          por ASEBEP.
+                          La aportación quedará
+                          pendiente hasta que un
+                          administrador la revise.
                         </p>
                       </form>
                     </div>
 
-                    <InformacionAntesDeEnviar
-                      variosMeses
-                    />
+                    <InformacionAntesDeEnviar />
                   </div>
                 </section>
               )}
             </div>
           </section>
         </main>
+
         <MobileNavigation />
       </section>
     </div>

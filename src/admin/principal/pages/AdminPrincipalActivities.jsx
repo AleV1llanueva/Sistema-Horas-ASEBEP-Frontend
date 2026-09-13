@@ -1,6 +1,7 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-
 import {
+    ChevronLeft,
+    ChevronRight,
     CalendarDays,
     Clock3,
     Eye,
@@ -12,7 +13,6 @@ import {
     Plus,
     Power,
     QrCode,
-    RefreshCw,
     Search,
     Trash2,
     TriangleAlert,
@@ -37,8 +37,8 @@ import { toast } from 'sonner'
 import {
     cambiarVisibilidadActividad,
     eliminarActividad,
-    habilitarEntradaActividad,
-    habilitarSalidaActividad,
+    obtenerQrEntradaActividad,
+    obtenerQrSalidaActividad,
     listarActividades,
 } from '../services/adminActividadesService.js'
 
@@ -49,7 +49,10 @@ const TIPOS_MARCACION = Object.freeze({
     salida: 'salida',
 })
 
-const MAXIMO_GENERACIONES_QR = 2
+const DURACION_VENTANA_QR_MINUTOS = 20
+
+// Cada pagina muestra como maximo diez actividades
+const ACTIVIDADES_POR_PAGINA = 10
 
 /*
  * Cada pestaña define los estados que debe mostrar.
@@ -226,65 +229,113 @@ function crearFechaHoraLocal(
 }
 
 /*
- * Obtiene cuántas generaciones se han utilizado
- * para un tipo específico de marcación.
+ * Calcula el estado actual usando el horario de la actividad.
+ *
+ * Esto permite que una actividad cambie automáticamente de
+ * Programada a En curso y después a Finalizada sin recargar.
  */
-function obtenerGeneracionesQr(
+function calcularEstadoTemporalActividad(
     actividad,
-    tipo,
-) {
-    const cantidad = Number(
-        tipo === TIPOS_MARCACION.entrada
-            ? actividad?.generacionesQrEntrada
-            : actividad?.generacionesQrSalida,
-    )
-
-    if (
-        !Number.isInteger(cantidad) ||
-        cantidad < 0
-    ) {
-        return 0
-    }
-
-    return Math.min(
-        cantidad,
-        MAXIMO_GENERACIONES_QR,
-    )
-}
-
-/*
- * Comprueba si el último QR guardado todavía
- * se encuentra dentro de su tiempo de vigencia.
- */
-function marcacionEstaVigente(
-    actividad,
-    tipo,
     instanteActual,
 ) {
-    const esEntrada =
-        tipo === TIPOS_MARCACION.entrada
-
-    const habilitada = esEntrada
-        ? actividad?.entradaHabilitada === true
-        : actividad?.salidaHabilitada === true
-
-    const expiraEn = esEntrada
-        ? actividad?.entradaHabilitadaHasta
-        : actividad?.salidaHabilitadaHasta
-
-    const fechaExpiracion =
-        Date.parse(expiraEn)
-
-    return (
-        habilitada &&
-        Number.isFinite(fechaExpiracion) &&
-        fechaExpiracion > instanteActual
+    const estadoGuardado = String(
+        actividad?.estado ?? '',
     )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+
+    if (estadoGuardado === 'cancelada') {
+        return 'cancelada'
+    }
+
+    const inicio = crearFechaHoraLocal(
+        actividad?.fecha,
+        actividad?.horaInicio,
+    )
+
+    const finalizacion =
+        crearFechaHoraLocal(
+            actividad?.fecha,
+            actividad?.horaFinalizacion,
+        )
+
+    if (!inicio || !finalizacion) {
+        return (
+            estadoGuardado ||
+            'programada'
+        )
+    }
+
+    if (
+        instanteActual <
+        inicio.getTime()
+    ) {
+        return 'programada'
+    }
+
+    if (
+        instanteActual <
+        finalizacion.getTime()
+    ) {
+        return 'en-curso'
+    }
+
+    return 'finalizada'
 }
 
 /*
- * Determina si el administrador puede habilitar
- * o volver a mostrar una marcación.
+ * Construye la ventana automática correspondiente.
+ *
+ * Entrada: desde el inicio hasta veinte minutos después.
+ * Salida: desde la finalización hasta veinte minutos después.
+ */
+function obtenerVentanaQrMarcacion(
+    actividad,
+    tipo,
+) {
+    const inicio = crearFechaHoraLocal(
+        actividad?.fecha,
+        actividad?.horaInicio,
+    )
+
+    const finalizacion =
+        crearFechaHoraLocal(
+            actividad?.fecha,
+            actividad?.horaFinalizacion,
+        )
+
+    if (!inicio || !finalizacion) {
+        return null
+    }
+
+    const comienzaEn =
+        tipo === TIPOS_MARCACION.entrada
+            ? inicio
+            : tipo ===
+                TIPOS_MARCACION.salida
+              ? finalizacion
+              : null
+
+    if (!comienzaEn) {
+        return null
+    }
+
+    return {
+        comienzaEn:
+            comienzaEn.getTime(),
+
+        expiraEn:
+            comienzaEn.getTime() +
+            DURACION_VENTANA_QR_MINUTOS *
+                60 *
+                1000,
+    }
+}
+
+/*
+ * Informa si el botón para mostrar el QR puede utilizarse.
+ * Ya no se revisan generaciones, habilitaciones ni reactivaciones.
  */
 function obtenerDisponibilidadMarcacion(
     actividad,
@@ -314,26 +365,13 @@ function obtenerDisponibilidadMarcacion(
         }
     }
 
-    if (estado === 'finalizada') {
-        return {
-            disponible: false,
-            mensaje:
-                'La actividad está finalizada.',
-        }
-    }
-
-    const inicio = crearFechaHoraLocal(
-        actividad?.fecha,
-        actividad?.horaInicio,
-    )
-
-    const finalizacion =
-        crearFechaHoraLocal(
-            actividad?.fecha,
-            actividad?.horaFinalizacion,
+    const ventana =
+        obtenerVentanaQrMarcacion(
+            actividad,
+            tipo,
         )
 
-    if (!inicio || !finalizacion) {
+    if (!ventana) {
         return {
             disponible: false,
             mensaje:
@@ -341,89 +379,44 @@ function obtenerDisponibilidadMarcacion(
         }
     }
 
-    const qrVigente =
-        marcacionEstaVigente(
-            actividad,
-            tipo,
-            instanteActual,
-        )
-
-    const generacionesUtilizadas =
-        obtenerGeneracionesQr(
-            actividad,
-            tipo,
-        )
-
-    /*
-     * Mientras el QR siga vigente siempre puede
-     * volver a mostrarse sin generar otro token.
-     */
-    if (qrVigente) {
-        return {
-            disponible: true,
-
-            mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'Mostrar el QR de entrada que sigue vigente.'
-                    : 'Mostrar el QR de salida que sigue vigente.',
-        }
-    }
-
-    // Después de dos generaciones no se permite generar más códigos.
-    if (
-        generacionesUtilizadas >=
-        MAXIMO_GENERACIONES_QR
-    ) {
-        return {
-            disponible: false,
-
-            mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'La entrada ya utilizó sus dos oportunidades.'
-                    : 'La salida ya utilizó sus dos oportunidades.',
-        }
-    }
-
     if (
         instanteActual <
-        inicio.getTime()
+        ventana.comienzaEn
     ) {
         return {
             disponible: false,
 
             mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'La entrada estará disponible cuando comience la actividad.'
-                    : 'La salida no puede habilitarse antes del inicio.',
+                tipo ===
+                TIPOS_MARCACION.entrada
+                    ? 'El QR de entrada estará disponible cuando comience la actividad.'
+                    : 'El QR de salida estará disponible cuando finalice la actividad.',
         }
     }
 
     if (
-        tipo === TIPOS_MARCACION.entrada &&
         instanteActual >=
-            finalizacion.getTime()
+        ventana.expiraEn
     ) {
         return {
             disponible: false,
+
             mensaje:
-                'La actividad ya terminó y no admite nuevas entradas.',
+                tipo ===
+                TIPOS_MARCACION.entrada
+                    ? 'La ventana de entrada ya finalizó.'
+                    : 'La ventana de salida ya finalizó.',
         }
     }
-
-    const esReactivacion =
-        generacionesUtilizadas > 0
 
     return {
         disponible: true,
 
         mensaje:
-            tipo === TIPOS_MARCACION.entrada
-                ? esReactivacion
-                    ? 'Reactivar el QR de entrada.'
-                    : 'Habilitar el QR de entrada.'
-                : esReactivacion
-                  ? 'Reactivar el QR de salida.'
-                  : 'Habilitar el QR de salida.',
+            tipo ===
+            TIPOS_MARCACION.entrada
+                ? 'Mostrar el QR de entrada.'
+                : 'Mostrar el QR de salida.',
     }
 }
 
@@ -501,6 +494,11 @@ function AdminPrincipalActivities() {
         visibilidadSeleccionada,
         setVisibilidadSeleccionada,
     ] = useState('todas')
+
+    const [
+        paginaActual,
+        setPaginaActual,
+    ] = useState(1)
 
     /*
      * Identifica qué botón está generando un QR.
@@ -658,19 +656,56 @@ function AdminPrincipalActivities() {
             )
         }
     }, [dialogoQrAbierto])
+    
+    /*
+     * Las imágenes recibidas desde la API utilizan una URL
+     * temporal del navegador. La liberamos cuando se reemplaza
+     * el QR o cuando el componente deja de mostrarse.
+     */
+    useEffect(() => {
+        return () => {
+            const imagenUrl =
+                qrActivo?.imagenUrl
 
-    // Las actividades eliminadas nunca regresan al listado.
+            if (
+                typeof imagenUrl ===
+                    'string' &&
+                imagenUrl.startsWith(
+                    'blob:',
+                )
+            ) {
+                URL.revokeObjectURL(
+                    imagenUrl,
+                )
+            }
+        }
+    }, [qrActivo])
+
     const actividadesDisponibles =
         useMemo(
             () =>
-                actividades.filter(
-                    (actividad) =>
-                        actividad.eliminada !==
-                        true,
-                ),
-            [actividades],
-        )
+                actividades
+                    .filter(
+                        (actividad) =>
+                            actividad.eliminada !==
+                            true,
+                    )
+                    .map(
+                        (actividad) => ({
+                            ...actividad,
 
+                            estado:
+                                calcularEstadoTemporalActividad(
+                                    actividad,
+                                    instanteActual,
+                                ),
+                        }),
+                    ),
+            [
+                actividades,
+                instanteActual,
+            ],
+        )
     /*
      * Los contadores incluyen todas las actividades
      * de cada pestaña antes de aplicar los filtros.
@@ -803,11 +838,93 @@ function AdminPrincipalActivities() {
             visibilidadSeleccionada,
         ])
 
+    /*
+     * Calcula cuántas páginas necesita el resultado filtrado.
+     * Se conserva al menos una página para mantener estable
+     * el estado del componente cuando no existen resultados.
+     */
+    const totalPaginas =
+        useMemo(
+            () =>
+                Math.max(
+                    1,
+                    Math.ceil(
+                        actividadesFiltradas.length /
+                            ACTIVIDADES_POR_PAGINA,
+                    ),
+                ),
+            [
+                actividadesFiltradas.length,
+            ],
+        )
+
+    /*
+     * Obtiene únicamente las actividades correspondientes
+     * a la página seleccionada.
+     */
+    const actividadesPagina =
+        useMemo(() => {
+            const indiceInicial =
+                (paginaActual - 1) *
+                ACTIVIDADES_POR_PAGINA
+
+            return actividadesFiltradas.slice(
+                indiceInicial,
+                indiceInicial +
+                    ACTIVIDADES_POR_PAGINA,
+            )
+        }, [
+            actividadesFiltradas,
+            paginaActual,
+        ])
+
+    /*
+     * Al cambiar de pestaña o filtros regresamos a la
+     * primera página para evitar mostrar una página vacía.
+     */
+    useEffect(() => {
+        setPaginaActual(1)
+    }, [
+        pestanaActiva,
+        busqueda,
+        visibilidadSeleccionada,
+    ])
+
+    /*
+     * Si disminuyen los resultados, impedimos conservar
+     * una página que ya no existe.
+     */
+    useEffect(() => {
+        setPaginaActual(
+            (paginaSeleccionada) =>
+                Math.min(
+                    paginaSeleccionada,
+                    totalPaginas,
+                ),
+        )
+    }, [totalPaginas])
+
     const existenActividades =
         actividadesDisponibles.length > 0
 
     const existenResultados =
         actividadesFiltradas.length > 0
+
+        const primeraActividadMostrada =
+        existenResultados
+            ? (
+                  paginaActual - 1
+              ) *
+                  ACTIVIDADES_POR_PAGINA +
+              1
+            : 0
+
+    const ultimaActividadMostrada =
+        Math.min(
+            paginaActual *
+                ACTIVIDADES_POR_PAGINA,
+            actividadesFiltradas.length,
+        )
 
     const hayFiltrosAplicados =
         Boolean(busqueda.trim()) ||
@@ -822,13 +939,23 @@ function AdminPrincipalActivities() {
         pestanaActiva ===
         'programadas'
 
-    /*
-     * Los controles QR permanecen disponibles para las
-     * programadas y en curso, pero no aparecen en el historial.
-     */
+    // Durante la actividad mostramos los controles de asistencia.
+    const existeVentanaQrEnHistorial =
+        pestanaActiva ===
+            'historial' &&
+        actividadesFiltradas.some(
+            (actividad) =>
+                obtenerDisponibilidadMarcacion(
+                    actividad,
+                    TIPOS_MARCACION.salida,
+                    instanteActual,
+                ).disponible,
+        )
+
     const mostrarAsistencia =
         pestanaActiva ===
-        'en-curso'
+            'en-curso' ||
+        existeVentanaQrEnHistorial
 
     const segundosRestantes =
         qrActivo
@@ -851,29 +978,6 @@ function AdminPrincipalActivities() {
         Boolean(qrActivo) &&
         procesandoMarcacion ===
             identificadorProcesoQr
-
-    // Identifica la generación que se encuentra abierta.
-    const generacionQrActiva =
-        qrActivo
-            ? Math.min(
-                  Math.max(
-                      Number(
-                          qrActivo.generacion,
-                      ) || 1,
-                      1,
-                  ),
-                  MAXIMO_GENERACIONES_QR,
-              )
-            : 0
-
-    const limiteQrAlcanzado =
-        generacionQrActiva >=
-        MAXIMO_GENERACIONES_QR
-
-    const qrPuedeReactivarse =
-        Boolean(qrActivo) &&
-        !qrEstaVigente &&
-        !limiteQrAlcanzado
 
     const accionEsEliminacion =
         accionPendiente?.tipo ===
@@ -908,10 +1012,10 @@ function AdminPrincipalActivities() {
     }
 
     /*
-     * Genera el QR solicitado, actualiza la actividad
-     * dentro de la tabla y abre el diálogo.
+     * Solicita al servicio el QR correspondiente y abre
+     * el diálogo para que los estudiantes puedan escanearlo.
      */
-    async function habilitarMarcacion(
+    async function mostrarQrMarcacion(
         actividad,
         tipo,
     ) {
@@ -933,16 +1037,25 @@ function AdminPrincipalActivities() {
             const respuesta =
                 tipo ===
                 TIPOS_MARCACION.entrada
-                    ? await habilitarEntradaActividad(
+                    ? await obtenerQrEntradaActividad(
                           actividad.id,
                       )
-                    : await habilitarSalidaActividad(
+                    : await obtenerQrSalidaActividad(
                           actividad.id,
                       )
 
+            const existeContenidoQr =
+                Boolean(
+                    respuesta?.qr?.url,
+                ) ||
+                Boolean(
+                    respuesta?.qr
+                        ?.imagenUrl,
+                )
+
             if (
                 !respuesta?.actividad ||
-                !respuesta?.qr?.url
+                !existeContenidoQr
             ) {
                 throw new Error(
                     'El servicio no devolvió un código QR válido.',
@@ -979,54 +1092,18 @@ function AdminPrincipalActivities() {
                     ? 'entrada'
                     : 'salida'
 
-            if (respuesta.reutilizado) {
-                toast.info(
-                    `El QR de ${nombreMarcacion} continúa vigente.`,
-                )
-            } else {
-                toast.success(
-                    `QR de ${nombreMarcacion} habilitado. Generación ${respuesta.qr.generacion} de ${MAXIMO_GENERACIONES_QR}.`,
-                )
-            }
+            toast.success(
+                `El QR de ${nombreMarcacion} fue generado correctamente.`,
+            )
         } catch (errorMarcacion) {
             toast.error(
                 errorMarcacion instanceof Error
                     ? errorMarcacion.message
-                    : 'No fue posible habilitar el código QR.',
+                    : 'No fue posible obtener el código QR.',
             )
         } finally {
             setProcesandoMarcacion('')
         }
-    }
-
-    /*
-     * Permite renovar un QR vencido desde el mismo diálogo.
-     * El servicio reemplazará el token anterior.
-     */
-    function renovarQrActivo() {
-        if (!qrActivo) {
-            return
-        }
-
-        const actividad =
-            actividades.find(
-                (elemento) =>
-                    elemento.id ===
-                    qrActivo.actividadId,
-            )
-
-        if (!actividad) {
-            toast.error(
-                'La actividad ya no se encuentra disponible.',
-            )
-
-            return
-        }
-
-        habilitarMarcacion(
-            actividad,
-            qrActivo.tipo,
-        )
     }
 
     function cerrarDialogoQr() {
@@ -1475,6 +1552,7 @@ function AdminPrincipalActivities() {
                                 )}
                             </div>
                         ) : (
+                            <>
                             <div className="admin-activities-management-table-wrapper">
                                 <table className="admin-activities-management-table">
                                     <caption>
@@ -1524,75 +1602,31 @@ function AdminPrincipalActivities() {
                                     </thead>
 
                                     <tbody>
-                                        {actividadesFiltradas.map(
+                                        {actividadesPagina.map(
                                             (actividad) => {
-                                                const entradaVigente =
-                                                    mostrarAsistencia &&
-                                                    marcacionEstaVigente(
-                                                        actividad,
-                                                        TIPOS_MARCACION.entrada,
-                                                        instanteActual,
-                                                    )
-
-                                                const salidaVigente =
-                                                    mostrarAsistencia &&
-                                                    marcacionEstaVigente(
-                                                        actividad,
-                                                        TIPOS_MARCACION.salida,
-                                                        instanteActual,
-                                                    )
-
                                                 const disponibilidadEntrada =
                                                     mostrarAsistencia
                                                         ? obtenerDisponibilidadMarcacion(
-                                                              actividad,
-                                                              TIPOS_MARCACION.entrada,
-                                                              instanteActual,
-                                                          )
-                                                        : null
+                                                            actividad,
+                                                            TIPOS_MARCACION.entrada,
+                                                            instanteActual,
+                                                        )
+                                                    : null
 
                                                 const disponibilidadSalida =
-                                                    mostrarAsistencia
-                                                        ? obtenerDisponibilidadMarcacion(
-                                                              actividad,
-                                                              TIPOS_MARCACION.salida,
-                                                              instanteActual,
-                                                          )
+                                                        mostrarAsistencia
+                                                            ? obtenerDisponibilidadMarcacion(
+                                                                actividad,
+                                                                TIPOS_MARCACION.salida,
+                                                                instanteActual,
+                                                            )
                                                         : null
 
-                                                const generacionesEntrada =
-                                                    obtenerGeneracionesQr(
-                                                        actividad,
-                                                        TIPOS_MARCACION.entrada,
-                                                    )
-
-                                                const generacionesSalida =
-                                                    obtenerGeneracionesQr(
-                                                        actividad,
-                                                        TIPOS_MARCACION.salida,
-                                                    )
-
                                                 const textoBotonEntrada =
-                                                    entradaVigente
-                                                        ? 'Ver QR de entrada'
-                                                        : generacionesEntrada >=
-                                                            MAXIMO_GENERACIONES_QR
-                                                          ? 'Entrada agotada'
-                                                          : generacionesEntrada >
-                                                              0
-                                                            ? 'Reactivar entrada'
-                                                            : 'Habilitar entrada'
+                                                    'Mostrar QR de entrada'
 
                                                 const textoBotonSalida =
-                                                    salidaVigente
-                                                        ? 'Ver QR de salida'
-                                                        : generacionesSalida >=
-                                                            MAXIMO_GENERACIONES_QR
-                                                          ? 'Salida agotada'
-                                                          : generacionesSalida >
-                                                              0
-                                                            ? 'Reactivar salida'
-                                                            : 'Habilitar salida'
+                                                    'Mostrar QR de salida'
 
                                                 const procesoEntrada =
                                                     `${actividad.id}:${TIPOS_MARCACION.entrada}`
@@ -1755,7 +1789,7 @@ function AdminPrincipalActivities() {
                                                                 <div className="admin-activity-attendance-actions">
                                                                     <button
                                                                         className={
-                                                                            entradaVigente
+                                                                            disponibilidadEntrada?.disponible
                                                                                 ? 'admin-activity-attendance-button admin-activity-attendance-button--entry admin-activity-attendance-button--active'
                                                                                 : 'admin-activity-attendance-button admin-activity-attendance-button--entry'
                                                                         }
@@ -1771,7 +1805,7 @@ function AdminPrincipalActivities() {
                                                                         }
                                                                         aria-label={`${textoBotonEntrada} para ${actividad.titulo}`}
                                                                         onClick={() =>
-                                                                            habilitarMarcacion(
+                                                                            mostrarQrMarcacion(
                                                                                 actividad,
                                                                                 TIPOS_MARCACION.entrada,
                                                                             )
@@ -1797,7 +1831,7 @@ function AdminPrincipalActivities() {
 
                                                                     <button
                                                                         className={
-                                                                            salidaVigente
+                                                                            disponibilidadSalida?.disponible
                                                                                 ? 'admin-activity-attendance-button admin-activity-attendance-button--exit admin-activity-attendance-button--active'
                                                                                 : 'admin-activity-attendance-button admin-activity-attendance-button--exit'
                                                                         }
@@ -1813,7 +1847,7 @@ function AdminPrincipalActivities() {
                                                                         }
                                                                         aria-label={`${textoBotonSalida} para ${actividad.titulo}`}
                                                                         onClick={() =>
-                                                                            habilitarMarcacion(
+                                                                            mostrarQrMarcacion(
                                                                                 actividad,
                                                                                 TIPOS_MARCACION.salida,
                                                                             )
@@ -1933,6 +1967,113 @@ function AdminPrincipalActivities() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Paginación del listado de actividades */}
+                            <div className="admin-activities-pagination">
+                                <p>
+                                    Mostrando{' '}
+                                    {
+                                        primeraActividadMostrada
+                                    }{' '}
+                                    a{' '}
+                                    {
+                                        ultimaActividadMostrada
+                                    }{' '}
+                                    de{' '}
+                                    {
+                                        actividadesFiltradas.length
+                                    }{' '}
+                                    {actividadesFiltradas.length ===
+                                    1
+                                        ? 'resultado'
+                                        : 'resultados'}
+                                </p>
+
+                                <nav aria-label="Paginación de actividades">
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            paginaActual === 1
+                                        }
+                                        aria-label="Ir a la página anterior"
+                                        onClick={() =>
+                                            setPaginaActual(
+                                                (
+                                                    paginaSeleccionada,
+                                                ) =>
+                                                    paginaSeleccionada -
+                                                    1,
+                                            )
+                                        }
+                                    >
+                                        <ChevronLeft aria-hidden="true" />
+                                    </button>
+
+                                    {Array.from(
+                                        {
+                                            length: totalPaginas,
+                                        },
+                                        (
+                                            _,
+                                            indice,
+                                        ) =>
+                                            indice +
+                                            1,
+                                    ).map(
+                                        (pagina) => (
+                                            <button
+                                                key={
+                                                    pagina
+                                                }
+                                                className={
+                                                    pagina ===
+                                                    paginaActual
+                                                        ? 'admin-activities-pagination__page admin-activities-pagination__page--active'
+                                                        : 'admin-activities-pagination__page'
+                                                }
+                                                type="button"
+                                                aria-current={
+                                                    pagina ===
+                                                    paginaActual
+                                                        ? 'page'
+                                                        : undefined
+                                                }
+                                                aria-label={`Ir a la página ${pagina}`}
+                                                onClick={() =>
+                                                    setPaginaActual(
+                                                        pagina,
+                                                    )
+                                                }
+                                            >
+                                                {
+                                                    pagina
+                                                }
+                                            </button>
+                                        ),
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            paginaActual ===
+                                            totalPaginas
+                                        }
+                                        aria-label="Ir a la página siguiente"
+                                        onClick={() =>
+                                            setPaginaActual(
+                                                (
+                                                    paginaSeleccionada,
+                                                ) =>
+                                                    paginaSeleccionada +
+                                                    1,
+                                            )
+                                        }
+                                    >
+                                        <ChevronRight aria-hidden="true" />
+                                    </button>
+                                </nav>
+                            </div>
+                            </>
                         )}
                     </section>
                 )}
@@ -2060,7 +2201,6 @@ function AdminPrincipalActivities() {
                 </AlertDialog.Portal>
             </AlertDialog.Root>
 
-            {/* Diálogo que muestra el QR habilitado. */}
             <AlertDialog.Root
                 open={dialogoQrAbierto}
                 onOpenChange={(abierto) => {
@@ -2110,7 +2250,10 @@ function AdminPrincipalActivities() {
                             {qrActivo?.actividadTitulo}
                         </p>
 
-                        {qrActivo?.url && (
+                        {(
+                            qrActivo?.imagenUrl ||
+                            qrActivo?.url
+                        ) && (
                             <div
                                 className={
                                     qrEstaVigente
@@ -2118,15 +2261,36 @@ function AdminPrincipalActivities() {
                                         : 'admin-qr-dialog__code admin-qr-dialog__code--expired'
                                 }
                             >
-                                <QRCodeSVG
-                                    value={qrActivo.url}
-                                    size={248}
-                                    level="M"
-                                    marginSize={2}
-                                    bgColor="#ffffff"
-                                    fgColor="#002b4f"
-                                    title={`Código QR de ${qrActivo.tipo}`}
-                                />
+                                {qrActivo.imagenUrl ? (
+                                    /*
+                                     * En modo API mostramos directamente
+                                     * el archivo PNG creado por el backend.
+                                     */
+                                    <img
+                                        src={
+                                            qrActivo.imagenUrl
+                                        }
+                                        width="248"
+                                        height="248"
+                                        alt={`Código QR de ${qrActivo.tipo}`}
+                                    />
+                                ) : (
+                                    /*
+                                     * En modo simulado generamos el dibujo
+                                     * a partir de la URL local con el token.
+                                     */
+                                    <QRCodeSVG
+                                        value={
+                                            qrActivo.url
+                                        }
+                                        size={248}
+                                        level="M"
+                                        marginSize={2}
+                                        bgColor="#ffffff"
+                                        fgColor="#002b4f"
+                                        title={`Código QR de ${qrActivo.tipo}`}
+                                    />
+                                )}
                             </div>
                         )}
 
@@ -2158,10 +2322,8 @@ function AdminPrincipalActivities() {
 
                         <p className="admin-qr-dialog__notice">
                             {qrEstaVigente
-                                ? `Generación ${generacionQrActiva} de ${MAXIMO_GENERACIONES_QR}. Cerrar este diálogo no reinicia el contador.`
-                                : limiteQrAlcanzado
-                                  ? `Ya se utilizaron las ${MAXIMO_GENERACIONES_QR} oportunidades disponibles para esta marcación.`
-                                  : `El QR venció. Puedes utilizar la reactivación ${generacionQrActiva + 1} de ${MAXIMO_GENERACIONES_QR}.`}
+                                ? 'El código permanecerá disponible únicamente durante la ventana oficial de veinte minutos.'
+                                : 'La ventana permitida para esta marcación ya finalizó.'}
                         </p>
 
                         <div className="admin-qr-dialog__actions">
@@ -2176,30 +2338,6 @@ function AdminPrincipalActivities() {
                                     Cerrar
                                 </button>
                             </AlertDialog.Cancel>
-
-                            {qrPuedeReactivarse && (
-                                <button
-                                    className="admin-qr-dialog__primary"
-                                    type="button"
-                                    disabled={
-                                        procesandoQrActivo
-                                    }
-                                    onClick={
-                                        renovarQrActivo
-                                    }
-                                >
-                                    {procesandoQrActivo ? (
-                                        <LoaderCircle
-                                            className="admin-activity-attendance-button__loader"
-                                            aria-hidden="true"
-                                        />
-                                    ) : (
-                                        <RefreshCw aria-hidden="true" />
-                                    )}
-
-                                    Reactivar QR
-                                </button>
-                            )}
                         </div>
                     </AlertDialog.Content>
                 </AlertDialog.Portal>

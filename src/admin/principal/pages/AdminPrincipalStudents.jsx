@@ -1,6 +1,7 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-
 import {
+  ChevronLeft,
+  ChevronRight,
   Eye,
   GraduationCap,
   LoaderCircle,
@@ -49,7 +50,6 @@ const PESTANAS_ESTUDIANTES = [
     activo: true,
     icono: UserCheck,
   },
-
   {
     id: 'inactivos',
     titulo: 'Estudiantes inactivos',
@@ -58,6 +58,9 @@ const PESTANAS_ESTUDIANTES = [
     icono: UserX,
   },
 ]
+
+  // Cada pagina del listado general mostrara como maximo 10 estudiantes.
+  const ESTUDIANTES_POR_PAGINA = 5
 
 /*
  * Convierte el texto de búsqueda a una forma consistente.
@@ -168,6 +171,11 @@ function AdminPrincipalStudents() {
     pestanaActiva,
     setPestanaActiva,
   ] = useState('activos')
+
+  const [
+    paginaActual,
+    setPaginaActual,
+  ] = useState(1)
 
   /*
    * La acción pendiente conserva al estudiante seleccionado
@@ -355,11 +363,87 @@ function AdminPrincipalStudents() {
       busqueda,
     ])
 
+    /*
+    * Calcula la cantidad de páginas disponibles.
+    *
+    * Siempre se conserva al menos una página para
+    * mantener estable el estado del componente.
+    */
+    const totalPaginas =
+      useMemo(
+        () =>
+          Math.max(
+            1,
+            Math.ceil(
+              estudiantesFiltrados.length /
+                ESTUDIANTES_POR_PAGINA,
+            ),
+          ),
+        [estudiantesFiltrados.length],
+      )
+
+    /*
+    * Obtiene únicamente los estudiantes que pertenecen
+    * a la página seleccionada.
+    */
+    const estudiantesPagina =
+      useMemo(() => {
+        const indiceInicial =
+          (paginaActual - 1) *
+          ESTUDIANTES_POR_PAGINA
+
+        return estudiantesFiltrados.slice(
+          indiceInicial,
+          indiceInicial +
+            ESTUDIANTES_POR_PAGINA,
+        )
+      }, [
+        estudiantesFiltrados,
+        paginaActual,
+      ])
+
+    /*
+    * Cuando cambia la pestaña o la búsqueda,
+    * el listado regresa automáticamente a la página uno.
+    */
+    useEffect(() => {
+      setPaginaActual(1)
+    }, [
+      pestanaActiva,
+      busqueda,
+    ])
+
+    /*
+    * Evita permanecer en una página inexistente cuando
+    * un estudiante cambia de estado o disminuyen los resultados.
+    */
+    useEffect(() => {
+      setPaginaActual(
+        (paginaSeleccionada) =>
+          Math.min(
+            paginaSeleccionada,
+            totalPaginas,
+          ),
+      )
+    }, [totalPaginas])
+
   const existenEstudiantes =
     estudiantesDisponibles.length > 0
 
   const existenResultados =
     estudiantesFiltrados.length > 0
+
+  const primerEstudianteMostrado =
+    existenResultados
+      ? (paginaActual - 1) * ESTUDIANTES_POR_PAGINA +
+        1
+      : 0
+
+  const ultimoEstudianteMostrado =
+    Math.min(
+      paginaActual * ESTUDIANTES_POR_PAGINA,
+      estudiantesFiltrados.length,
+    )
 
   const hayFiltrosAplicados =
     Boolean(busqueda.trim())
@@ -786,6 +870,7 @@ function AdminPrincipalStudents() {
                 )}
               </div>
             ) : (
+              <>
               <div className="admin-students-table-wrapper">
                 <table className="admin-students-table">
                   <caption>
@@ -824,7 +909,7 @@ function AdminPrincipalStudents() {
                   </thead>
 
                   <tbody>
-                    {estudiantesFiltrados.map(
+                    {estudiantesPagina.map(
                       (estudiante) => {
                         const datosPersonales =
                           estudiante
@@ -1024,6 +1109,80 @@ function AdminPrincipalStudents() {
                   </tbody>
                 </table>
               </div>
+
+              {/* PAGINACIÓN DEL LISTADO GENERAL */}
+              <div className="admin-students-pagination">
+                <p>
+                  Mostrando{' '}
+                  {primerEstudianteMostrado} a{' '}
+                  {ultimoEstudianteMostrado} de{' '}
+                  {estudiantesFiltrados.length}{' '}
+                  {estudiantesFiltrados.length === 1
+                    ? 'resultado'
+                    : 'resultados'}
+                </p>
+
+                <nav aria-label="Paginación de estudiantes">
+                  <button
+                    type="button"
+                    disabled={paginaActual === 1}
+                    aria-label="Ir a la página anterior"
+                    onClick={() =>
+                      setPaginaActual(
+                        (paginaSeleccionada) =>
+                          paginaSeleccionada - 1,
+                      )
+                    }
+                  >
+                    <ChevronLeft aria-hidden="true" />
+                  </button>
+
+                  {Array.from(
+                    {
+                      length: totalPaginas,
+                    },
+                    (_, indice) => indice + 1,
+                  ).map((pagina) => (
+                    <button
+                      key={pagina}
+                      type="button"
+                      className={
+                        pagina === paginaActual
+                          ? 'admin-students-pagination__page admin-students-pagination__page--active'
+                          : 'admin-students-pagination__page'
+                      }
+                      aria-current={
+                        pagina === paginaActual
+                          ? 'page'
+                          : undefined
+                      }
+                      aria-label={`Ir a la página ${pagina}`}
+                      onClick={() =>
+                        setPaginaActual(pagina)
+                      }
+                    >
+                      {pagina}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    disabled={
+                      paginaActual === totalPaginas
+                    }
+                    aria-label="Ir a la página siguiente"
+                    onClick={() =>
+                      setPaginaActual(
+                        (paginaSeleccionada) =>
+                          paginaSeleccionada + 1,
+                      )
+                    }
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+              </>
             )}
           </section>
         )}

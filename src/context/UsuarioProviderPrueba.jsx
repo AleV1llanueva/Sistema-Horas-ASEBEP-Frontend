@@ -134,11 +134,7 @@ export function UsuarioProviderPrueba({
      return sesionCreada
  }, [])
 
- /*
- * Recupera la informacion personal del becario
- * asociado con la sesion actual.
- * Tambien funciona para los admins cuando ingresan a su portal personal.
- */
+// Recupera la información de la cuenta autentica.
 const cargarUsuario =
  useCallback(async () => {
   const sesionActual = obtenerSesion()

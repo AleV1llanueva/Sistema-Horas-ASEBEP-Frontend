@@ -618,6 +618,89 @@
   background: #faf5f6;
 }
 
+/* Paginación del listado de actividades */
+.admin-activities-pagination {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 18px;
+  border-top:
+    1px solid var(--admin-border);
+  background: #fbfcfd;
+}
+
+.admin-activities-pagination p {
+  margin: 0;
+  color: var(--admin-text-soft);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.admin-activities-pagination nav {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-activities-pagination
+  nav
+  button {
+  min-width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 9px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid #cbd8e1;
+  border-radius: 7px;
+  background: var(--admin-white);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 740;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-activities-pagination
+  nav
+  button:hover:not(:disabled) {
+  color: var(--admin-navy);
+  border-color: #acc7d9;
+  background: var(--admin-hover);
+  transform: translateY(-1px);
+}
+
+.admin-activities-pagination
+  nav
+  button:disabled {
+  color: #a3afb8;
+  background: #f4f6f7;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.admin-activities-pagination
+  nav
+  button
+  svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-activities-pagination
+  .admin-activities-pagination__page--active {
+  color: var(--admin-white);
+  border-color: var(--admin-blue);
+  background: var(--admin-blue);
+}
+
 /* Información de cada actividad */
 .admin-activity-name {
   min-width: 220px;
@@ -1496,13 +1579,16 @@
     filter 180ms ease;
 }
 
-.admin-qr-dialog__code svg {
+.admin-qr-dialog__code svg,
+.admin-qr-dialog__code img {
   width: 100%;
   height: auto;
   display: block;
+  object-fit: contain;
 }
 
-.admin-qr-dialog__code--expired svg {
+.admin-qr-dialog__code--expired svg,
+.admin-qr-dialog__code--expired img {
   opacity: 0.22;
   filter: blur(2px);
 }
@@ -1663,7 +1749,8 @@
 .admin-activity-confirm-dialog__confirm:focus-visible,
 .admin-qr-dialog__close:focus-visible,
 .admin-qr-dialog__secondary:focus-visible,
-.admin-qr-dialog__primary:focus-visible {
+.admin-qr-dialog__primary:focus-visible,
+.admin-activities-pagination button:focus-visible {
   outline:
     3px solid
     rgb(75 145 196 / 30%);
@@ -1812,6 +1899,21 @@
 
   .admin-activities-clear-button {
     width: 100%;
+  }
+
+  .admin-activities-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 15px;
+  }
+
+  .admin-activities-pagination nav {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 2px;
+    scrollbar-width: thin;
   }
 
   .admin-activities-list__header {
@@ -2126,7 +2228,8 @@
   .admin-qr-dialog__close,
   .admin-qr-dialog__code,
   .admin-qr-dialog__secondary,
-  .admin-qr-dialog__primary {
+  .admin-qr-dialog__primary,
+  .admin-activities-pagination button {
     transition: none;
   }
 }
