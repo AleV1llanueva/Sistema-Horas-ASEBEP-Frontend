@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Clock3,
   GraduationCap,
+  MapPin,
   Scale,
   WalletCards,
 } from 'lucide-react'
@@ -13,6 +14,15 @@ import MobileNavigation from '../components/MobileNavigation.jsx'
 import { useUsuario } from '../hooks/useUsuario.js'
 import '../styles/AppLayout.css'
 import '../styles/Dashboard.css'
+
+import { useEffect, useState } from 'react'
+import { listarProximasActividadesInscritas } from '../services/estudianteActividadesService.js'
+
+import { listarTodasLasProximasActividades } from '../services/estudianteActividadesService.js'
+
+// Estado para almacenar las próximas actividades
+
+
 
 /*
  * Convierte un estado como "activo" o "EN_CURSO"
@@ -44,6 +54,32 @@ function Dashboard() {
     errorUsuario,
     cargarUsuario,
   } = useUsuario()
+
+
+  const [proximasActividades, setProximasActividades] = useState([])
+  const [cargandoActividades, setCargandoActividades] = useState(true)
+
+  useEffect(() => {
+    async function cargarProximas() {
+      try {
+        setCargandoActividades(true)
+
+        // Llamamos a la nueva función unificada
+        const data = await listarTodasLasProximasActividades()
+
+        if (Array.isArray(data)) {
+          // Tomamos únicamente las primeras 3 (las más cercanas)
+          setProximasActividades(data.slice(0, 3))
+        }
+      } catch (error) {
+        console.error('Error al cargar actividades en Dashboard:', error)
+      } finally {
+        setCargandoActividades(false)
+      }
+    }
+
+    cargarProximas()
+  }, [])
 
   const datosPersonales =
     usuario?.datosPersonales
@@ -90,12 +126,12 @@ function Dashboard() {
   const porcentaje =
     metaHoras > 0
       ? Math.min(
+        100,
+        Math.round(
+          (horasAcumuladas / metaHoras) *
           100,
-          Math.round(
-            (horasAcumuladas / metaHoras) *
-              100,
-          ),
-        )
+        ),
+      )
       : 0
 
   const maximoProgreso =
@@ -103,9 +139,9 @@ function Dashboard() {
 
   const estadoBeca = prepararEstado(
     datosBecario?.estadoBeca ||
-      (credenciales?.activo
-        ? 'activo'
-        : 'inactivo'),
+    (credenciales?.activo
+      ? 'activo'
+      : 'inactivo'),
   )
 
   /*
@@ -436,6 +472,124 @@ function Dashboard() {
                       </p>
                     </div>
                   </article>
+                </section>
+
+                <section className="dashboard-activities-preview" style={{ marginTop: '28px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h2 style={{ fontSize: '1.1rem', color: '#10283e', margin: 0 }}>
+                      Próximas actividades inscritas
+                    </h2>
+                    <Link to="/actividades" className="summary-action">
+                      Ver todas <ArrowRight size={16} />
+                    </Link>
+                  </div>
+
+                  {cargandoActividades && (
+                    <p style={{ fontSize: '0.85rem', color: '#7a8793' }}>Cargando actividades...</p>
+                  )}
+
+                  {!cargandoActividades && proximasActividades.length === 0 && (
+                    <div className="summary-card" style={{ padding: '16px' }}>
+                      <p className="summary-card__description" style={{ margin: 0 }}>
+                        No tienes próximas actividades inscritas en este momento.
+                      </p>
+                    </div>
+                  )}
+
+                  {!cargandoActividades && proximasActividades.length > 0 && (
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      {proximasActividades.map((actividad) => {
+                        const estaInscrito = actividad.inscrito === true || Boolean(actividad.inscripcionId)
+
+                        return (
+                          <article
+                            key={actividad.id || actividad.inscripcionId}
+                            className="summary-card"
+                            style={{ padding: '16px' }}
+                          >
+                            <div
+                              className={`summary-card__icon ${estaInscrito ? 'summary-card__icon--blue' : 'summary-card__icon--purple'
+                                }`}
+                            >
+                              <CalendarDays size={20} />
+                            </div>
+
+                            <div className="summary-card__content">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="summary-card__label">
+                                  {actividad.fecha || 'Fecha pendiente'}
+                                </span>
+
+                                {/* Badge indicador de estado */}
+                                {estaInscrito ? (
+                                  <span
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      fontWeight: '700',
+                                      color: '#0b5688',
+                                      backgroundColor: '#e1eff9',
+                                      padding: '2px 8px',
+                                      borderRadius: '12px',
+                                    }}
+                                  >
+                                    Inscrito
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      fontWeight: '700',
+                                      color: '#278153',
+                                      backgroundColor: '#e6f6ec',
+                                      padding: '2px 8px',
+                                      borderRadius: '12px',
+                                    }}
+                                  >
+                                    {actividad.cuposDisponibles ?? 0} cupos libres
+                                  </span>
+                                )}
+                              </div>
+
+                              <h3
+                                style={{
+                                  margin: '4px 0 6px',
+                                  fontSize: '0.95rem',
+                                  color: '#10283e',
+                                }}
+                              >
+                                {actividad.titulo}
+                              </h3>
+
+                              <div
+                                className="summary-card__details"
+                                style={{ marginTop: '4px' }}
+                              >
+                                <span>
+                                  <Clock3 size={14} />
+                                  {actividad.horaInicio
+                                    ? `${actividad.horaInicio} hrs`
+                                    : 'Horario pendiente'}
+                                </span>
+                                <span>
+                                  <MapPin size={14} />
+                                  {actividad.lugar || 'Lugar no especificado'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <Link
+                              to={`/actividades/${encodeURIComponent(actividad.id)}`}
+                              className="summary-action"
+                              title={estaInscrito ? 'Ver marcación' : 'Ir a inscripción'}
+                            >
+                              {estaInscrito ? 'Ver detalle' : 'Inscribirme'}
+                            </Link>
+                          </article>
+                        )
+                      })}
+                    </div>
+                  )}
+
                 </section>
               </>
             )}

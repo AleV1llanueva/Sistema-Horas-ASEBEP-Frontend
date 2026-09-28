@@ -1,0 +1,1358 @@
+/*
+ * Perfil del administrador principal.
+ * Similar al perfil del portal usuario pero con diferentes clases
+ * Para futuros implementaciones y mejoras.
+ */
+
+.admin-principal-profile {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+
+/* Encabezado de la vista */
+.admin-principal-profile__heading {
+  margin-bottom: 22px;
+  animation:
+    admin-principal-profile-entry
+    500ms ease-out both;
+}
+
+.admin-principal-profile__heading p {
+  margin: 0 0 5px;
+  color: var(--admin-focus);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-principal-profile__heading h1 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+}
+
+/* Información principal de la cuenta */
+.admin-principal-profile__identity {
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 17px;
+  padding: 22px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-white);
+  box-shadow:
+    0 10px 28px
+    rgb(10 39 64 / 6%);
+  animation:
+    admin-principal-profile-entry
+    550ms 60ms ease-out both;
+}
+
+.admin-principal-profile__identity-information:first-child:last-child {
+  grid-column: 1 / -1;
+}
+
+.admin-principal-profile__avatar {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+  border-radius: 50%;
+  background: #e2f0fa;
+}
+
+.admin-principal-profile__avatar svg {
+  width: 28px;
+  height: 28px;
+}
+
+.admin-principal-profile__identity-information {
+  min-width: 0;
+}
+
+.admin-principal-profile__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.admin-principal-profile__name h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--admin-text);
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+}
+
+.admin-principal-profile__name span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  color: var(--admin-blue);
+  border-radius: 999px;
+  background: #e1eff9;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-principal-profile__name span svg {
+  width: 12px;
+  height: 12px;
+}
+
+.admin-principal-profile__identity-information > p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 7px 0 0;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+}
+
+.admin-principal-profile__identity-information > p svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Acciones disponibles para la cuenta */
+.admin-principal-profile__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.admin-principal-profile__button {
+  min-height: 39px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-principal-profile__button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-principal-profile__button--primary {
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
+  background: var(--admin-navy);
+}
+
+.admin-principal-profile__button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 7px 15px
+    rgb(0 43 79 / 12%);
+}
+
+.admin-principal-profile__button--primary:hover {
+  background: var(--admin-navy-hover);
+}
+
+.admin-principal-profile__button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
+}
+
+/* Tarjetas de información */
+.admin-principal-profile__grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 0.9fr)
+    minmax(0, 1.1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.admin-principal-profile__card {
+  overflow: hidden;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-white);
+  animation:
+    admin-principal-profile-entry
+    600ms 120ms ease-out both;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-principal-profile__card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 27px
+    rgb(10 39 64 / 7%);
+}
+
+.admin-principal-profile__card-header {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-bottom:
+    1px solid #e0e6eb;
+  background: #fbfcfd;
+}
+
+.admin-principal-profile__card-header svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-principal-profile__card-header h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 0.78rem;
+}
+
+.admin-principal-profile__details {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 19px 17px 22px;
+}
+
+.admin-principal-profile__details--academic {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.admin-principal-profile__details div {
+  min-width: 0;
+}
+
+.admin-principal-profile__details dt {
+  margin-bottom: 5px;
+  color: #85919c;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.admin-principal-profile__details dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #233c50;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.admin-principal-profile__details dd svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #6f7f8d;
+}
+
+/* Estado actual de la beca */
+.admin-principal-profile__scholarship {
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr);
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 18px;
+  padding: 22px;
+  color: var(--admin-white);
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      125deg,
+      #00345c,
+      #07588c
+    );
+  animation:
+    admin-principal-profile-entry
+    650ms 180ms ease-out both;
+}
+
+.admin-principal-profile__scholarship-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background:
+    rgb(255 255 255 / 12%);
+}
+
+.admin-principal-profile__scholarship-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-principal-profile__scholarship h2 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.admin-principal-profile__scholarship p {
+  max-width: 600px;
+  margin: 6px 0 0;
+  color:
+    rgb(255 255 255 / 72%);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.admin-principal-profile__scholarship-watermark {
+  width: 120px;
+  height: 120px;
+  position: absolute;
+  right: -20px;
+  bottom: -38px;
+  opacity: 0.07;
+}
+
+@keyframes admin-principal-profile-entry {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal para cambiar la contraseña */
+.admin-principal-profile-password__dialog {
+  width:
+    min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  color: var(--admin-text);
+  border: 0;
+  background: transparent;
+}
+
+.admin-principal-profile-password__dialog:focus-visible {
+  outline: none;
+}
+
+.admin-principal-profile-password__dialog::backdrop {
+  background:
+    rgb(4 22 37 / 68%);
+  backdrop-filter: blur(5px);
+  animation:
+    admin-principal-profile-password-backdrop
+    180ms ease-out both;
+}
+
+.admin-principal-profile-password__modal {
+  max-height:
+    min(88vh, 820px);
+  max-height:
+    min(88dvh, 820px);
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  border:
+    1px solid
+    rgb(219 226 232 / 90%);
+  border-radius: 16px;
+  background: var(--admin-white);
+  box-shadow:
+    0 28px 80px
+    rgb(0 20 38 / 32%);
+  animation:
+    admin-principal-profile-password-modal
+    220ms ease-out both;
+}
+
+/* Encabezado del modal */
+.admin-principal-profile-password__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom:
+    1px solid var(--admin-border);
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbfd,
+      #eef5fa
+    );
+}
+
+.admin-principal-profile-password__heading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.admin-principal-profile-password__heading > div {
+  min-width: 0;
+}
+
+.admin-principal-profile-password__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-white);
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--admin-navy),
+      var(--admin-blue)
+    );
+  box-shadow:
+    0 8px 18px
+    rgb(0 43 79 / 18%);
+}
+
+.admin-principal-profile-password__icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.admin-principal-profile-password__heading p {
+  margin: 0 0 4px;
+  color: var(--admin-focus);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-principal-profile-password__heading h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+
+.admin-principal-profile-password__heading
+  > div
+  > span {
+  display: block;
+  max-width: 520px;
+  margin-top: 5px;
+  color: #647686;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.admin-principal-profile-password__close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  color: #647686;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.admin-principal-profile-password__close svg {
+  width: 19px;
+  height: 19px;
+}
+
+.admin-principal-profile-password__close:hover {
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-principal-profile-password__close:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Área desplazable del formulario */
+.admin-principal-profile-password__form {
+  min-height: 0;
+  display: flex;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+  overscroll-behavior: contain;
+}
+
+/* Información de la cuenta */
+.admin-principal-profile-password__account {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-principal-profile-password__account
+  > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid #dce4ea;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.admin-principal-profile-password__account
+  > div
+  > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-principal-profile-password__account p {
+  min-width: 0;
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+}
+
+.admin-principal-profile-password__account
+  p
+  span {
+  color: #7b8995;
+  font-size: 0.57rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.admin-principal-profile-password__account
+  p
+  strong {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #233c50;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pasos del cambio de contraseña */
+.admin-principal-profile-password__step {
+  padding: 17px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-white);
+}
+
+.admin-principal-profile-password__step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.admin-principal-profile-password__step-header
+  > span {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-white);
+  border-radius: 50%;
+  background: var(--admin-navy);
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.admin-principal-profile-password__step-header
+  div {
+  min-width: 0;
+}
+
+.admin-principal-profile-password__step-header
+  h3 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 0.82rem;
+}
+
+.admin-principal-profile-password__step-header
+  p {
+  margin: 4px 0 0;
+  color: #758491;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+/* Botón para solicitar o reenviar el PIN */
+.admin-principal-profile-password__send {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 0 15px;
+  color: var(--admin-blue);
+  border: 1px solid #a9cbe1;
+  border-radius: 8px;
+  background: #eef7fc;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-principal-profile-password__send svg {
+  width: 17px;
+  height: 17px;
+}
+
+.admin-principal-profile-password__send:hover:not(
+    :disabled
+  ) {
+  color: var(--admin-navy);
+  border-color: #75afd2;
+  background: #e0f0fa;
+  transform: translateY(-1px);
+}
+
+.admin-principal-profile-password__send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Confirmación del envío del PIN */
+.admin-principal-profile-password__pin-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  color: #1c6b48;
+  border: 1px solid #b9dfcd;
+  border-radius: 8px;
+  background: #effaf5;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.admin-principal-profile-password__pin-message
+  svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Campos habilitados después de enviar el PIN */
+.admin-principal-profile-password__fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  transition: opacity 160ms ease;
+}
+
+.admin-principal-profile-password__fields:disabled {
+  opacity: 0.55;
+}
+
+.admin-principal-profile-password__pin {
+  margin-top: 17px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8ed;
+}
+
+.admin-principal-profile-password__field-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.admin-principal-profile-password__field-heading
+  > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-principal-profile-password__field-heading
+  label {
+  display: block;
+  color: #243e52;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.admin-principal-profile-password__field-heading
+  p {
+  margin: 2px 0 0;
+  color: #84919c;
+  font-size: 0.61rem;
+}
+
+/* Entrada visual del PIN */
+.admin-principal-profile-password__pin-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.admin-principal-profile-password__pin-group {
+  display: flex;
+  gap: 7px;
+}
+
+.admin-principal-profile-password__pin-slot {
+  width: 43px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  color: var(--admin-text);
+  border: 1px solid #cdd8e0;
+  border-radius: 8px;
+  background: var(--admin-white);
+  font-size: 1rem;
+  font-weight: 800;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+
+.admin-principal-profile-password__pin-slot--active {
+  border-color: var(--admin-focus);
+  background: #f7fbfe;
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 18%);
+}
+
+.admin-principal-profile-password__pin-caret {
+  width: 1px;
+  height: 18px;
+  position: absolute;
+  background: var(--admin-blue);
+  animation:
+    admin-principal-profile-password-caret
+    900ms step-end infinite;
+}
+
+.admin-principal-profile-password__pin-separator {
+  color: #8b98a3;
+  font-weight: 800;
+}
+
+/* Campos de contraseña */
+.admin-principal-profile-password__grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 17px;
+}
+
+.admin-principal-profile-password__field {
+  min-width: 0;
+}
+
+.admin-principal-profile-password__field
+  > label {
+  display: block;
+  margin-bottom: 6px;
+  color: #344e62;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.admin-principal-profile-password__input {
+  min-height: 43px;
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 7px 0 11px;
+  border: 1px solid #cfd9e1;
+  border-radius: 8px;
+  background: var(--admin-white);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-principal-profile-password__input:focus-within {
+  border-color: var(--admin-focus);
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.admin-principal-profile-password__input
+  > svg {
+  width: 16px;
+  height: 16px;
+  color: #72818e;
+}
+
+.admin-principal-profile-password__input
+  input {
+  width: 100%;
+  min-width: 0;
+  height: 41px;
+  padding: 0;
+  color: var(--admin-text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.71rem;
+}
+
+.admin-principal-profile-password__input
+  input::placeholder {
+  color: #9aa5ae;
+}
+
+.admin-principal-profile-password__input
+  button {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #647686;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.admin-principal-profile-password__input
+  button:hover {
+  color: var(--admin-navy);
+  background: var(--admin-hover);
+}
+
+.admin-principal-profile-password__input
+  button
+  svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Requisitos de seguridad */
+.admin-principal-profile-password__security {
+  margin-top: 14px;
+  padding: 13px 14px;
+  border: 1px solid #dce5eb;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.admin-principal-profile-password__security
+  h4 {
+  margin: 0 0 9px;
+  color: #314c61;
+  font-size: 0.68rem;
+}
+
+.admin-principal-profile-password__security
+  ul {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 7px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-principal-profile-password__requirement {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #7b8995;
+  font-size: 0.62rem;
+}
+
+.admin-principal-profile-password__requirement
+  svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.admin-principal-profile-password__requirement--complete {
+  color: #218455;
+  font-weight: 700;
+}
+
+/* Error mostrado dentro del modal */
+.admin-principal-profile-password__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 12px;
+  color: #9b2f3c;
+  border: 1px solid #efc4c9;
+  border-radius: 8px;
+  background: #fff4f5;
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+
+.admin-principal-profile-password__error
+  svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Acciones finales del modal */
+.admin-principal-profile-password__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  position: sticky;
+  bottom: -24px;
+  margin: 0 -24px -24px;
+  padding: 15px 24px;
+  border-top:
+    1px solid var(--admin-border);
+  background:
+    rgb(255 255 255 / 96%);
+  backdrop-filter: blur(10px);
+}
+
+.admin-principal-profile-password__cancel,
+.admin-principal-profile-password__submit {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.69rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-principal-profile-password__cancel {
+  color: #425b6e;
+  border: 1px solid #ccd7df;
+  background: var(--admin-white);
+}
+
+.admin-principal-profile-password__submit {
+  color: var(--admin-white);
+  border:
+    1px solid var(--admin-navy);
+  background: var(--admin-navy);
+}
+
+.admin-principal-profile-password__submit svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-principal-profile-password__cancel:hover:not(
+    :disabled
+  ) {
+  border-color: #aebdc8;
+  background: #f5f8fa;
+}
+
+.admin-principal-profile-password__submit:hover:not(
+    :disabled
+  ) {
+  background: var(--admin-navy-hover);
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 18%);
+  transform: translateY(-1px);
+}
+
+.admin-principal-profile-password__cancel:disabled,
+.admin-principal-profile-password__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-principal-profile-password__modal
+  button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 28%);
+  outline-offset: 2px;
+}
+
+.admin-principal-profile-password__input
+  input:focus-visible {
+  outline: 0;
+}
+
+/* Animaciones del modal */
+@keyframes admin-principal-profile-password-modal {
+  from {
+    opacity: 0;
+    transform:
+      translateY(18px)
+      scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+@keyframes admin-principal-profile-password-backdrop {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes admin-principal-profile-password-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Ajustes para tablet */
+@media (max-width: 900px) {
+  .admin-principal-profile__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile__identity {
+    grid-template-columns:
+      auto minmax(0, 1fr);
+  }
+
+  .admin-principal-profile__actions {
+    grid-column: 1 / -1;
+  }
+
+  .admin-principal-profile__button {
+    width: 100%;
+  }
+}
+
+/* Vista para celulares */
+@media (max-width: 760px) {
+  .admin-principal-profile__heading {
+    margin-bottom: 17px;
+  }
+
+  .admin-principal-profile__heading p {
+    display: none;
+  }
+
+  .admin-principal-profile__heading h1 {
+    font-size: 1.35rem;
+  }
+
+  .admin-principal-profile__identity {
+    grid-template-columns:
+      auto minmax(0, 1fr);
+    gap: 13px;
+    padding: 17px;
+  }
+
+  .admin-principal-profile__avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .admin-principal-profile__avatar svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .admin-principal-profile__name {
+    display: block;
+  }
+
+  .admin-principal-profile__name h2 {
+    font-size: 1.08rem;
+  }
+
+  .admin-principal-profile__name span {
+    margin-top: 5px;
+  }
+
+  .admin-principal-profile__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile__scholarship {
+    align-items: start;
+    padding: 18px;
+  }
+
+  /* Modal */
+  .admin-principal-profile-password__dialog {
+    width:
+      min(100% - 20px, 620px);
+  }
+
+  .admin-principal-profile-password__modal {
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 13px;
+  }
+
+  .admin-principal-profile-password__header {
+    gap: 12px;
+    padding: 18px 16px;
+  }
+
+  .admin-principal-profile-password__icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .admin-principal-profile-password__heading
+    h2 {
+    font-size: 1.08rem;
+  }
+
+  .admin-principal-profile-password__heading
+    > div
+    > span {
+    font-size: 0.67rem;
+  }
+
+  .admin-principal-profile-password__form {
+    gap: 13px;
+    padding: 16px 14px 20px;
+  }
+
+  .admin-principal-profile-password__account,
+  .admin-principal-profile-password__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile-password__step {
+    padding: 15px;
+  }
+
+  .admin-principal-profile-password__pin-slot {
+    width:
+      clamp(34px, 10vw, 41px);
+    height: 44px;
+  }
+
+  .admin-principal-profile-password__pin-group {
+    gap: 5px;
+  }
+
+  .admin-principal-profile-password__pin-input {
+    gap: 6px;
+  }
+
+  .admin-principal-profile-password__security
+    ul {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile-password__actions {
+    bottom: -20px;
+    margin: 0 -14px -20px;
+    padding: 13px 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-principal-profile__identity {
+    padding: 15px;
+  }
+
+  .admin-principal-profile__details--academic {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-principal-profile__card-header {
+    padding: 0 15px;
+  }
+
+  .admin-principal-profile__details {
+    padding: 17px 15px 20px;
+  }
+
+  .admin-principal-profile__scholarship {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .admin-principal-profile__scholarship-icon {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-principal-profile__identity {
+    grid-template-columns:
+      44px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .admin-principal-profile__avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .admin-principal-profile__name h2 {
+    font-size: 1rem;
+  }
+
+  .admin-principal-profile-password__heading {
+    gap: 9px;
+  }
+
+  .admin-principal-profile-password__heading
+    p,
+  .admin-principal-profile-password__heading
+    > div
+    > span {
+    display: none;
+  }
+
+  .admin-principal-profile-password__close {
+    width: 32px;
+    height: 32px;
+  }
+
+  .admin-principal-profile-password__account
+    > div {
+    padding: 10px 11px;
+  }
+
+  .admin-principal-profile-password__pin-slot {
+    width:
+      clamp(31px, 9.5vw, 36px);
+    height: 41px;
+  }
+
+  .admin-principal-profile-password__actions {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-principal-profile-password__cancel,
+  .admin-principal-profile-password__submit {
+    width: 100%;
+    padding: 0 9px;
+    font-size: 0.64rem;
+  }
+}
+
+/* Respeta la configuración de movimiento del usuario */
+@media (prefers-reduced-motion: reduce) {
+  .admin-principal-profile__heading,
+  .admin-principal-profile__identity,
+  .admin-principal-profile__card,
+  .admin-principal-profile__scholarship,
+  .admin-principal-profile-password__dialog::backdrop,
+  .admin-principal-profile-password__modal,
+  .admin-principal-profile-password__pin-caret {
+    animation: none;
+  }
+
+  .admin-principal-profile__button,
+  .admin-principal-profile__card,
+  .admin-principal-profile-password__modal *,
+  .admin-principal-profile-password__modal *::before,
+  .admin-principal-profile-password__modal *::after {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

@@ -1,10 +1,7 @@
 // Roles reconocidos por ASEBEP.
 export const ROL_BECARIO = 'Becario'
-
 export const ROL_ADMIN_GENERAL = 'Admin General'
-
 export const ROL_ADMIN_APORTACIONES = 'Admin Aportaciones'
-
 export const ROL_ADMIN_HORAS = 'Admin Horas'
 
 // Rutas principales de cada portal.
@@ -13,8 +10,8 @@ export const RUTA_PORTAL_PERSONAL = '/dashboard'
 export const RUTAS_ADMINISTRATIVAS_POR_ROL =
   Object.freeze({
     [ROL_ADMIN_GENERAL]: '/admin-principal/dashboard',
-    [ROL_ADMIN_APORTACIONES]: '/admin-aportaciones/dashboard',
-    [ROL_ADMIN_HORAS]: '/admin-horas/dashboard',
+    [ROL_ADMIN_APORTACIONES]: '/admin-principal/dashboard',
+    [ROL_ADMIN_HORAS]: '/admin-principal/dashboard',
   })
 
 /*
@@ -33,9 +30,6 @@ export const RUTAS_INICIALES_POR_ROL =
 export const ROLES_PORTAL_PERSONAL =
   Object.freeze([
     ROL_BECARIO,
-    ROL_ADMIN_GENERAL,
-    ROL_ADMIN_APORTACIONES,
-    ROL_ADMIN_HORAS,
   ])
 
 // Elimina espacios accidentales sin cambiar mayúsculas ni minúsculas del nombre oficial.
@@ -73,20 +67,5 @@ export function obtenerRutaAdministrativaPorRol(
 export function esRolAdministrativo(rol) {
   return Boolean(
     obtenerRutaAdministrativaPorRol(rol),
-  )
-}
-
-/*
-* Comprueba si el rol puede entrar al portal personal.
-* Los administradores tambien son beneficiarios,
-* por lo que pueden consultar sus propios datos.
-*/
-export function puedeAccederPortalPersonal(
-  rol,
-) {
-  const rolNormalizado = normalizarRol(rol)
-
-  return ROLES_PORTAL_PERSONAL.includes(
-    rolNormalizado,
   )
 }

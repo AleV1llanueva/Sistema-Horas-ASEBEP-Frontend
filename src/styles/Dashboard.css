@@ -290,9 +290,12 @@
 
 .dashboard-summary {
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 20px;
+  align-items: stretch;
 }
+
 
 .summary-card {
   display: grid;
@@ -510,7 +513,7 @@
    - como dos tarjetas compactas.
    */
   .dashboard-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .summary-card {

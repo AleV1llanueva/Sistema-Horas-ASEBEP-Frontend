@@ -1,6 +1,8 @@
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CircleCheck,
   CircleDollarSign,
   Clock3,
@@ -23,21 +25,45 @@ import {
 
 import {
   Link,
+  useLocation,
   useParams,
 } from 'react-router'
+
+import {
+  listarHistorialActividadesPorEstudiante,
+} from '../services/adminActividadesService.js'
+
+import {
+  ESTADOS_APORTACION,
+  listarAportacionesPorEstudiante,
+} from '../services/adminAportacionesService.js'
 
 import {
   obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
 
-import {
-  notificarInformacion,
-} from '../../../services/notificationService.js'
-
 import '../styles/AdminPrincipalStudentDetail.css'
 
+/*
+ * Cada tabla mostrará como máximo cinco registros
+ * antes de pasar a la página siguiente.
+ */
+const REGISTROS_POR_PAGINA = 5
+
+// UTILIDADES GENERALES
+function prepararTexto(valor) {
+  if (
+    valor === null ||
+    valor === undefined
+  ) {
+    return ''
+  }
+
+  return String(valor).trim()
+}
+
 function mostrarDato(valor) {
-  const texto = String(valor ?? '').trim()
+  const texto = prepararTexto(valor)
 
   return texto || 'No disponible'
 }
@@ -46,7 +72,8 @@ function prepararCantidad(valor) {
   const numero = Number(valor)
 
   if (
-    !Number.isFinite(numero) || numero < 0
+    !Number.isFinite(numero) ||
+    numero < 0
   ) {
     return 0
   }
@@ -66,31 +93,59 @@ function formatearLempiras(valor) {
   ).format(numero)}`
 }
 
-function formatearFecha(fecha) {
-  if (
-    typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
-  ) {
+/*
+ * Acepta fechas simples como 2026-09-12 y
+ * fechas completas como las que devuelve el backend.
+ *
+ * Las fechas simples se construyen de forma local para
+ * evitar que el navegador cambie el día por la zona horaria.
+ */
+function formatearFecha(valor) {
+  const fechaRecibida = prepararTexto(valor)
+
+  if (!fechaRecibida) {
     return 'Fecha no disponible'
   }
 
-  const [
-    anio,
-    mes,
-    dia,
-  ] = fecha.split('-').map(Number)
-
-  const fechaLocal = new Date(
-    anio,
-    mes - 1,
-    dia,
-  )
+  let fecha
 
   if (
-    fechaLocal.getFullYear() !== anio ||
-    fechaLocal.getMonth() !== mes - 1 ||
-    fechaLocal.getDate() !== dia
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      fechaRecibida,
+    )
   ) {
-    return 'Fecha no disponible'
+    const [
+      anio,
+      mes,
+      dia,
+    ] = fechaRecibida
+      .split('-')
+      .map(Number)
+
+    fecha = new Date(
+      anio,
+      mes - 1,
+      dia,
+    )
+
+    const fechaValida =
+      fecha.getFullYear() === anio &&
+      fecha.getMonth() === mes - 1 &&
+      fecha.getDate() === dia
+
+    if (!fechaValida) {
+      return 'Fecha no disponible'
+    }
+  } else {
+    fecha = new Date(fechaRecibida)
+
+    if (
+      Number.isNaN(
+        fecha.getTime(),
+      )
+    ) {
+      return 'Fecha no disponible'
+    }
   }
 
   return new Intl.DateTimeFormat(
@@ -98,24 +153,43 @@ function formatearFecha(fecha) {
     {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     },
-  ).format(fechaLocal)
+  ).format(fecha)
 }
 
 function formatearEstado(estado) {
-  const texto = String(estado ?? '')
-    .trim()
-    .replace(/-/g, ' ')
-    .toLowerCase()
+  const texto =
+    prepararTexto(estado)
+      .replace(/-/g, ' ')
+      .toLocaleLowerCase('es')
 
   if (!texto) {
     return 'Sin estado'
   }
 
   return (
-    texto.charAt(0).toUpperCase() + texto.slice(1)
+    texto.charAt(0).toLocaleUpperCase('es') +
+    texto.slice(1)
   )
+}
+
+/*
+ * Convierte el estado en un nombre seguro para CSS.
+ *
+ * Por ejemplo:
+ * "Asistió" se convierte en "asistio".
+ */
+function obtenerClaseEstado(estado) {
+  const clase =
+    prepararTexto(estado)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+  return clase || 'sin-estado'
 }
 
 function construirPeriodoInicio(
@@ -127,8 +201,9 @@ function construirPeriodoInicio(
   ]
     .filter(
       (valor) =>
-        valor !== null && valor !== undefined &&
-        String(valor).trim() !== '',
+        valor !== null &&
+        valor !== undefined &&
+        prepararTexto(valor) !== '',
     )
     .join(' ')
 }
@@ -136,9 +211,10 @@ function construirPeriodoInicio(
 function describirMesesPendientes(
   mesesSinPagar,
 ) {
-  const meses = prepararCantidad(
-    mesesSinPagar,
-  )
+  const meses =
+    prepararCantidad(
+      mesesSinPagar,
+    )
 
   if (meses === 0) {
     return 'Sin meses pendientes'
@@ -149,9 +225,208 @@ function describirMesesPendientes(
     : `${meses} meses pendientes`
 }
 
+function obtenerMensajeError(
+  error,
+  mensajePredeterminado,
+) {
+  if (
+    error instanceof Error &&
+    prepararTexto(error.message)
+  ) {
+    return error.message
+  }
+
+  return mensajePredeterminado
+}
+
+function calcularTotalPaginas(
+  totalRegistros,
+) {
+  return Math.max(
+    1,
+    Math.ceil(
+      totalRegistros /
+        REGISTROS_POR_PAGINA,
+    ),
+  )
+}
+
+function obtenerRegistrosPagina(
+  registros,
+  pagina,
+) {
+  const indiceInicial =
+    (pagina - 1) *
+    REGISTROS_POR_PAGINA
+
+  return registros.slice(
+    indiceInicial,
+    indiceInicial +
+      REGISTROS_POR_PAGINA,
+  )
+}
+
+/*
+ * Los registros de aportaciones llegan acompañados
+ * por la identidad del estudiante.
+ *
+ * Esta vista necesita únicamente el objeto
+ * "aportacion" definido por el contrato.
+ */
+function extraerAportaciones(
+  registros,
+) {
+  if (!Array.isArray(registros)) {
+    return []
+  }
+
+  return registros
+    .map(
+      (registro) =>
+        registro?.aportacion,
+    )
+    .filter(
+      (aportacion) =>
+        aportacion &&
+        typeof aportacion === 'object',
+    )
+}
+
+// COMPONENTE DE PAGINACIÓN
+function PaginacionRegistros({
+  paginaActual,
+  totalPaginas,
+  totalRegistros,
+  onCambiarPagina,
+  etiqueta,
+}) {
+  if (totalRegistros === 0) {
+    return null
+  }
+
+  const primerRegistro =
+    (paginaActual - 1) *
+      REGISTROS_POR_PAGINA +
+    1
+
+  const ultimoRegistro = Math.min(
+    paginaActual *
+      REGISTROS_POR_PAGINA,
+    totalRegistros,
+  )
+
+  const paginas = Array.from(
+    {
+      length: totalPaginas,
+    },
+    (_, indice) => indice + 1,
+  )
+
+  return (
+    <div className="admin-student-detail-pagination">
+      <p>
+        Mostrando {primerRegistro} a{' '}
+        {ultimoRegistro} de{' '}
+        {totalRegistros} registros
+      </p>
+
+      <nav
+        aria-label={`Paginación de ${etiqueta}`}
+      >
+        <button
+          type="button"
+          disabled={paginaActual === 1}
+          aria-label={`Página anterior de ${etiqueta}`}
+          onClick={() =>
+            onCambiarPagina(
+              paginaActual - 1,
+            )
+          }
+        >
+          <ChevronLeft aria-hidden="true" />
+        </button>
+
+        {paginas.map((pagina) => (
+          <button
+            key={pagina}
+            type="button"
+            className={
+              pagina === paginaActual
+                ? 'admin-student-detail-pagination__page admin-student-detail-pagination__page--active'
+                : 'admin-student-detail-pagination__page'
+            }
+            aria-current={
+              pagina === paginaActual
+                ? 'page'
+                : undefined
+            }
+            aria-label={`Página ${pagina} de ${etiqueta}`}
+            onClick={() =>
+              onCambiarPagina(pagina)
+            }
+          >
+            {pagina}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          disabled={
+            paginaActual ===
+            totalPaginas
+          }
+          aria-label={`Página siguiente de ${etiqueta}`}
+          onClick={() =>
+            onCambiarPagina(
+              paginaActual + 1,
+            )
+          }
+        >
+          <ChevronRight aria-hidden="true" />
+        </button>
+      </nav>
+    </div>
+  )
+}
+
+// COMPONENTE PRINCIPAL
 function AdminPrincipalStudentDetail() {
   const { numeroCuenta } = useParams()
+  const location = useLocation()
 
+  /*
+   * Cuando se abre al estudiante desde una actividad,
+   * conservamos esa actividad como ruta de regreso.
+   */
+  const actividadOrigenId =
+    location.state?.origen ===
+      'detalle-actividad'
+      ? prepararTexto(
+          location.state.actividadId,
+        )
+      : ''
+
+  const vieneDesdeActividad =
+    Boolean(actividadOrigenId)
+
+  const rutaRegreso =
+    vieneDesdeActividad
+      ? `/admin-principal/actividades/${encodeURIComponent(
+          actividadOrigenId,
+        )}`
+      : '/admin-principal/estudiantes'
+
+  const etiquetaRegreso =
+    vieneDesdeActividad
+      ? 'Volver a la actividad'
+      : 'Volver a estudiantes'
+
+  const etiquetaBreadcrumb =
+    vieneDesdeActividad
+      ? 'Actividad'
+      : 'Estudiantes'
+
+  // INFORMACIÓN GENERAL DEL ESTUDIANTE
   const [
     estudiante,
     setEstudiante,
@@ -172,64 +447,152 @@ function AdminPrincipalStudentDetail() {
     setRecarga,
   ] = useState(0)
 
+  // HISTORIAL DE ACTIVIDADES
+  const [
+    actividades,
+    setActividades,
+  ] = useState([])
+
+  const [
+    errorActividades,
+    setErrorActividades,
+  ] = useState('')
+
+  const [
+    paginaActividades,
+    setPaginaActividades,
+  ] = useState(1)
+
+  // HISTORIAL DE APORTACIONES
+  const [
+    aportaciones,
+    setAportaciones,
+  ] = useState([])
+
+  const [
+    errorAportaciones,
+    setErrorAportaciones,
+  ] = useState('')
+
   const [
     filtroAportaciones,
     setFiltroAportaciones,
-  ] = useState('historial')
+  ] = useState('pendientes')
 
-  /*
-  * El numero de cuenta proviene de la URL.
-  * El servicio puede localizar al estudiante por ese
-  * valor sin que la vista acceda directamente al mock.
-  */
+  const [
+    paginaAportaciones,
+    setPaginaAportaciones,
+  ] = useState(1)
+
   useEffect(() => {
     let componenteMontado = true
 
-    async function cargarEstudiante() {
+    async function cargarInformacion() {
       setCargando(true)
       setError('')
+      setErrorActividades('')
+      setErrorAportaciones('')
       setEstudiante(null)
+      setActividades([])
+      setAportaciones([])
 
-      try {
-        const estudianteObtenido =
-          await obtenerEstudiante(
-            numeroCuenta,
-          )
+      const [
+        resultadoEstudiante,
+        resultadoActividades,
+        resultadoAportaciones,
+      ] = await Promise.allSettled([
+        obtenerEstudiante(
+          numeroCuenta,
+        ),
 
-        if (!componenteMontado) {
-          return
-        }
+        listarHistorialActividadesPorEstudiante(
+          numeroCuenta,
+        ),
 
-        if (!estudianteObtenido) {
-          setError(
-            'No encontramos un estudiante con ese número de cuenta.',
-          )
+        listarAportacionesPorEstudiante(
+          numeroCuenta,
+        ),
+      ])
 
-          return
-        }
-
-        setEstudiante(
-          estudianteObtenido,
-        )
-      } catch (errorCarga) {
-
-        if (!componenteMontado) {
-          return
-        }
-
-        setError(
-          errorCarga instanceof Error
-            ? errorCarga.message
-            : 'No fue posible cargar la información del estudiante.',
-        )
-      } finally {
-        if (componenteMontado) {
-          setCargando(false)
-        }
+      if (!componenteMontado) {
+        return
       }
+
+      /*
+       * La información general es indispensable.
+       * Si esta consulta falla, no podemos construir el perfil.
+       */
+      if (
+        resultadoEstudiante.status ===
+        'rejected'
+      ) {
+        setError(
+          obtenerMensajeError(
+            resultadoEstudiante.reason,
+            'No fue posible cargar la información del estudiante.',
+          ),
+        )
+      } else if (
+        !resultadoEstudiante.value
+      ) {
+        setError(
+          'No encontramos un estudiante con ese número de cuenta.',
+        )
+      } else {
+        setEstudiante(
+          resultadoEstudiante.value,
+        )
+      }
+
+      /*
+       * El historial de actividades puede fallar en modo API, pero siempre se crea la vista del resumen del estudiante.
+       */
+      if (
+        resultadoActividades.status ===
+        'fulfilled'
+      ) {
+        setActividades(
+          Array.isArray(
+            resultadoActividades.value,
+          )
+            ? resultadoActividades.value
+            : [],
+        )
+      } else {
+        setErrorActividades(
+          obtenerMensajeError(
+            resultadoActividades.reason,
+            'No fue posible cargar el historial de actividades.',
+          ),
+        )
+      }
+
+      /*
+       * Las aportaciones se obtienen mediante el listado
+       * administrativo y se filtran por número de cuenta.
+       */
+      if (
+        resultadoAportaciones.status ===
+        'fulfilled'
+      ) {
+        setAportaciones(
+          extraerAportaciones(
+            resultadoAportaciones.value,
+          ),
+        )
+      } else {
+        setErrorAportaciones(
+          obtenerMensajeError(
+            resultadoAportaciones.reason,
+            'No fue posible cargar el historial de aportaciones.',
+          ),
+        )
+      }
+
+      setCargando(false)
     }
 
-    cargarEstudiante()
+    cargarInformacion()
 
     return () => {
       componenteMontado = false
@@ -239,54 +602,134 @@ function AdminPrincipalStudentDetail() {
     recarga,
   ])
 
-  /* El historial muestra todas las aportaciones.
-  - La segunda pestaña conserva unicamente las pendientes.
-  */
+  // Relaciona cada pestaña visual con el estado exacto.
   const aportacionesMostradas =
     useMemo(() => {
-      const aportaciones = Array.isArray(
-        estudiante?.aportaciones,
-      )
-        ? estudiante.aportaciones
-        : []
-
-      if (
-        filtroAportaciones === 'pendientes'
-      ) {
-        return aportaciones.filter(
-          (aportacion) =>
-            aportacion.estado === 'pendiente',
-        )
+      const estadosPorFiltro = {
+        pendientes: ESTADOS_APORTACION.PENDIENTE,
+        aprobadas: ESTADOS_APORTACION.APROBADO,
+        rechazadas: ESTADOS_APORTACION.RECHAZADO,
       }
 
-      return aportaciones
+      const estadoSeleccionado =
+        estadosPorFiltro[
+          filtroAportaciones
+        ]
+
+      if (!estadoSeleccionado) {
+        return []
+      }
+
+      return aportaciones.filter(
+        (aportacion) =>
+          prepararTexto(
+            aportacion.estado,
+          ).toLocaleLowerCase('es') === estadoSeleccionado.toLocaleLowerCase('es'),
+      )
     }, [
-      estudiante,
+      aportaciones,
       filtroAportaciones,
     ])
 
+  // PAGINACIÓN DE ACTIVIDADES
+  const totalPaginasActividades =
+    useMemo(
+      () =>
+        calcularTotalPaginas(
+          actividades.length,
+        ),
+      [actividades.length],
+    )
+
+  const actividadesPagina =
+    useMemo(
+      () =>
+        obtenerRegistrosPagina(
+          actividades,
+          paginaActividades,
+        ),
+      [
+        actividades,
+        paginaActividades,
+      ],
+    )
+
+  // PAGINACIÓN DE APORTACIONES
+  const totalPaginasAportaciones =
+    useMemo(
+      () =>
+        calcularTotalPaginas(
+          aportacionesMostradas.length,
+        ),
+      [aportacionesMostradas.length],
+    )
+
+  const aportacionesPagina =
+    useMemo(
+      () =>
+        obtenerRegistrosPagina(
+          aportacionesMostradas,
+          paginaAportaciones,
+        ),
+      [
+        aportacionesMostradas,
+        paginaAportaciones,
+      ],
+    )
+
+  /*
+   * Si cambia la cantidad de actividades, evitamos dejar
+   * seleccionada una página que ya no existe.
+   */
+  useEffect(() => {
+    setPaginaActividades(
+      (paginaActual) =>
+        Math.min(
+          paginaActual,
+          totalPaginasActividades,
+        ),
+    )
+  }, [totalPaginasActividades])
+
+  // Cada cambio de pestaña comienza desde la primera página.
+  useEffect(() => {
+    setPaginaAportaciones(1)
+  }, [filtroAportaciones])
+
+  /*
+   * También protegemos la página cuando cambia
+   * la cantidad de aportaciones disponibles.
+   */
+  useEffect(() => {
+    setPaginaAportaciones(
+      (paginaActual) =>
+        Math.min(
+          paginaActual,
+          totalPaginasAportaciones,
+        ),
+    )
+  }, [totalPaginasAportaciones])
+
   function reintentarCarga() {
     setRecarga(
-      (valorActual) => valorActual + 1,
+      (valorActual) =>
+        valorActual + 1,
     )
   }
 
-  function mostrarEdicionPendiente() {
-    const nombre = estudiante?.datosPersonales
-      ?.nombreCompleto || 'este estudiante'
-
-    notificarInformacion({
-      id: `editar-detalle-estudiante-${estudiante?.id}`,
-      titulo: 'Edición disponible próximamente',
-      descripcion: `La información de ${nombre} podrá editarse en un siguiente avance.`,
-    })
-  }
-
+  // ESTADO DE CARGA GENERAL
   if (cargando) {
     return (
       <div className="admin-student-detail-page">
-        <section className="admin-student-detail-state" role="status" aria-live="polite">
-          <LoaderCircle className="admin-student-detail-state__loader" aria-hidden="true" />
+        <section
+          className="admin-student-detail-state"
+          role="status"
+          aria-live="polite"
+        >
+          <LoaderCircle
+            className="admin-student-detail-state__loader"
+            aria-hidden="true"
+          />
 
           <h1>Cargando estudiante</h1>
 
@@ -299,10 +742,14 @@ function AdminPrincipalStudentDetail() {
     )
   }
 
+  // ERROR DE LA INFORMACIÓN GENERAL
   if (error || !estudiante) {
     return (
       <div className="admin-student-detail-page">
-        <section className="admin-student-detail-state admin-student-detail-state--error" role="alert">
+        <section
+          className="admin-student-detail-state admin-student-detail-state--error"
+          role="alert"
+        >
           <TriangleAlert aria-hidden="true" />
 
           <h1>
@@ -310,17 +757,22 @@ function AdminPrincipalStudentDetail() {
           </h1>
 
           <p>
-            {error || 'La información solicitada no está disponible.'}
+            {error ||
+              'La información solicitada no está disponible.'}
           </p>
 
           <div className="admin-student-detail-state__actions">
-            <button type="button" onClick={reintentarCarga} >
+            <button
+              type="button"
+              onClick={reintentarCarga}
+            >
               Intentar nuevamente
             </button>
 
-            <Link to="/admin-principal/estudiantes">
+            <Link to={rutaRegreso}>
               <ArrowLeft aria-hidden="true" />
-              Volver a estudiantes
+
+              {etiquetaRegreso}
             </Link>
           </div>
         </section>
@@ -328,53 +780,65 @@ function AdminPrincipalStudentDetail() {
     )
   }
 
-  const datosPersonales = estudiante.datosPersonales ?? {}
-  const datosBecario = estudiante.datosBecario ?? {}
-  const actividadesRecientes = Array.isArray(
-    estudiante.actividadesRecientes,
-  )
-    ? estudiante.actividadesRecientes
-    : []
+  // INFORMACIÓN NORMALIZADA DEL ESTUDIANTE
+  const datosPersonales =
+    estudiante.datosPersonales ?? {}
 
-  const activo = estudiante.crendenciales?.activo !== false
-  const nombreCompleto = datosPersonales.nombreCompleto || 'Estudiante sin nombre'
+  const datosBecario =
+    estudiante.datosBecario ?? {}
 
-  const periodoInicio = construirPeriodoInicio(
-    datosBecario,
-  )
+  const activo =
+    estudiante.credenciales?.activo !==
+    false
 
-  const horasAcumuladas = prepararCantidad(
-    datosBecario.horasAcumuladas,
-  )
+  const nombreCompleto =
+    datosPersonales.nombreCompleto ||
+    'Estudiante sin nombre'
 
-  const horasFaltantes = prepararCantidad(
-    datosBecario.horasFaltantes,
-  )
+  const periodoInicio =
+    construirPeriodoInicio(
+      datosBecario,
+    )
 
-  const mesesSinPagar = prepararCantidad(
-    datosBecario.mesesSinPagar,
-  )
+  const horasAcumuladas =
+    prepararCantidad(
+      datosBecario.horasAcumuladas,
+    )
 
-  const saldoPendiente = prepararCantidad(
-    estudiante.saldoAportacionesPendientes,
-  )
+  const horasFaltantes =
+    prepararCantidad(
+      datosBecario.horasFaltantes,
+    )
+
+  const mesesSinPagar =
+    prepararCantidad(
+      datosBecario.mesesSinPagar,
+    )
+
+  const saldoPendiente =
+    prepararCantidad(
+      estudiante
+        .saldoAportacionesPendientes,
+    )
 
   /*
-  * El servicio ordena las actividades desde la mas
-  * reciente, por eso el primer elemento representa la ultima actividad registrada.
-  */
-
-  const ultimaActividad = actividadesRecientes[0] ?? null
+   * El servicio entrega las actividades ordenadas desde
+   * la fecha más reciente.
+   */
+  const ultimaActividad =
+    actividades[0] ?? null
 
   return (
     <div className="admin-student-detail-page">
+      {/* NAVEGACIÓN DE REGRESO */}
       <nav
         className="admin-student-detail-breadcrumb"
         aria-label="Ruta de navegación"
       >
-        <Link to="/admin-principal/estudiantes">
+        <Link to={rutaRegreso}>
           <ArrowLeft aria-hidden="true" />
-          Estudiantes
+
+          {etiquetaBreadcrumb}
         </Link>
 
         <span aria-hidden="true">/</span>
@@ -386,6 +850,7 @@ function AdminPrincipalStudentDetail() {
         </span>
       </nav>
 
+      {/* ENCABEZADO */}
       <header className="admin-student-detail-heading">
         <div>
           <div className="admin-student-detail-heading__identity">
@@ -412,18 +877,21 @@ function AdminPrincipalStudentDetail() {
           </p>
         </div>
 
-        <button
+        <Link
           className="admin-student-detail-edit-button"
-          type="button"
-          onClick={mostrarEdicionPendiente}
+          to={`/admin-principal/estudiantes/${encodeURIComponent(
+            numeroCuenta,
+          )}/editar`}
         >
           <Pencil aria-hidden="true" />
+
           Editar información
-        </button>
+        </Link>
       </header>
 
       <div className="admin-student-detail-layout">
         <div className="admin-student-detail-main">
+          {/* INFORMACIÓN PERSONAL */}
           <section
             className="admin-student-detail-card admin-student-detail-personal"
             aria-labelledby="student-personal-title"
@@ -484,7 +952,9 @@ function AdminPrincipalStudentDetail() {
                 </dt>
 
                 <dd>
-                  {mostrarDato(periodoInicio)}
+                  {mostrarDato(
+                    periodoInicio,
+                  )}
                 </dd>
               </div>
 
@@ -504,6 +974,7 @@ function AdminPrincipalStudentDetail() {
             </dl>
           </section>
 
+          {/* PROGRESO DE HORAS */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-progress-title"
@@ -559,6 +1030,7 @@ function AdminPrincipalStudentDetail() {
             </div>
           </section>
 
+          {/* HISTORIAL DE ACTIVIDADES */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-activities-title"
@@ -567,12 +1039,20 @@ function AdminPrincipalStudentDetail() {
               <CalendarDays aria-hidden="true" />
 
               <h2 id="student-activities-title">
-                Actividades recientes
+                Historial de actividades
               </h2>
             </header>
 
-            {actividadesRecientes.length ===
-              0 ? (
+            {errorActividades ? (
+              <div
+                className="admin-student-detail-empty admin-student-detail-empty--error"
+                role="status"
+              >
+                <TriangleAlert aria-hidden="true" />
+
+                <p>{errorActividades}</p>
+              </div>
+            ) : actividades.length === 0 ? (
               <div className="admin-student-detail-empty">
                 <CalendarDays aria-hidden="true" />
 
@@ -581,76 +1061,108 @@ function AdminPrincipalStudentDetail() {
                 </p>
               </div>
             ) : (
-              <div className="admin-student-detail-table-wrapper">
-                <table className="admin-student-detail-table">
-                  <caption>
-                    Actividades recientes del estudiante
-                  </caption>
+              <>
+                <div className="admin-student-detail-table-wrapper">
+                  <table className="admin-student-detail-table">
+                    <caption>
+                      Historial de actividades del estudiante
+                    </caption>
 
-                  <thead>
-                    <tr>
-                      <th scope="col">
-                        Fecha
-                      </th>
+                    <thead>
+                      <tr>
+                        <th scope="col">
+                          Fecha
+                        </th>
 
-                      <th scope="col">
-                        Actividad
-                      </th>
+                        <th scope="col">
+                          Actividad
+                        </th>
 
-                      <th scope="col">
-                        Horas
-                      </th>
+                        <th scope="col">
+                          Horas acreditadas
+                        </th>
 
-                      <th scope="col">
-                        Registrado por
-                      </th>
-                    </tr>
-                  </thead>
+                        <th scope="col">
+                          Estado
+                        </th>
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    {actividadesRecientes.map(
-                      (actividad) => (
-                        <tr key={actividad.id}>
-                          <td>
-                            <time
-                              dateTime={
-                                actividad.fecha
-                              }
-                            >
-                              {formatearFecha(
-                                actividad.fecha,
+                    <tbody>
+                      {actividadesPagina.map(
+                        (actividad) => (
+                          <tr
+                            key={
+                              actividad.id ??
+                              actividad.actividadId
+                            }
+                          >
+                            <td data-label="Fecha">
+                              <time
+                                dateTime={
+                                  actividad.fecha
+                                }
+                              >
+                                {formatearFecha(
+                                  actividad.fecha,
+                                )}
+                              </time>
+                            </td>
+
+                            <td data-label="Actividad">
+                              {mostrarDato(
+                                actividad.titulo,
                               )}
-                            </time>
-                          </td>
+                            </td>
 
-                          <td>
-                            {mostrarDato(
-                              actividad.titulo,
-                            )}
-                          </td>
+                            <td data-label="Horas acreditadas">
+                              {prepararCantidad(
+                                actividad
+                                  .horasAcreditadas,
+                              )}
+                            </td>
 
-                          <td>
-                            {prepararCantidad(
-                              actividad
-                                .horasAcreditadas,
-                            )}
-                          </td>
+                            <td data-label="Estado">
+                              <span
+                                className={
+                                  'admin-student-contribution-status ' +
+                                  `admin-student-contribution-status--${obtenerClaseEstado(
+                                    actividad.estado,
+                                  )}`
+                                }
+                              >
+                                {formatearEstado(
+                                  actividad.estado,
+                                )}
+                              </span>
+                            </td>
+                          </tr>
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                          <td>
-                            {mostrarDato(
-                              actividad
-                                .registradoPor,
-                            )}
-                          </td>
-                        </tr>
-                      ),
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                <PaginacionRegistros
+                  paginaActual={
+                    paginaActividades
+                  }
+                  totalPaginas={
+                    totalPaginasActividades
+                  }
+                  totalRegistros={
+                    actividades.length
+                  }
+                  onCambiarPagina={
+                    setPaginaActividades
+                  }
+                  etiqueta="actividades"
+                />
+              </>
             )}
           </section>
 
+          {/* APORTACIONES */}
           <section
             className="admin-student-detail-card"
             aria-labelledby="student-contributions-title"
@@ -666,34 +1178,11 @@ function AdminPrincipalStudentDetail() {
             <div
               className="admin-student-contribution-tabs"
               role="tablist"
-              aria-label="Filtrar aportaciones"
+              aria-label="Filtrar aportaciones por estado"
             >
+              {/* APORTACIONES PENDIENTES */}
               <button
-                id="student-contributions-history-tab"
-                type="button"
-                role="tab"
-                aria-selected={
-                  filtroAportaciones ===
-                  'historial'
-                }
-                aria-controls="student-contributions-panel"
-                className={
-                  filtroAportaciones ===
-                    'historial'
-                    ? 'admin-student-contribution-tab admin-student-contribution-tab--active'
-                    : 'admin-student-contribution-tab'
-                }
-                onClick={() =>
-                  setFiltroAportaciones(
-                    'historial',
-                  )
-                }
-              >
-                Historial
-              </button>
-
-              <button
-                id="student-contributions-pending-tab"
+                id="student-contributions-pendientes-tab"
                 type="button"
                 role="tab"
                 aria-selected={
@@ -715,108 +1204,208 @@ function AdminPrincipalStudentDetail() {
               >
                 Pendientes
               </button>
+
+              {/* APORTACIONES APROBADAS */}
+              <button
+                id="student-contributions-aprobadas-tab"
+                type="button"
+                role="tab"
+                aria-selected={
+                  filtroAportaciones ===
+                  'aprobadas'
+                }
+                aria-controls="student-contributions-panel"
+                className={
+                  filtroAportaciones ===
+                    'aprobadas'
+                    ? 'admin-student-contribution-tab admin-student-contribution-tab--active'
+                    : 'admin-student-contribution-tab'
+                }
+                onClick={() =>
+                  setFiltroAportaciones(
+                    'aprobadas',
+                  )
+                }
+              >
+                Aprobadas
+              </button>
+
+              {/* APORTACIONES RECHAZADAS */}
+              <button
+                id="student-contributions-rechazadas-tab"
+                type="button"
+                role="tab"
+                aria-selected={
+                  filtroAportaciones ===
+                  'rechazadas'
+                }
+                aria-controls="student-contributions-panel"
+                className={
+                  filtroAportaciones ===
+                    'rechazadas'
+                    ? 'admin-student-contribution-tab admin-student-contribution-tab--active'
+                    : 'admin-student-contribution-tab'
+                }
+                onClick={() =>
+                  setFiltroAportaciones(
+                    'rechazadas',
+                  )
+                }
+              >
+                Rechazadas
+              </button>
             </div>
 
             <div
               id="student-contributions-panel"
               className="admin-student-contribution-panel"
               role="tabpanel"
-              aria-labelledby={
-                filtroAportaciones ===
-                  'historial'
-                  ? 'student-contributions-history-tab'
-                  : 'student-contributions-pending-tab'
-              }
+              aria-labelledby={`student-contributions-${filtroAportaciones}-tab`}
             >
-              {aportacionesMostradas.length ===
+              {errorAportaciones ? (
+                <div
+                  className="admin-student-detail-empty admin-student-detail-empty--error"
+                  role="alert"
+                >
+                  <TriangleAlert aria-hidden="true" />
+
+                  <p>
+                    {errorAportaciones}
+                  </p>
+                </div>
+              ) : aportacionesMostradas.length ===
                 0 ? (
                 <div className="admin-student-detail-empty">
                   <ReceiptText aria-hidden="true" />
 
                   <p>
                     {filtroAportaciones ===
-                      'pendientes'
-                      ? 'El estudiante no tiene aportaciones pendientes.'
-                      : 'No hay aportaciones registradas.'}
+                    'pendientes'
+                    ? 'El estudiante no tiene aportaciones pendientes.'
+                    : filtroAportaciones ===
+                      'aprobadas'
+                    ? 'El estudiante no tiene aportaciones aprobadas.'
+                    : 'El estudiante no tiene aportaciones rechazadas.'}
                   </p>
                 </div>
               ) : (
-                <div className="admin-student-detail-table-wrapper">
-                  <table className="admin-student-detail-table admin-student-contributions-table">
-                    <caption>
-                      Aportaciones del estudiante
-                    </caption>
+                <>
+                  <div className="admin-student-detail-table-wrapper">
+                    <table className="admin-student-detail-table admin-student-contributions-table">
+                      <caption>
+                        Aportaciones del estudiante
+                      </caption>
 
-                    <thead>
-                      <tr>
-                        <th scope="col">
-                          Periodo
-                        </th>
+                      <thead>
+                        <tr>
+                          <th scope="col">
+                            Referencia
+                          </th>
 
-                        <th scope="col">
-                          Monto
-                        </th>
+                          <th scope="col">
+                            Descripción
+                          </th>
 
-                        <th scope="col">
-                          Fecha de pago
-                        </th>
+                          <th scope="col">
+                            Fecha de envío
+                          </th>
 
-                        <th scope="col">
-                          Estado
-                        </th>
-                      </tr>
-                    </thead>
+                          <th scope="col">
+                            Meses aprobados
+                          </th>
 
-                    <tbody>
-                      {aportacionesMostradas.map(
-                        (aportacion) => (
-                          <tr
-                            key={aportacion.id}
-                          >
-                            <td>
-                              {mostrarDato(
-                                aportacion.periodo,
-                              )}
-                            </td>
+                          <th scope="col">
+                            Estado
+                          </th>
+                        </tr>
+                      </thead>
 
-                            <td>
-                              {formatearLempiras(
-                                aportacion.monto,
-                              )}
-                            </td>
-
-                            <td>
-                              {aportacion.fechaPago
-                                ? formatearFecha(
+                      <tbody>
+                        {aportacionesPagina.map(
+                          (aportacion) => (
+                            <tr
+                              key={
+                                aportacion.id
+                              }
+                            >
+                              <td data-label="Referencia">
+                                {mostrarDato(
                                   aportacion
-                                    .fechaPago,
-                                )
-                                : 'Pendiente'}
-                            </td>
-
-                            <td>
-                              <span
-                                className={
-                                  'admin-student-contribution-status ' +
-                                  `admin-student-contribution-status--${aportacion.estado}`
-                                }
-                              >
-                                {formatearEstado(
-                                  aportacion.estado,
+                                    .num_referencia,
                                 )}
-                              </span>
-                            </td>
-                          </tr>
-                        ),
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                              </td>
+
+                              <td data-label="Descripción">
+                                {mostrarDato(
+                                  aportacion
+                                    .descripcion,
+                                )}
+                              </td>
+
+                              <td data-label="Fecha de envío">
+                                <time
+                                  dateTime={
+                                    aportacion
+                                      .fecha_subida
+                                  }
+                                >
+                                  {formatearFecha(
+                                    aportacion
+                                      .fecha_subida,
+                                  )}
+                                </time>
+                              </td>
+
+                              <td data-label="Meses aprobados">
+                                {prepararCantidad(
+                                  aportacion
+                                    .meses_aprobados,
+                                )}
+                              </td>
+
+                              <td data-label="Estado">
+                                <span
+                                  className={
+                                    'admin-student-contribution-status ' +
+                                    `admin-student-contribution-status--${obtenerClaseEstado(
+                                      aportacion.estado,
+                                    )}`
+                                  }
+                                >
+                                  {formatearEstado(
+                                    aportacion.estado,
+                                  )}
+                                </span>
+                              </td>
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <PaginacionRegistros
+                    paginaActual={
+                      paginaAportaciones
+                    }
+                    totalPaginas={
+                      totalPaginasAportaciones
+                    }
+                    totalRegistros={
+                      aportacionesMostradas.length
+                    }
+                    onCambiarPagina={
+                      setPaginaAportaciones
+                    }
+                    etiqueta="aportaciones"
+                  />
+                </>
               )}
             </div>
           </section>
         </div>
 
+        {/* RESUMEN LATERAL */}
         <aside className="admin-student-detail-sidebar">
           <section
             className="admin-student-detail-card admin-student-summary"
@@ -839,7 +1428,9 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Estado de beca</small>
+                <small>
+                  Estado de beca
+                </small>
 
                 <strong
                   className={
@@ -850,9 +1441,9 @@ function AdminPrincipalStudentDetail() {
                 >
                   {formatearEstado(
                     datosBecario.estadoBeca ||
-                    (activo
-                      ? 'activo'
-                      : 'inactivo'),
+                      (activo
+                        ? 'activo'
+                        : 'inactivo'),
                   )}
                 </strong>
               </div>
@@ -867,7 +1458,9 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Meses sin pagar</small>
+                <small>
+                  Meses sin pagar
+                </small>
 
                 <strong>
                   {mesesSinPagar}
@@ -890,14 +1483,18 @@ function AdminPrincipalStudentDetail() {
               </span>
 
               <div>
-                <small>Última actividad</small>
+                <small>
+                  Última actividad
+                </small>
 
                 <strong>
                   {ultimaActividad
                     ? formatearFecha(
-                      ultimaActividad.fecha,
-                    )
-                    : 'Sin actividad'}
+                        ultimaActividad.fecha,
+                      )
+                    : errorActividades
+                      ? 'No disponible'
+                      : 'Sin actividad'}
                 </strong>
 
                 {ultimaActividad && (

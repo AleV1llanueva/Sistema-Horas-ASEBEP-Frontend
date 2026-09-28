@@ -126,11 +126,6 @@ function App() {
         }}
       />
       <ScrollToTop />
-
-      {/*
-       * Las rutas de usuario y administrador se
-       * conservan juntas mientras unificamos el login.
-       */}
       <Routes>
         {/* Rutas públicas. */}
         <Route path="/" element={<Home />} />

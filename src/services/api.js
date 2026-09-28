@@ -142,3 +142,131 @@ export async function apiFetch(
 
     return data
 }
+
+/*
+ * Realiza solicitudes autenticadas que devuelven una imagen PNG.
+ *
+ * Se utiliza de forma separada a apiFetch porque los códigos QR
+ * del backend no se entregan como JSON, sino como archivos binarios.
+ */
+export async function apiFetchBlob(
+    endpoint,
+    options = {},
+) {
+    if (!API_BASE_URL) {
+        throw new ApiError(
+            'La URL del backend no está configurada.',
+            0,
+        )
+    }
+
+    const headers = construirHeaders(
+        options.headers,
+    )
+
+    /*
+     * El endpoint del QR devuelve directamente
+     * una imagen con el tipo image/png.
+     */
+    headers.set('Accept', 'image/png')
+
+    let response
+
+    try {
+        response = await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                ...options,
+                headers,
+            },
+        )
+    } catch (error) {
+        throw new ApiError(
+            'No fue posible conectarse con el servidor.',
+            0,
+            error,
+        )
+    }
+
+    /*
+     * Si el JWT ya no es válido, conservamos el mismo
+     * comportamiento utilizado por las solicitudes JSON.
+     */
+    if (response.status === 401) {
+        invalidarSesion()
+    }
+
+    const contentType =
+        response.headers.get(
+            'content-type',
+        ) || ''
+
+    /*
+     * Aunque esperamos una imagen, FastAPI devuelve JSON
+     * cuando ocurre un error. Recuperamos ese mensaje para
+     * mostrar una explicación clara en la interfaz.
+     */
+    if (!response.ok) {
+        let detalles = null
+        let mensaje =
+            'No fue posible generar el código QR.'
+
+        if (
+            contentType.includes(
+                'application/json',
+            )
+        ) {
+            try {
+                detalles =
+                    await response.json()
+
+                mensaje =
+                    obtenerMensajeError(
+                        detalles,
+                    )
+            } catch {
+                // Conservamos el mensaje general.
+            }
+        } else {
+            try {
+                const mensajeServidor =
+                    await response.text()
+
+                if (mensajeServidor.trim()) {
+                    mensaje =
+                        mensajeServidor.trim()
+                }
+            } catch {
+                // Conservamos el mensaje general.
+            }
+        }
+
+        throw new ApiError(
+            mensaje,
+            response.status,
+            detalles,
+        )
+    }
+
+    if (
+        !contentType.includes(
+            'image/png',
+        )
+    ) {
+        throw new ApiError(
+            'El servidor no devolvió una imagen PNG válida.',
+            response.status,
+        )
+    }
+
+    const imagen = await response.blob()
+
+    if (imagen.size === 0) {
+        throw new ApiError(
+            'El servidor devolvió un código QR vacío.',
+            response.status,
+        )
+    }
+
+    return imagen
+}

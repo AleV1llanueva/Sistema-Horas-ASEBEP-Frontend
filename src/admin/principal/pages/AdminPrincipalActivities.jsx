@@ -1,7 +1,7 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-
 import {
-    Archive,
+    ChevronLeft,
+    ChevronRight,
     CalendarDays,
     Clock3,
     Eye,
@@ -13,7 +13,6 @@ import {
     Plus,
     Power,
     QrCode,
-    RefreshCw,
     Search,
     Trash2,
     TriangleAlert,
@@ -27,28 +26,66 @@ import {
 } from 'react'
 
 import { QRCodeSVG } from 'qrcode.react'
-import { Link } from 'react-router'
+
+import {
+    Link,
+    useNavigate,
+} from 'react-router'
+
 import { toast } from 'sonner'
 
 import {
-    habilitarEntradaActividad,
-    habilitarSalidaActividad,
+    cambiarVisibilidadActividad,
+    eliminarActividad,
+    obtenerQrEntradaActividad,
+    obtenerQrSalidaActividad,
     listarActividades,
 } from '../services/adminActividadesService.js'
 
 import '../styles/AdminPrincipalActivities.css'
-
-const ESTADOS_VIGENTES = [
-    'programada',
-    'en-curso',
-]
 
 const TIPOS_MARCACION = Object.freeze({
     entrada: 'entrada',
     salida: 'salida',
 })
 
-const MAXIMO_GENERACIONES_QR = 2
+const DURACION_VENTANA_QR_MINUTOS = 20
+
+// Cada pagina muestra como maximo diez actividades
+const ACTIVIDADES_POR_PAGINA = 10
+
+/*
+ * Cada pestaña define los estados que debe mostrar.
+ * El historial también queda preparado para actividades canceladas.
+ */
+const PESTANAS_ACTIVIDADES = [
+    {
+        id: 'programadas',
+        titulo: 'Programadas',
+        tituloListado: 'Actividades programadas',
+        estados: ['programada'],
+        icono: CalendarDays,
+    },
+
+    {
+        id: 'en-curso',
+        titulo: 'En curso',
+        tituloListado: 'Actividades en curso',
+        estados: ['en-curso'],
+        icono: Clock3,
+    },
+
+    {
+        id: 'historial',
+        titulo: 'Historial',
+        tituloListado: 'Historial de actividades',
+        estados: [
+            'finalizada',
+            'cancelada',
+        ],
+        icono: History,
+    },
+]
 
 /*
  * Convierte el texto de búsqueda a una forma consistente.
@@ -114,10 +151,13 @@ function formatearEstado(estado) {
         String(estado ?? '')
             .trim()
             .toLowerCase()
+            .replace(/\s+/g, '-')
 
     const nombres = {
         programada: 'Programada',
         'en-curso': 'En curso',
+        finalizada: 'Finalizada',
+        cancelada: 'Cancelada',
     }
 
     return (
@@ -189,35 +229,113 @@ function crearFechaHoraLocal(
 }
 
 /*
- * Obtiene cuántas generaciones se han utilizado
- * para un tipo específico de marcación.
+ * Calcula el estado actual usando el horario de la actividad.
+ *
+ * Esto permite que una actividad cambie automáticamente de
+ * Programada a En curso y después a Finalizada sin recargar.
  */
-function obtenerGeneracionesQr(
+function calcularEstadoTemporalActividad(
     actividad,
-    tipo,
+    instanteActual,
 ) {
-    const cantidad = Number(
-        tipo === TIPOS_MARCACION.entrada
-            ? actividad?.generacionesQrEntrada
-            : actividad?.generacionesQrSalida,
+    const estadoGuardado = String(
+        actividad?.estado ?? '',
     )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
 
-    if (
-        !Number.isInteger(cantidad) ||
-        cantidad < 0
-    ) {
-        return 0
+    if (estadoGuardado === 'cancelada') {
+        return 'cancelada'
     }
 
-    return Math.min(
-        cantidad,
-        MAXIMO_GENERACIONES_QR,
+    const inicio = crearFechaHoraLocal(
+        actividad?.fecha,
+        actividad?.horaInicio,
     )
+
+    const finalizacion =
+        crearFechaHoraLocal(
+            actividad?.fecha,
+            actividad?.horaFinalizacion,
+        )
+
+    if (!inicio || !finalizacion) {
+        return (
+            estadoGuardado ||
+            'programada'
+        )
+    }
+
+    if (
+        instanteActual <
+        inicio.getTime()
+    ) {
+        return 'programada'
+    }
+
+    if (
+        instanteActual <
+        finalizacion.getTime()
+    ) {
+        return 'en-curso'
+    }
+
+    return 'finalizada'
 }
 
 /*
- * Determina si el administrador puede mostrar,
- * habilitar o reactivar una marcación.
+ * Construye la ventana automática correspondiente.
+ *
+ * Entrada: desde el inicio hasta veinte minutos después.
+ * Salida: desde la finalización hasta veinte minutos después.
+ */
+function obtenerVentanaQrMarcacion(
+    actividad,
+    tipo,
+) {
+    const inicio = crearFechaHoraLocal(
+        actividad?.fecha,
+        actividad?.horaInicio,
+    )
+
+    const finalizacion =
+        crearFechaHoraLocal(
+            actividad?.fecha,
+            actividad?.horaFinalizacion,
+        )
+
+    if (!inicio || !finalizacion) {
+        return null
+    }
+
+    const comienzaEn =
+        tipo === TIPOS_MARCACION.entrada
+            ? inicio
+            : tipo ===
+                TIPOS_MARCACION.salida
+              ? finalizacion
+              : null
+
+    if (!comienzaEn) {
+        return null
+    }
+
+    return {
+        comienzaEn:
+            comienzaEn.getTime(),
+
+        expiraEn:
+            comienzaEn.getTime() +
+            DURACION_VENTANA_QR_MINUTOS *
+                60 *
+                1000,
+    }
+}
+
+/*
+ * Informa si el botón para mostrar el QR puede utilizarse.
+ * Ya no se revisan generaciones, habilitaciones ni reactivaciones.
  */
 function obtenerDisponibilidadMarcacion(
     actividad,
@@ -247,26 +365,13 @@ function obtenerDisponibilidadMarcacion(
         }
     }
 
-    if (estado === 'finalizada') {
-        return {
-            disponible: false,
-            mensaje:
-                'La actividad está finalizada.',
-        }
-    }
-
-    const inicio = crearFechaHoraLocal(
-        actividad?.fecha,
-        actividad?.horaInicio,
-    )
-
-    const finalizacion =
-        crearFechaHoraLocal(
-            actividad?.fecha,
-            actividad?.horaFinalizacion,
+    const ventana =
+        obtenerVentanaQrMarcacion(
+            actividad,
+            tipo,
         )
 
-    if (!inicio || !finalizacion) {
+    if (!ventana) {
         return {
             disponible: false,
             mensaje:
@@ -274,120 +379,45 @@ function obtenerDisponibilidadMarcacion(
         }
     }
 
-    const qrVigente =
-        marcacionEstaVigente(
-            actividad,
-            tipo,
-            instanteActual,
-        )
-
-    const generacionesUtilizadas =
-        obtenerGeneracionesQr(
-            actividad,
-            tipo,
-        )
-
-    /*
-     * Mientras el QR siga vigente siempre se puede
-     * volver a mostrar. Esto no genera otro token.
-     */
-    if (qrVigente) {
-        return {
-            disponible: true,
-
-            mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'Mostrar el QR de entrada que sigue vigente.'
-                    : 'Mostrar el QR de salida que sigue vigente.',
-        }
-    }
-
-    // Después de dos generaciones no se permite generar más codigos.
-    if (
-        generacionesUtilizadas >=
-        MAXIMO_GENERACIONES_QR
-    ) {
-        return {
-            disponible: false,
-
-            mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'La entrada ya utilizó sus dos oportunidades.'
-                    : 'La salida ya utilizó sus dos oportunidades.',
-        }
-    }
-
     if (
         instanteActual <
-        inicio.getTime()
+        ventana.comienzaEn
     ) {
         return {
             disponible: false,
 
             mensaje:
-                tipo === TIPOS_MARCACION.entrada
-                    ? 'La entrada estará disponible cuando comience la actividad.'
-                    : 'La salida no puede habilitarse antes del inicio.',
+                tipo ===
+                TIPOS_MARCACION.entrada
+                    ? 'El QR de entrada estará disponible cuando comience la actividad.'
+                    : 'El QR de salida estará disponible cuando finalice la actividad.',
         }
     }
 
     if (
-        tipo === TIPOS_MARCACION.entrada &&
         instanteActual >=
-            finalizacion.getTime()
+        ventana.expiraEn
     ) {
         return {
             disponible: false,
+
             mensaje:
-                'La actividad ya terminó y no admite nuevas entradas.',
+                tipo ===
+                TIPOS_MARCACION.entrada
+                    ? 'La ventana de entrada ya finalizó.'
+                    : 'La ventana de salida ya finalizó.',
         }
     }
-
-    const esReactivacion =
-        generacionesUtilizadas > 0
 
     return {
         disponible: true,
 
         mensaje:
-            tipo === TIPOS_MARCACION.entrada
-                ? esReactivacion
-                    ? 'Reactivar el QR de entrada.'
-                    : 'Habilitar el QR de entrada.'
-                : esReactivacion
-                  ? 'Reactivar el QR de salida.'
-                  : 'Habilitar el QR de salida.',
+            tipo ===
+            TIPOS_MARCACION.entrada
+                ? 'Mostrar el QR de entrada.'
+                : 'Mostrar el QR de salida.',
     }
-}
-
-/*
- * Comprueba si el último QR guardado todavía
- * se encuentra dentro de su tiempo de vigencia.
- */
-function marcacionEstaVigente(
-    actividad,
-    tipo,
-    instanteActual,
-) {
-    const esEntrada =
-        tipo === TIPOS_MARCACION.entrada
-
-    const habilitada = esEntrada
-        ? actividad?.entradaHabilitada === true
-        : actividad?.salidaHabilitada === true
-
-    const expiraEn = esEntrada
-        ? actividad?.entradaHabilitadaHasta
-        : actividad?.salidaHabilitadaHasta
-
-    const fechaExpiracion =
-        Date.parse(expiraEn)
-
-    return (
-        habilitada &&
-        Number.isFinite(fechaExpiracion) &&
-        fechaExpiracion > instanteActual
-    )
 }
 
 // Calcula el contador visible dentro del diálogo.
@@ -428,6 +458,8 @@ function formatearTiempoRestante(
 }
 
 function AdminPrincipalActivities() {
+    const navigate = useNavigate()
+
     const [
         actividades,
         setActividades,
@@ -449,47 +481,66 @@ function AdminPrincipalActivities() {
     ] = useState(0)
 
     const [
+        pestanaActiva,
+        setPestanaActiva,
+    ] = useState('programadas')
+
+    const [
         busqueda,
         setBusqueda,
     ] = useState('')
 
     const [
-        estadoSeleccionado,
-        setEstadoSeleccionado,
-    ] = useState('todos')
-
-    const [
         visibilidadSeleccionada,
         setVisibilidadSeleccionada,
-    ] = useState('activas')
+    ] = useState('todas')
+
+    const [
+        paginaActual,
+        setPaginaActual,
+    ] = useState(1)
 
     /*
      * Identifica qué botón está generando un QR.
-     * Su formato interno es: actividadId:tipo.
+     * Su formato interno es actividadId:tipo.
      */
     const [
         procesandoMarcacion,
         setProcesandoMarcacion,
     ] = useState('')
 
-    /*
-     * Contiene el QR que actualmente se muestra
-     * en el diálogo administrativo.
-     */
     const [
         qrActivo,
         setQrActivo,
     ] = useState(null)
 
-    // Contola unicamente la visibilidad del dialogo.
     const [
-      dialogoQrAbierto,
-      setDialogoQrAbierto,
+        dialogoQrAbierto,
+        setDialogoQrAbierto,
     ] = useState(false)
 
     /*
-     * El reloj permite actualizar automáticamente los
-     * botones y el contador de vencimiento del QR.
+     * La acción pendiente conserva la actividad
+     * que se desea activar, desactivar o eliminar.
+     */
+    const [
+        accionPendiente,
+        setAccionPendiente,
+    ] = useState(null)
+
+    const [
+        dialogoAccionAbierto,
+        setDialogoAccionAbierto,
+    ] = useState(false)
+
+    const [
+        procesandoAccion,
+        setProcesandoAccion,
+    ] = useState(false)
+
+    /*
+     * El reloj actualiza los estados de los botones
+     * y el tiempo restante de los códigos QR.
      */
     const [
         instanteActual,
@@ -549,9 +600,8 @@ function AdminPrincipalActivities() {
     }, [recarga])
 
     /*
-     * Mientras existe un QR abierto actualizamos el reloj
-     * cada segundo. En el listado bastan comprobaciones
-     * cada 30 segundos.
+     * Cuando existe un QR abierto actualizamos el reloj
+     * cada segundo. En el listado bastan treinta segundos.
      */
     useEffect(() => {
         const intervalo = window.setInterval(
@@ -561,8 +611,8 @@ function AdminPrincipalActivities() {
                 )
             },
             dialogoQrAbierto
-              ? 1000
-              : 30000,
+                ? 1000
+                : 30000,
         )
 
         function actualizarAlRegresar() {
@@ -606,28 +656,135 @@ function AdminPrincipalActivities() {
             )
         }
     }, [dialogoQrAbierto])
-
+    
     /*
-     * Mantiene fuera del listado las actividades
-     * finalizadas, canceladas y eliminadas.
+     * Las imágenes recibidas desde la API utilizan una URL
+     * temporal del navegador. La liberamos cuando se reemplaza
+     * el QR o cuando el componente deja de mostrarse.
      */
-    const actividadesVigentes =
+    useEffect(() => {
+        return () => {
+            const imagenUrl =
+                qrActivo?.imagenUrl
+
+            if (
+                typeof imagenUrl ===
+                    'string' &&
+                imagenUrl.startsWith(
+                    'blob:',
+                )
+            ) {
+                URL.revokeObjectURL(
+                    imagenUrl,
+                )
+            }
+        }
+    }, [qrActivo])
+
+    const actividadesDisponibles =
         useMemo(
             () =>
-                actividades.filter(
-                    (actividad) =>
-                        ESTADOS_VIGENTES.includes(
-                            actividad.estado,
-                        ) &&
-                        actividad.eliminada !==
+                actividades
+                    .filter(
+                        (actividad) =>
+                            actividad.eliminada !==
                             true,
-                ),
-            [actividades],
+                    )
+                    .map(
+                        (actividad) => ({
+                            ...actividad,
+
+                            estado:
+                                calcularEstadoTemporalActividad(
+                                    actividad,
+                                    instanteActual,
+                                ),
+                        }),
+                    ),
+            [
+                actividades,
+                instanteActual,
+            ],
+        )
+    /*
+     * Los contadores incluyen todas las actividades
+     * de cada pestaña antes de aplicar los filtros.
+     */
+    const cantidadesPorPestana =
+        useMemo(
+            () => ({
+                programadas:
+                    actividadesDisponibles.filter(
+                        (actividad) =>
+                            actividad.estado ===
+                            'programada',
+                    ).length,
+
+                'en-curso':
+                    actividadesDisponibles.filter(
+                        (actividad) =>
+                            actividad.estado ===
+                            'en-curso',
+                    ).length,
+
+                historial:
+                    actividadesDisponibles.filter(
+                        (actividad) =>
+                            [
+                                'finalizada',
+                                'cancelada',
+                            ].includes(
+                                actividad.estado,
+                            ),
+                    ).length,
+            }),
+            [actividadesDisponibles],
         )
 
+    const configuracionPestana =
+        PESTANAS_ACTIVIDADES.find(
+            (pestana) =>
+                pestana.id ===
+                pestanaActiva,
+        ) ?? PESTANAS_ACTIVIDADES[0]
+
     /*
-     * Aplica búsqueda, estado y visibilidad sin
-     * modificar el arreglo original.
+     * Primero seleccionamos las actividades de la pestaña.
+     * El historial se ordena desde la más reciente.
+     */
+    const actividadesPestana =
+        useMemo(() => {
+            const actividadesEncontradas =
+                actividadesDisponibles.filter(
+                    (actividad) =>
+                        configuracionPestana.estados.includes(
+                            actividad.estado,
+                        ),
+                )
+
+            return actividadesEncontradas.sort(
+                (actividadA, actividadB) => {
+                    const fechaA =
+                        `${actividadA.fecha}T${actividadA.horaInicio}`
+
+                    const fechaB =
+                        `${actividadB.fecha}T${actividadB.horaInicio}`
+
+                    return pestanaActiva ===
+                        'historial'
+                        ? fechaB.localeCompare(fechaA)
+                        : fechaA.localeCompare(fechaB)
+                },
+            )
+        }, [
+            actividadesDisponibles,
+            configuracionPestana,
+            pestanaActiva,
+        ])
+
+    /*
+     * La visibilidad solamente se aplica a las programadas.
+     * Las demás pestañas conservan únicamente la búsqueda.
      */
     const actividadesFiltradas =
         useMemo(() => {
@@ -636,7 +793,7 @@ function AdminPrincipalActivities() {
                     busqueda,
                 )
 
-            return actividadesVigentes.filter(
+            return actividadesPestana.filter(
                 (actividad) => {
                     const coincideBusqueda =
                         !textoBuscado ||
@@ -651,41 +808,154 @@ function AdminPrincipalActivities() {
                             textoBuscado,
                         )
 
-                    const coincideEstado =
-                        estadoSeleccionado ===
-                            'todos' ||
-                        actividad.estado ===
-                            estadoSeleccionado
+                    if (!coincideBusqueda) {
+                        return false
+                    }
+
+                    if (
+                        pestanaActiva !==
+                            'programadas' ||
+                        visibilidadSeleccionada ===
+                            'todas'
+                    ) {
+                        return true
+                    }
 
                     const actividadActiva =
                         actividad.activa !==
                         false
 
-                    const coincideVisibilidad =
-                        visibilidadSeleccionada ===
+                    return visibilidadSeleccionada ===
                         'activas'
-                            ? actividadActiva
-                            : !actividadActiva
-
-                    return (
-                        coincideBusqueda &&
-                        coincideEstado &&
-                        coincideVisibilidad
-                    )
+                        ? actividadActiva
+                        : !actividadActiva
                 },
             )
         }, [
-            actividadesVigentes,
+            actividadesPestana,
             busqueda,
-            estadoSeleccionado,
+            pestanaActiva,
             visibilidadSeleccionada,
         ])
 
+    /*
+     * Calcula cuántas páginas necesita el resultado filtrado.
+     * Se conserva al menos una página para mantener estable
+     * el estado del componente cuando no existen resultados.
+     */
+    const totalPaginas =
+        useMemo(
+            () =>
+                Math.max(
+                    1,
+                    Math.ceil(
+                        actividadesFiltradas.length /
+                            ACTIVIDADES_POR_PAGINA,
+                    ),
+                ),
+            [
+                actividadesFiltradas.length,
+            ],
+        )
+
+    /*
+     * Obtiene únicamente las actividades correspondientes
+     * a la página seleccionada.
+     */
+    const actividadesPagina =
+        useMemo(() => {
+            const indiceInicial =
+                (paginaActual - 1) *
+                ACTIVIDADES_POR_PAGINA
+
+            return actividadesFiltradas.slice(
+                indiceInicial,
+                indiceInicial +
+                    ACTIVIDADES_POR_PAGINA,
+            )
+        }, [
+            actividadesFiltradas,
+            paginaActual,
+        ])
+
+    /*
+     * Al cambiar de pestaña o filtros regresamos a la
+     * primera página para evitar mostrar una página vacía.
+     */
+    useEffect(() => {
+        setPaginaActual(1)
+    }, [
+        pestanaActiva,
+        busqueda,
+        visibilidadSeleccionada,
+    ])
+
+    /*
+     * Si disminuyen los resultados, impedimos conservar
+     * una página que ya no existe.
+     */
+    useEffect(() => {
+        setPaginaActual(
+            (paginaSeleccionada) =>
+                Math.min(
+                    paginaSeleccionada,
+                    totalPaginas,
+                ),
+        )
+    }, [totalPaginas])
+
     const existenActividades =
-        actividadesVigentes.length > 0
+        actividadesDisponibles.length > 0
 
     const existenResultados =
         actividadesFiltradas.length > 0
+
+        const primeraActividadMostrada =
+        existenResultados
+            ? (
+                  paginaActual - 1
+              ) *
+                  ACTIVIDADES_POR_PAGINA +
+              1
+            : 0
+
+    const ultimaActividadMostrada =
+        Math.min(
+            paginaActual *
+                ACTIVIDADES_POR_PAGINA,
+            actividadesFiltradas.length,
+        )
+
+    const hayFiltrosAplicados =
+        Boolean(busqueda.trim()) ||
+        (
+            pestanaActiva ===
+                'programadas' &&
+            visibilidadSeleccionada !==
+                'todas'
+        )
+
+    const mostrarVisibilidad =
+        pestanaActiva ===
+        'programadas'
+
+    // Durante la actividad mostramos los controles de asistencia.
+    const existeVentanaQrEnHistorial =
+        pestanaActiva ===
+            'historial' &&
+        actividadesFiltradas.some(
+            (actividad) =>
+                obtenerDisponibilidadMarcacion(
+                    actividad,
+                    TIPOS_MARCACION.salida,
+                    instanteActual,
+                ).disponible,
+        )
+
+    const mostrarAsistencia =
+        pestanaActiva ===
+            'en-curso' ||
+        existeVentanaQrEnHistorial
 
     const segundosRestantes =
         qrActivo
@@ -708,35 +978,16 @@ function AdminPrincipalActivities() {
         Boolean(qrActivo) &&
         procesandoMarcacion ===
             identificadorProcesoQr
-    
-    // Identifica la generacion que se encuentra abierta y si todavia puede reactivarse despues de vencer.
-    const generacionQrActiva =
-        qrActivo
-          ? Math.min(
-            Math.max(
-              Number(
-                qrActivo.generacion,
-              ) || 1,
-              1,
-            ),
-            MAXIMO_GENERACIONES_QR,
-          )
-        : 0
 
-    
-    const limiteQrAlcanzado = generacionQrActiva >= MAXIMO_GENERACIONES_QR
-    const qrPuedeReactivarse =
-        Boolean(qrActivo) &&
-        !qrEstaVigente &&
-        !limiteQrAlcanzado
+    const accionEsEliminacion =
+        accionPendiente?.tipo ===
+        'eliminar'
 
-    function mostrarFuncionPendiente(
-        nombreFuncion,
-    ) {
-        toast.info(
-            `${nombreFuncion} estará disponible próximamente`,
-        )
-    }
+    const accionEsActivacion =
+        accionPendiente?.tipo ===
+            'visibilidad' &&
+        accionPendiente?.nuevaVisibilidad ===
+            true
 
     function reintentarCarga() {
         setRecarga(
@@ -745,11 +996,26 @@ function AdminPrincipalActivities() {
         )
     }
 
+    function seleccionarPestana(
+        identificador,
+    ) {
+        setPestanaActiva(
+            identificador,
+        )
+    }
+
+    function limpiarFiltros() {
+        setBusqueda('')
+        setVisibilidadSeleccionada(
+            'todas',
+        )
+    }
+
     /*
-     * Genera el QR solicitado, actualiza la actividad
-     * dentro de la tabla y abre el diálogo.
+     * Solicita al servicio el QR correspondiente y abre
+     * el diálogo para que los estudiantes puedan escanearlo.
      */
-    async function habilitarMarcacion(
+    async function mostrarQrMarcacion(
         actividad,
         tipo,
     ) {
@@ -771,16 +1037,25 @@ function AdminPrincipalActivities() {
             const respuesta =
                 tipo ===
                 TIPOS_MARCACION.entrada
-                    ? await habilitarEntradaActividad(
+                    ? await obtenerQrEntradaActividad(
                           actividad.id,
                       )
-                    : await habilitarSalidaActividad(
+                    : await obtenerQrSalidaActividad(
                           actividad.id,
                       )
 
+            const existeContenidoQr =
+                Boolean(
+                    respuesta?.qr?.url,
+                ) ||
+                Boolean(
+                    respuesta?.qr
+                        ?.imagenUrl,
+                )
+
             if (
                 !respuesta?.actividad ||
-                !respuesta?.qr?.url
+                !existeContenidoQr
             ) {
                 throw new Error(
                     'El servicio no devolvió un código QR válido.',
@@ -800,73 +1075,35 @@ function AdminPrincipalActivities() {
 
             setQrActivo({
                 ...respuesta.qr,
+
                 actividadId:
                     respuesta.actividad.id,
+
                 actividadTitulo:
                     respuesta.actividad.titulo,
             })
 
-            // Abrimos el dialogo despues de conservar toda la informacion que debe mostrar.
             setDialogoQrAbierto(true)
-
-            setInstanteActual(
-                Date.now(),
-            )
+            setInstanteActual(Date.now())
 
             const nombreMarcacion =
-              tipo === TIPOS_MARCACION.entrada
-                  ? 'entrada'
-                  : 'salida'
-            
-            if (respuesta.reutilizado) {
-              toast.info(
-                `QR de ${nombreMarcacion}. Se puede renovar al expirar el tiempo.`,
-              )
-            } else {
-              toast.success(
-                `QR de ${nombreMarcacion} habilitado. Generación ${respuesta.qr.generacion} de ${MAXIMO_GENERACIONES_QR}.`,
-              )
-            }
+                tipo ===
+                TIPOS_MARCACION.entrada
+                    ? 'entrada'
+                    : 'salida'
 
+            toast.success(
+                `El QR de ${nombreMarcacion} fue generado correctamente.`,
+            )
         } catch (errorMarcacion) {
             toast.error(
                 errorMarcacion instanceof Error
                     ? errorMarcacion.message
-                    : 'No fue posible habilitar el código QR.',
+                    : 'No fue posible obtener el código QR.',
             )
         } finally {
             setProcesandoMarcacion('')
         }
-    }
-
-    /*
-     * Permite renovar un QR vencido desde el mismo diálogo.
-     * El servicio reemplazará el token anterior.
-     */
-    function renovarQrActivo() {
-        if (!qrActivo) {
-            return
-        }
-
-        const actividad =
-            actividades.find(
-                (elemento) =>
-                    elemento.id ===
-                    qrActivo.actividadId,
-            )
-
-        if (!actividad) {
-            toast.error(
-                'La actividad ya no se encuentra disponible.',
-            )
-
-            return
-        }
-
-        habilitarMarcacion(
-            actividad,
-            qrActivo.tipo,
-        )
     }
 
     function cerrarDialogoQr() {
@@ -874,8 +1111,149 @@ function AdminPrincipalActivities() {
             return
         }
 
-        // Cerramos unicamente el dialogo
         setDialogoQrAbierto(false)
+    }
+
+    /*
+     * Guarda la actividad seleccionada antes de mostrar
+     * la confirmación para activar o desactivar.
+     */
+    function solicitarCambioVisibilidad(
+        actividad,
+    ) {
+        if (
+            !actividad?.id ||
+            procesandoAccion
+        ) {
+            return
+        }
+
+        setAccionPendiente({
+            tipo: 'visibilidad',
+            actividad,
+            nuevaVisibilidad:
+                actividad.activa === false,
+        })
+
+        setDialogoAccionAbierto(true)
+    }
+
+    function solicitarEliminacion(
+        actividad,
+    ) {
+        if (
+            !actividad?.id ||
+            procesandoAccion
+        ) {
+            return
+        }
+
+        setAccionPendiente({
+            tipo: 'eliminar',
+            actividad,
+        })
+
+        setDialogoAccionAbierto(true)
+    }
+
+    function cerrarDialogoAccion() {
+        if (procesandoAccion) {
+            return
+        }
+
+        /*
+         * Conservamos la acción durante el cierre para evitar
+         * cambios de contenido mientras termina la animación.
+         */
+        setDialogoAccionAbierto(false)
+    }
+
+    /*
+     * Ejecuta la operación elegida y actualiza la tabla
+     * sin realizar una nueva consulta completa.
+     */
+    async function confirmarAccionPendiente() {
+        if (
+            !accionPendiente?.actividad?.id ||
+            procesandoAccion
+        ) {
+            return
+        }
+
+        const actividadSeleccionada =
+            accionPendiente.actividad
+
+        setProcesandoAccion(true)
+
+        try {
+            if (
+                accionPendiente.tipo ===
+                'visibilidad'
+            ) {
+                const actividadActualizada =
+                    await cambiarVisibilidadActividad(
+                        actividadSeleccionada.id,
+                        accionPendiente.nuevaVisibilidad,
+                    )
+
+                setActividades(
+                    (actividadesActuales) =>
+                        actividadesActuales.map(
+                            (actividad) =>
+                                actividad.id ===
+                                actividadActualizada.id
+                                    ? actividadActualizada
+                                    : actividad,
+                        ),
+                )
+
+                toast.success(
+                    accionPendiente.nuevaVisibilidad
+                        ? 'La actividad fue activada correctamente.'
+                        : 'La actividad fue desactivada correctamente.',
+                )
+            }
+
+            if (
+                accionPendiente.tipo ===
+                'eliminar'
+            ) {
+                await eliminarActividad(
+                    actividadSeleccionada.id,
+                )
+
+                setActividades(
+                    (actividadesActuales) =>
+                        actividadesActuales.filter(
+                            (actividad) =>
+                                actividad.id !==
+                                actividadSeleccionada.id,
+                        ),
+                )
+
+                if (
+                    qrActivo?.actividadId ===
+                    actividadSeleccionada.id
+                ) {
+                    setQrActivo(null)
+                    setDialogoQrAbierto(false)
+                }
+
+                toast.success(
+                    'La actividad fue eliminada permanentemente.',
+                )
+            }
+
+            setDialogoAccionAbierto(false)
+        } catch (errorAccion) {
+            toast.error(
+                errorAccion instanceof Error
+                    ? errorAccion.message
+                    : 'No fue posible completar la operación.',
+            )
+        } finally {
+            setProcesandoAccion(false)
+        }
     }
 
     return (
@@ -889,26 +1267,14 @@ function AdminPrincipalActivities() {
                     <h1>Actividades</h1>
 
                     <p>
-                        Administra las actividades
-                        vigentes y habilita los códigos
-                        QR de entrada y salida.
+                        Administra las actividades,
+                        consulta su historial y controla
+                        su disponibilidad para los
+                        estudiantes.
                     </p>
                 </div>
 
                 <div className="admin-activities-heading__actions">
-                    <button
-                        className="admin-activities-history-button"
-                        type="button"
-                        onClick={() =>
-                            mostrarFuncionPendiente(
-                                'El historial de actividades',
-                            )
-                        }
-                    >
-                        <History aria-hidden="true" />
-                        Historial
-                    </button>
-
                     <Link
                         className="admin-activities-create-button"
                         to="/admin-principal/actividades/crear"
@@ -920,81 +1286,138 @@ function AdminPrincipalActivities() {
             </header>
 
             {!cargando && !error && (
-                <section
-                    className="admin-activities-toolbar"
-                    aria-label="Filtros de actividades"
-                >
-                    <label className="admin-activities-search">
-                        <span>
-                            Buscar actividad
-                        </span>
+                <>
+                    {/* Navegación entre los estados principales. */}
+                    <div
+                        className="admin-activities-tabs"
+                        role="tablist"
+                        aria-label="Clasificación de actividades"
+                    >
+                        {PESTANAS_ACTIVIDADES.map(
+                            (pestana) => {
+                                const IconoPestana =
+                                    pestana.icono
 
-                        <div className="admin-activities-search__control">
-                            <Search aria-hidden="true" />
+                                const seleccionada =
+                                    pestanaActiva ===
+                                    pestana.id
 
-                            <input
-                                type="search"
-                                value={busqueda}
-                                placeholder="Buscar por título o lugar"
-                                onChange={(evento) =>
-                                    setBusqueda(
-                                        evento.target.value,
-                                    )
-                                }
-                            />
-                        </div>
-                    </label>
+                                return (
+                                    <button
+                                        key={
+                                            pestana.id
+                                        }
+                                        id={`admin-activities-tab-${pestana.id}`}
+                                        className={
+                                            seleccionada
+                                                ? 'admin-activities-tab admin-activities-tab--active'
+                                                : 'admin-activities-tab'
+                                        }
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={
+                                            seleccionada
+                                        }
+                                        aria-controls="admin-activities-tab-panel"
+                                        onClick={() =>
+                                            seleccionarPestana(
+                                                pestana.id,
+                                            )
+                                        }
+                                    >
+                                        <IconoPestana
+                                            aria-hidden="true"
+                                        />
 
-                    <label className="admin-activities-filter">
-                        <span>Estado</span>
+                                        <span>
+                                            {
+                                                pestana.titulo
+                                            }
+                                        </span>
 
-                        <select
-                            value={
-                                estadoSeleccionado
-                            }
-                            onChange={(evento) =>
-                                setEstadoSeleccionado(
-                                    evento.target.value,
+                                        <small>
+                                            {
+                                                cantidadesPorPestana[
+                                                    pestana.id
+                                                ]
+                                            }
+                                        </small>
+                                    </button>
                                 )
+                            },
+                        )}
+                    </div>
+
+                    {/* Los filtros trabajan sobre la pestaña seleccionada. */}
+                    <section
+                        className="admin-activities-toolbar"
+                        aria-label="Filtros de actividades"
+                    >
+                        <label className="admin-activities-search">
+                            <span>
+                                Buscar actividad
+                            </span>
+
+                            <div className="admin-activities-search__control">
+                                <Search aria-hidden="true" />
+
+                                <input
+                                    type="search"
+                                    value={busqueda}
+                                    placeholder="Buscar por título o lugar"
+                                    onChange={(evento) =>
+                                        setBusqueda(
+                                            evento.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
+                        </label>
+
+                        {mostrarVisibilidad && (
+                            <label className="admin-activities-filter">
+                                <span>
+                                    Visibilidad
+                                </span>
+
+                                <select
+                                    value={
+                                        visibilidadSeleccionada
+                                    }
+                                    onChange={(evento) =>
+                                        setVisibilidadSeleccionada(
+                                            evento.target.value,
+                                        )
+                                    }
+                                >
+                                    <option value="todas">
+                                        Todas
+                                    </option>
+
+                                    <option value="activas">
+                                        Activas
+                                    </option>
+
+                                    <option value="desactivadas">
+                                        Desactivadas
+                                    </option>
+                                </select>
+                            </label>
+                        )}
+
+                        <button
+                            className="admin-activities-clear-button"
+                            type="button"
+                            disabled={
+                                !hayFiltrosAplicados
                             }
+                            onClick={limpiarFiltros}
                         >
-                            <option value="todos">
-                                Todos los estados
-                            </option>
-
-                            <option value="programada">
-                                Programadas
-                            </option>
-
-                            <option value="en-curso">
-                                En curso
-                            </option>
-                        </select>
-                    </label>
-
-                    <label className="admin-activities-filter">
-                        <span>Visibilidad</span>
-
-                        <select
-                            value={
-                                visibilidadSeleccionada
-                            }
-                            onChange={(evento) =>
-                                setVisibilidadSeleccionada(
-                                    evento.target.value,
-                                )
-                            }
-                        >
-                            <option value="activas">
-                                Activas
-                            </option>
-
-                            <option value="desactivadas">
-                                Desactivadas
-                            </option>
-                        </select>
-                    </label>
-                </section>
+                            <X aria-hidden="true" />
+                            Limpiar filtros
+                        </button>
+                    </section>
+                </>
             )}
 
             {cargando && (
@@ -1049,7 +1472,7 @@ function AdminPrincipalActivities() {
                         <CalendarDays aria-hidden="true" />
 
                         <h2>
-                            No hay actividades vigentes
+                            No hay actividades registradas
                         </h2>
 
                         <p>
@@ -1069,15 +1492,20 @@ function AdminPrincipalActivities() {
                 !error &&
                 existenActividades && (
                     <section
+                        key={pestanaActiva}
+                        id="admin-activities-tab-panel"
                         className="admin-activities-list"
-                        aria-labelledby="admin-activities-list-title"
+                        role="tabpanel"
+                        aria-labelledby={`admin-activities-tab-${pestanaActiva}`}
                     >
                         <header className="admin-activities-list__header">
                             <div>
                                 <p>Listado</p>
 
                                 <h2 id="admin-activities-list-title">
-                                    Actividades vigentes
+                                    {
+                                        configuracionPestana.tituloListado
+                                    }
                                 </h2>
                             </div>
 
@@ -1097,22 +1525,40 @@ function AdminPrincipalActivities() {
                                 <Search aria-hidden="true" />
 
                                 <h3>
-                                    No encontramos
-                                    resultados
+                                    {actividadesPestana.length ===
+                                    0
+                                        ? 'No hay actividades en esta sección'
+                                        : 'No encontramos resultados'}
                                 </h3>
 
                                 <p>
-                                    Cambia la búsqueda o
-                                    los filtros
-                                    seleccionados.
+                                    {actividadesPestana.length ===
+                                    0
+                                        ? 'Las actividades aparecerán aquí cuando alcancen este estado.'
+                                        : 'Cambia la búsqueda o limpia los filtros seleccionados.'}
                                 </p>
+
+                                {hayFiltrosAplicados && (
+                                    <button
+                                        className="admin-activities-no-results__clear"
+                                        type="button"
+                                        onClick={
+                                            limpiarFiltros
+                                        }
+                                    >
+                                        <X aria-hidden="true" />
+                                        Limpiar filtros
+                                    </button>
+                                )}
                             </div>
                         ) : (
+                            <>
                             <div className="admin-activities-management-table-wrapper">
                                 <table className="admin-activities-management-table">
                                     <caption>
-                                        Listado administrativo
-                                        de actividades vigentes
+                                        {
+                                            configuracionPestana.tituloListado
+                                        }
                                     </caption>
 
                                     <thead>
@@ -1137,13 +1583,17 @@ function AdminPrincipalActivities() {
                                                 Estado
                                             </th>
 
-                                            <th scope="col">
-                                                Visibilidad
-                                            </th>
+                                            {mostrarVisibilidad && (
+                                                <th scope="col">
+                                                    Visibilidad
+                                                </th>
+                                            )}
 
-                                            <th scope="col">
-                                                Asistencia
-                                            </th>
+                                            {mostrarAsistencia && (
+                                                <th scope="col">
+                                                    Asistencia
+                                                </th>
+                                            )}
 
                                             <th scope="col">
                                                 Acciones
@@ -1152,65 +1602,31 @@ function AdminPrincipalActivities() {
                                     </thead>
 
                                     <tbody>
-                                        {actividadesFiltradas.map(
+                                        {actividadesPagina.map(
                                             (actividad) => {
                                                 const disponibilidadEntrada =
-                                                    obtenerDisponibilidadMarcacion(
-                                                        actividad,
-                                                        TIPOS_MARCACION.entrada,
-                                                        instanteActual,
-                                                    )
+                                                    mostrarAsistencia
+                                                        ? obtenerDisponibilidadMarcacion(
+                                                            actividad,
+                                                            TIPOS_MARCACION.entrada,
+                                                            instanteActual,
+                                                        )
+                                                    : null
 
                                                 const disponibilidadSalida =
-                                                    obtenerDisponibilidadMarcacion(
-                                                        actividad,
-                                                        TIPOS_MARCACION.salida,
-                                                        instanteActual,
-                                                    )
-
-                                                const entradaVigente =
-                                                    marcacionEstaVigente(
-                                                        actividad,
-                                                        TIPOS_MARCACION.entrada,
-                                                        instanteActual,
-                                                    )
-
-                                                const salidaVigente =
-                                                    marcacionEstaVigente(
-                                                        actividad,
-                                                        TIPOS_MARCACION.salida,
-                                                        instanteActual,
-                                                    )
-
-                                                const generacionesEntrada =
-                                                    obtenerGeneracionesQr(
-                                                      actividad,
-                                                      TIPOS_MARCACION.entrada,
-                                                    )
-
-                                                const generacionesSalida =
-                                                    obtenerGeneracionesQr(
-                                                      actividad,
-                                                      TIPOS_MARCACION.salida,
-                                                    )
+                                                        mostrarAsistencia
+                                                            ? obtenerDisponibilidadMarcacion(
+                                                                actividad,
+                                                                TIPOS_MARCACION.salida,
+                                                                instanteActual,
+                                                            )
+                                                        : null
 
                                                 const textoBotonEntrada =
-                                                    entradaVigente
-                                                      ? 'Ver QR de entrada'
-                                                      : generacionesEntrada >= MAXIMO_GENERACIONES_QR
-                                                      ? 'Entrada agotada'
-                                                      : generacionesEntrada > 0
-                                                        ? 'Reactivar entrada'
-                                                        : 'Habilitar entrada'
-                                                
+                                                    'Mostrar QR de entrada'
+
                                                 const textoBotonSalida =
-                                                    salidaVigente
-                                                      ? 'Ver QR de salida'
-                                                      : generacionesSalida >= MAXIMO_GENERACIONES_QR
-                                                      ? 'Salida agotada'
-                                                      : generacionesSalida > 0
-                                                        ? 'Reactivar salida'
-                                                        : 'Habilitar salida'
+                                                    'Mostrar QR de salida'
 
                                                 const procesoEntrada =
                                                     `${actividad.id}:${TIPOS_MARCACION.entrada}`
@@ -1226,9 +1642,40 @@ function AdminPrincipalActivities() {
                                                     procesandoMarcacion ===
                                                     procesoSalida
 
+                                                const cuposDisponibles =
+                                                    Number(
+                                                        actividad.cuposDisponibles,
+                                                    )
+
+                                                const cuposTotales =
+                                                    Number(
+                                                        actividad.cuposTotales,
+                                                    )
+
+                                                const cuposLlenos =
+                                                    Number.isFinite(
+                                                        cuposDisponibles,
+                                                    ) &&
+                                                    cuposDisponibles <=
+                                                        0
+
+                                                const esProgramada =
+                                                    actividad.estado ===
+                                                    'programada'
+
                                                 return (
-                                                    <tr key={actividad.id}>
-                                                        <th scope="row">
+                                                    <tr
+                                                        key={
+                                                            actividad.id
+                                                        }
+                                                        className={
+                                                            actividad.activa ===
+                                                            false
+                                                                ? 'admin-activity-row--inactive'
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <th scope="row" data-label="Actividad">
                                                             <div className="admin-activity-name">
                                                                 <span>
                                                                     <CalendarDays
@@ -1255,7 +1702,7 @@ function AdminPrincipalActivities() {
                                                             </div>
                                                         </th>
 
-                                                        <td>
+                                                        <td data-label="Fecha y horario">
                                                             <div className="admin-activity-schedule">
                                                                 <time
                                                                     dateTime={
@@ -1277,18 +1724,36 @@ function AdminPrincipalActivities() {
                                                             </div>
                                                         </td>
 
-                                                        <td>
+                                                        <td data-label="Lugar">
                                                             {actividad.lugar ||
                                                                 'Lugar por confirmar'}
                                                         </td>
 
-                                                        <td>
-                                                            {
-                                                                actividad.cuposDisponibles
-                                                            }
+                                                        <td data-label="Cupos">
+                                                            <div
+                                                                className={
+                                                                    cuposLlenos
+                                                                        ? 'admin-activity-capacity admin-activity-capacity--full'
+                                                                        : 'admin-activity-capacity'
+                                                                }
+                                                            >
+                                                                <strong>
+                                                                    {cuposLlenos
+                                                                        ? 'Cupos llenos'
+                                                                        : `${cuposDisponibles} disponibles`}
+                                                                </strong>
+
+                                                                <small>
+                                                                    {Number.isFinite(
+                                                                        cuposTotales,
+                                                                    )
+                                                                        ? `${cuposTotales} cupos totales`
+                                                                        : 'Total no disponible'}
+                                                                </small>
+                                                            </div>
                                                         </td>
 
-                                                        <td>
+                                                        <td data-label="Estado">
                                                             <span
                                                                 className={
                                                                     'admin-activity-state ' +
@@ -1301,173 +1766,198 @@ function AdminPrincipalActivities() {
                                                             </span>
                                                         </td>
 
-                                                        <td>
-                                                            <span
-                                                                className={
-                                                                    actividad.activa !==
+                                                        {mostrarVisibilidad && (
+                                                            <td data-label="Visibilidad">
+                                                                <span
+                                                                    className={
+                                                                        actividad.activa !==
+                                                                        false
+                                                                            ? 'admin-activity-visibility admin-activity-visibility--active'
+                                                                            : 'admin-activity-visibility admin-activity-visibility--inactive'
+                                                                    }
+                                                                >
+                                                                    {actividad.activa !==
                                                                     false
-                                                                        ? 'admin-activity-visibility admin-activity-visibility--active'
-                                                                        : 'admin-activity-visibility admin-activity-visibility--inactive'
-                                                                }
-                                                            >
-                                                                {actividad.activa !==
-                                                                false
-                                                                    ? 'Activa'
-                                                                    : 'Desactivada'}
-                                                            </span>
-                                                        </td>
+                                                                        ? 'Activa'
+                                                                        : 'Desactivada'}
+                                                                </span>
+                                                            </td>
+                                                        )}
 
-                                                        <td>
-                                                            <div className="admin-activity-attendance-actions">
-                                                                <button
-                                                                    className={
-                                                                        entradaVigente
-                                                                            ? 'admin-activity-attendance-button admin-activity-attendance-button--entry admin-activity-attendance-button--active'
-                                                                            : 'admin-activity-attendance-button admin-activity-attendance-button--entry'
-                                                                    }
-                                                                    type="button"
-                                                                    disabled={
-                                                                        !disponibilidadEntrada.disponible ||
-                                                                        Boolean(
-                                                                            procesandoMarcacion,
-                                                                        )
-                                                                    }
-                                                                    title={
-                                                                        disponibilidadEntrada.mensaje
-                                                                    }
-                                                                    aria-label={`${textoBotonEntrada} para ${actividad.titulo}`}
-                                                                    onClick={() =>
-                                                                        habilitarMarcacion(
-                                                                            actividad,
-                                                                            TIPOS_MARCACION.entrada,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {generandoEntrada ? (
-                                                                        <LoaderCircle
-                                                                            className="admin-activity-attendance-button__loader"
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    ) : (
-                                                                        <LogIn
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    )}
+                                                        {mostrarAsistencia && (
+                                                            <td data-label="Asistencia">
+                                                                <div className="admin-activity-attendance-actions">
+                                                                    <button
+                                                                        className={
+                                                                            disponibilidadEntrada?.disponible
+                                                                                ? 'admin-activity-attendance-button admin-activity-attendance-button--entry admin-activity-attendance-button--active'
+                                                                                : 'admin-activity-attendance-button admin-activity-attendance-button--entry'
+                                                                        }
+                                                                        type="button"
+                                                                        disabled={
+                                                                            !disponibilidadEntrada?.disponible ||
+                                                                            Boolean(
+                                                                                procesandoMarcacion,
+                                                                            )
+                                                                        }
+                                                                        title={
+                                                                            disponibilidadEntrada?.mensaje
+                                                                        }
+                                                                        aria-label={`${textoBotonEntrada} para ${actividad.titulo}`}
+                                                                        onClick={() =>
+                                                                            mostrarQrMarcacion(
+                                                                                actividad,
+                                                                                TIPOS_MARCACION.entrada,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {generandoEntrada ? (
+                                                                            <LoaderCircle
+                                                                                className="admin-activity-attendance-button__loader"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        ) : (
+                                                                            <LogIn
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        )}
 
-                                                                    <span>
-                                                                        {textoBotonEntrada}
-                                                                    </span>
-                                                                </button>
+                                                                        <span>
+                                                                            {
+                                                                                textoBotonEntrada
+                                                                            }
+                                                                        </span>
+                                                                    </button>
 
-                                                                <button
-                                                                    className={
-                                                                        salidaVigente
-                                                                            ? 'admin-activity-attendance-button admin-activity-attendance-button--exit admin-activity-attendance-button--active'
-                                                                            : 'admin-activity-attendance-button admin-activity-attendance-button--exit'
-                                                                    }
-                                                                    type="button"
-                                                                    disabled={
-                                                                        !disponibilidadSalida.disponible ||
-                                                                        Boolean(
-                                                                            procesandoMarcacion,
-                                                                        )
-                                                                    }
-                                                                    title={
-                                                                        disponibilidadSalida.mensaje
-                                                                    }
-                                                                    aria-label={`${textoBotonSalida} para ${actividad.titulo}`}
-                                                                    onClick={() =>
-                                                                        habilitarMarcacion(
-                                                                            actividad,
-                                                                            TIPOS_MARCACION.salida,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {generandoSalida ? (
-                                                                        <LoaderCircle
-                                                                            className="admin-activity-attendance-button__loader"
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    ) : (
-                                                                        <LogOut
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    )}
+                                                                    <button
+                                                                        className={
+                                                                            disponibilidadSalida?.disponible
+                                                                                ? 'admin-activity-attendance-button admin-activity-attendance-button--exit admin-activity-attendance-button--active'
+                                                                                : 'admin-activity-attendance-button admin-activity-attendance-button--exit'
+                                                                        }
+                                                                        type="button"
+                                                                        disabled={
+                                                                            !disponibilidadSalida?.disponible ||
+                                                                            Boolean(
+                                                                                procesandoMarcacion,
+                                                                            )
+                                                                        }
+                                                                        title={
+                                                                            disponibilidadSalida?.mensaje
+                                                                        }
+                                                                        aria-label={`${textoBotonSalida} para ${actividad.titulo}`}
+                                                                        onClick={() =>
+                                                                            mostrarQrMarcacion(
+                                                                                actividad,
+                                                                                TIPOS_MARCACION.salida,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {generandoSalida ? (
+                                                                            <LoaderCircle
+                                                                                className="admin-activity-attendance-button__loader"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        ) : (
+                                                                            <LogOut
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        )}
 
-                                                                    <span>
-                                                                        {textoBotonSalida}
-                                                                    </span>
-                                                                </button>
-                                                            </div>
-                                                        </td>
+                                                                        <span>
+                                                                            {
+                                                                                textoBotonSalida
+                                                                            }
+                                                                        </span>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        )}
 
-                                                        <td>
+                                                        <td data-label="Acciones">
                                                             <div className="admin-activity-actions">
                                                                 <button
                                                                     type="button"
                                                                     title="Ver actividad"
                                                                     aria-label={`Ver ${actividad.titulo}`}
                                                                     onClick={() =>
-                                                                        mostrarFuncionPendiente(
-                                                                            'Ver actividad',
+                                                                        navigate(
+                                                                            `/admin-principal/actividades/${encodeURIComponent(
+                                                                                actividad.id,
+                                                                            )}`,
                                                                         )
                                                                     }
                                                                 >
                                                                     <Eye aria-hidden="true" />
                                                                 </button>
 
-                                                                <button
-                                                                    type="button"
-                                                                    title="Editar actividad"
-                                                                    aria-label={`Editar ${actividad.titulo}`}
-                                                                    onClick={() =>
-                                                                        mostrarFuncionPendiente(
-                                                                            'Editar actividad',
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Pencil aria-hidden="true" />
-                                                                </button>
+                                                                {esProgramada && (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            title="Editar actividad"
+                                                                            aria-label={`Editar ${actividad.titulo}`}
+                                                                            onClick={() =>
+                                                                                navigate(
+                                                                                    `/admin-principal/actividades/${encodeURIComponent(
+                                                                                        actividad.id,
+                                                                                    )}/editar`,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Pencil aria-hidden="true" />
+                                                                        </button>
 
-                                                                <button
-                                                                    type="button"
-                                                                    title={
-                                                                        actividad.activa !==
-                                                                        false
-                                                                            ? 'Desactivar actividad'
-                                                                            : 'Activar actividad'
-                                                                    }
-                                                                    aria-label={
-                                                                        actividad.activa !==
-                                                                        false
-                                                                            ? `Desactivar ${actividad.titulo}`
-                                                                            : `Activar ${actividad.titulo}`
-                                                                    }
-                                                                    onClick={() =>
-                                                                        mostrarFuncionPendiente(
-                                                                            actividad.activa !==
-                                                                            false
-                                                                                ? 'Desactivar actividad'
-                                                                                : 'Activar actividad',
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Power aria-hidden="true" />
-                                                                </button>
+                                                                        <button
+                                                                            className={
+                                                                                actividad.activa !==
+                                                                                false
+                                                                                    ? 'admin-activity-actions__power'
+                                                                                    : 'admin-activity-actions__power admin-activity-actions__power--inactive'
+                                                                            }
+                                                                            type="button"
+                                                                            disabled={
+                                                                                procesandoAccion
+                                                                            }
+                                                                            title={
+                                                                                actividad.activa !==
+                                                                                false
+                                                                                    ? 'Desactivar actividad'
+                                                                                    : 'Activar actividad'
+                                                                            }
+                                                                            aria-label={
+                                                                                actividad.activa !==
+                                                                                false
+                                                                                    ? `Desactivar ${actividad.titulo}`
+                                                                                    : `Activar ${actividad.titulo}`
+                                                                            }
+                                                                            onClick={() =>
+                                                                                solicitarCambioVisibilidad(
+                                                                                    actividad,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Power aria-hidden="true" />
+                                                                        </button>
 
-                                                                <button
-                                                                    className="admin-activity-actions__delete"
-                                                                    type="button"
-                                                                    title="Eliminar actividad"
-                                                                    aria-label={`Eliminar ${actividad.titulo}`}
-                                                                    onClick={() =>
-                                                                        mostrarFuncionPendiente(
-                                                                            'Eliminar actividad',
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Trash2 aria-hidden="true" />
-                                                                </button>
+                                                                        <button
+                                                                            className="admin-activity-actions__delete"
+                                                                            type="button"
+                                                                            disabled={
+                                                                                procesandoAccion
+                                                                            }
+                                                                            title="Eliminar actividad"
+                                                                            aria-label={`Eliminar ${actividad.titulo}`}
+                                                                            onClick={() =>
+                                                                                solicitarEliminacion(
+                                                                                    actividad,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Trash2 aria-hidden="true" />
+                                                                        </button>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1477,25 +1967,240 @@ function AdminPrincipalActivities() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Paginación del listado de actividades */}
+                            <div className="admin-activities-pagination">
+                                <p>
+                                    Mostrando{' '}
+                                    {
+                                        primeraActividadMostrada
+                                    }{' '}
+                                    a{' '}
+                                    {
+                                        ultimaActividadMostrada
+                                    }{' '}
+                                    de{' '}
+                                    {
+                                        actividadesFiltradas.length
+                                    }{' '}
+                                    {actividadesFiltradas.length ===
+                                    1
+                                        ? 'resultado'
+                                        : 'resultados'}
+                                </p>
+
+                                <nav aria-label="Paginación de actividades">
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            paginaActual === 1
+                                        }
+                                        aria-label="Ir a la página anterior"
+                                        onClick={() =>
+                                            setPaginaActual(
+                                                (
+                                                    paginaSeleccionada,
+                                                ) =>
+                                                    paginaSeleccionada -
+                                                    1,
+                                            )
+                                        }
+                                    >
+                                        <ChevronLeft aria-hidden="true" />
+                                    </button>
+
+                                    {Array.from(
+                                        {
+                                            length: totalPaginas,
+                                        },
+                                        (
+                                            _,
+                                            indice,
+                                        ) =>
+                                            indice +
+                                            1,
+                                    ).map(
+                                        (pagina) => (
+                                            <button
+                                                key={
+                                                    pagina
+                                                }
+                                                className={
+                                                    pagina ===
+                                                    paginaActual
+                                                        ? 'admin-activities-pagination__page admin-activities-pagination__page--active'
+                                                        : 'admin-activities-pagination__page'
+                                                }
+                                                type="button"
+                                                aria-current={
+                                                    pagina ===
+                                                    paginaActual
+                                                        ? 'page'
+                                                        : undefined
+                                                }
+                                                aria-label={`Ir a la página ${pagina}`}
+                                                onClick={() =>
+                                                    setPaginaActual(
+                                                        pagina,
+                                                    )
+                                                }
+                                            >
+                                                {
+                                                    pagina
+                                                }
+                                            </button>
+                                        ),
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            paginaActual ===
+                                            totalPaginas
+                                        }
+                                        aria-label="Ir a la página siguiente"
+                                        onClick={() =>
+                                            setPaginaActual(
+                                                (
+                                                    paginaSeleccionada,
+                                                ) =>
+                                                    paginaSeleccionada +
+                                                    1,
+                                            )
+                                        }
+                                    >
+                                        <ChevronRight aria-hidden="true" />
+                                    </button>
+                                </nav>
+                            </div>
+                            </>
                         )}
                     </section>
                 )}
 
-            <div
-                className="admin-activities-future-note"
-                role="note"
+            {/* Confirmación para activar, desactivar o eliminar. */}
+            <AlertDialog.Root
+                open={dialogoAccionAbierto}
+                onOpenChange={(abierto) => {
+                    if (!procesandoAccion) {
+                        setDialogoAccionAbierto(
+                            abierto,
+                        )
+                    }
+                }}
             >
-                <Archive aria-hidden="true" />
+                <AlertDialog.Portal>
+                    <AlertDialog.Overlay className="admin-activity-confirm-dialog__overlay" />
 
-                <p>
-                    Las opciones para consultar,
-                    editar, activar, desactivar y
-                    eliminar se implementarán en los
-                    siguientes avances.
-                </p>
-            </div>
+                    <AlertDialog.Content className="admin-activity-confirm-dialog__content">
+                        <div
+                            className={
+                                accionEsEliminacion
+                                    ? 'admin-activity-confirm-dialog__icon admin-activity-confirm-dialog__icon--danger'
+                                    : accionEsActivacion
+                                      ? 'admin-activity-confirm-dialog__icon admin-activity-confirm-dialog__icon--activate'
+                                      : 'admin-activity-confirm-dialog__icon admin-activity-confirm-dialog__icon--deactivate'
+                            }
+                        >
+                            {accionEsEliminacion ? (
+                                <Trash2 aria-hidden="true" />
+                            ) : (
+                                <Power aria-hidden="true" />
+                            )}
+                        </div>
 
-            {/* Diálogo que muestra el QR habilitado. */}
+                        <AlertDialog.Title className="admin-activity-confirm-dialog__title">
+                            {accionEsEliminacion
+                                ? 'Eliminar actividad'
+                                : accionEsActivacion
+                                  ? 'Activar actividad'
+                                  : 'Desactivar actividad'}
+                        </AlertDialog.Title>
+
+                        <AlertDialog.Description className="admin-activity-confirm-dialog__description">
+                            {accionEsEliminacion
+                                ? 'Se eliminarán permanentemente la actividad, sus inscripciones y sus registros de asistencia. Las cuentas de los estudiantes no serán eliminadas.'
+                                : accionEsActivacion
+                                  ? 'La actividad volverá a mostrarse en el portal de los estudiantes.'
+                                  : 'La actividad dejará de mostrarse en el portal de los estudiantes, pero conservará sus inscripciones y asistencias.'}
+                        </AlertDialog.Description>
+
+                        <p className="admin-activity-confirm-dialog__activity">
+                            {
+                                accionPendiente
+                                    ?.actividad
+                                    ?.titulo
+                            }
+                        </p>
+
+                        {accionEsEliminacion && (
+                            <div
+                                className="admin-activity-confirm-dialog__warning"
+                                role="note"
+                            >
+                                <TriangleAlert aria-hidden="true" />
+
+                                <p>
+                                    Esta acción no se
+                                    puede deshacer.
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="admin-activity-confirm-dialog__actions">
+                            <AlertDialog.Cancel asChild>
+                                <button
+                                    className="admin-activity-confirm-dialog__cancel"
+                                    type="button"
+                                    disabled={
+                                        procesandoAccion
+                                    }
+                                    onClick={
+                                        cerrarDialogoAccion
+                                    }
+                                >
+                                    Cancelar
+                                </button>
+                            </AlertDialog.Cancel>
+
+                            <button
+                                className={
+                                    accionEsEliminacion
+                                        ? 'admin-activity-confirm-dialog__confirm admin-activity-confirm-dialog__confirm--danger'
+                                        : 'admin-activity-confirm-dialog__confirm'
+                                }
+                                type="button"
+                                disabled={
+                                    procesandoAccion
+                                }
+                                onClick={
+                                    confirmarAccionPendiente
+                                }
+                            >
+                                {procesandoAccion ? (
+                                    <LoaderCircle
+                                        className="admin-activity-confirm-dialog__loader"
+                                        aria-hidden="true"
+                                    />
+                                ) : accionEsEliminacion ? (
+                                    <Trash2 aria-hidden="true" />
+                                ) : (
+                                    <Power aria-hidden="true" />
+                                )}
+
+                                {procesandoAccion
+                                    ? 'Procesando...'
+                                    : accionEsEliminacion
+                                      ? 'Eliminar permanentemente'
+                                      : accionEsActivacion
+                                        ? 'Activar actividad'
+                                        : 'Desactivar actividad'}
+                            </button>
+                        </div>
+                    </AlertDialog.Content>
+                </AlertDialog.Portal>
+            </AlertDialog.Root>
+
             <AlertDialog.Root
                 open={dialogoQrAbierto}
                 onOpenChange={(abierto) => {
@@ -1545,7 +2250,10 @@ function AdminPrincipalActivities() {
                             {qrActivo?.actividadTitulo}
                         </p>
 
-                        {qrActivo?.url && (
+                        {(
+                            qrActivo?.imagenUrl ||
+                            qrActivo?.url
+                        ) && (
                             <div
                                 className={
                                     qrEstaVigente
@@ -1553,15 +2261,36 @@ function AdminPrincipalActivities() {
                                         : 'admin-qr-dialog__code admin-qr-dialog__code--expired'
                                 }
                             >
-                                <QRCodeSVG
-                                    value={qrActivo.url}
-                                    size={248}
-                                    level="M"
-                                    marginSize={2}
-                                    bgColor="#ffffff"
-                                    fgColor="#002b4f"
-                                    title={`Código QR de ${qrActivo.tipo}`}
-                                />
+                                {qrActivo.imagenUrl ? (
+                                    /*
+                                     * En modo API mostramos directamente
+                                     * el archivo PNG creado por el backend.
+                                     */
+                                    <img
+                                        src={
+                                            qrActivo.imagenUrl
+                                        }
+                                        width="248"
+                                        height="248"
+                                        alt={`Código QR de ${qrActivo.tipo}`}
+                                    />
+                                ) : (
+                                    /*
+                                     * En modo simulado generamos el dibujo
+                                     * a partir de la URL local con el token.
+                                     */
+                                    <QRCodeSVG
+                                        value={
+                                            qrActivo.url
+                                        }
+                                        size={248}
+                                        level="M"
+                                        marginSize={2}
+                                        bgColor="#ffffff"
+                                        fgColor="#002b4f"
+                                        title={`Código QR de ${qrActivo.tipo}`}
+                                    />
+                                )}
                             </div>
                         )}
 
@@ -1593,10 +2322,8 @@ function AdminPrincipalActivities() {
 
                         <p className="admin-qr-dialog__notice">
                             {qrEstaVigente
-                                ? `Generación ${generacionQrActiva} de ${MAXIMO_GENERACIONES_QR}. Cerrar este diálogo no reinicia el contador.`
-                                : limiteQrAlcanzado
-                                  ? `Ya se utilizaron las ${MAXIMO_GENERACIONES_QR} oportunidades disponibles para esta marcación.`
-                                  : `El QR venció. Puedes utilizar la reactivación ${generacionQrActiva + 1} de ${MAXIMO_GENERACIONES_QR}.`}
+                                ? 'El código permanecerá disponible únicamente durante la ventana oficial de veinte minutos.'
+                                : 'La ventana permitida para esta marcación ya finalizó.'}
                         </p>
 
                         <div className="admin-qr-dialog__actions">
@@ -1611,30 +2338,6 @@ function AdminPrincipalActivities() {
                                     Cerrar
                                 </button>
                             </AlertDialog.Cancel>
-
-                            {qrPuedeReactivarse && (
-                                <button
-                                    className="admin-qr-dialog__primary"
-                                    type="button"
-                                    disabled={
-                                        procesandoQrActivo
-                                    }
-                                    onClick={
-                                        renovarQrActivo
-                                    }
-                                >
-                                    {procesandoQrActivo ? (
-                                        <LoaderCircle
-                                            className="admin-activity-attendance-button__loader"
-                                            aria-hidden="true"
-                                        />
-                                    ) : (
-                                        <RefreshCw aria-hidden="true" />
-                                    )}
-
-                                    Reactivar QR
-                                </button>
-                            )}
                         </div>
                     </AlertDialog.Content>
                 </AlertDialog.Portal>

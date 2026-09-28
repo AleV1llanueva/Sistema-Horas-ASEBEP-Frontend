@@ -33,8 +33,8 @@ const CLAVE_INTENTOS_PIN_MOCK =
   'asebep_intentos_pin_mock'
 
 /*
- * Construye la información personal simulada de un
- * administrador cuando accede a su portal de becario.
+* Construye la identidad simulada por el encabezado
+* y el perfil del panel administrativo.
  */
 function crearUsuarioAdministradorMock({
   numeroCuenta,
