@@ -118,7 +118,7 @@ function crearIdentificadorInscripcion() {
   if (
     typeof crypto !== 'undefined' &&
     typeof crypto.randomUUID ===
-      'function'
+    'function'
   ) {
     return (
       `inscripcion-` +
@@ -331,10 +331,10 @@ function obtenerVentanaMarcacionActividad(
 
   const comienzaEn =
     tipo ===
-    TIPOS_MARCACION_ASISTENCIA.entrada
+      TIPOS_MARCACION_ASISTENCIA.entrada
       ? inicio
       : tipo ===
-          TIPOS_MARCACION_ASISTENCIA.salida
+        TIPOS_MARCACION_ASISTENCIA.salida
         ? finalizacion
         : null
 
@@ -344,9 +344,9 @@ function obtenerVentanaMarcacionActividad(
 
   const expiraEn = new Date(
     comienzaEn.getTime() +
-      DURACION_VENTANA_QR_MINUTOS *
-        60 *
-        1000,
+    DURACION_VENTANA_QR_MINUTOS *
+    60 *
+    1000,
   )
 
   return {
@@ -400,7 +400,7 @@ function evaluarVentanaMarcacionActividad({
 
       mensaje:
         tipo ===
-        TIPOS_MARCACION_ASISTENCIA.entrada
+          TIPOS_MARCACION_ASISTENCIA.entrada
           ? 'La entrada estará disponible cuando comience la actividad.'
           : 'La salida estará disponible cuando finalice la actividad.',
 
@@ -418,7 +418,7 @@ function evaluarVentanaMarcacionActividad({
 
       mensaje:
         tipo ===
-        TIPOS_MARCACION_ASISTENCIA.entrada
+          TIPOS_MARCACION_ASISTENCIA.entrada
           ? 'La ventana de veinte minutos para registrar la entrada ya finalizó.'
           : 'La ventana de veinte minutos para registrar la salida ya finalizó.',
 
@@ -432,7 +432,7 @@ function evaluarVentanaMarcacionActividad({
 
     mensaje:
       tipo ===
-      TIPOS_MARCACION_ASISTENCIA.entrada
+        TIPOS_MARCACION_ASISTENCIA.entrada
         ? 'Escanea el QR de entrada mostrado por el administrador.'
         : 'Escanea el QR de salida mostrado por el administrador.',
 
@@ -698,7 +698,7 @@ export function interpretarCodigoQrAsistencia(
 
   const origenActual =
     typeof window !== 'undefined' &&
-    window.location?.origin
+      window.location?.origin
       ? window.location.origin
       : 'http://localhost'
 
@@ -808,7 +808,7 @@ function validarTokenQrSimulado({
   const generadoEn =
     prepararTexto(
       contenido.habilitadaEn ??
-        contenido.generadoEn,
+      contenido.generadoEn,
     )
 
   const expiraEn =
@@ -834,7 +834,7 @@ function validarTokenQrSimulado({
       expiraEnMilisegundos,
     ) ||
     expiraEnMilisegundos <=
-      generadoEnMilisegundos
+    generadoEnMilisegundos
   ) {
     throw new EstudianteActividadesError(
       'El código QR simulado no contiene información válida.',
@@ -885,9 +885,9 @@ function obtenerConfiguracionQrActividad(
     token: prepararTexto(
       esEntrada
         ? actividad
-            ?.tokenEntradaSimulado
+          ?.tokenEntradaSimulado
         : actividad
-            ?.tokenSalidaSimulado,
+          ?.tokenSalidaSimulado,
     ),
   }
 }
@@ -1007,8 +1007,8 @@ function obtenerCuposIniciales(
 
   return prepararEntero(
     actividadInicial?.cuposTotales ??
-      actividadInicial
-        ?.cuposDisponibles,
+    actividadInicial
+      ?.cuposDisponibles,
     null,
   )
 }
@@ -1032,7 +1032,7 @@ function normalizarActividad(
 
   const id = prepararTexto(
     actividad.id ??
-      actividad.id_actividad,
+    actividad.id_actividad,
   )
 
   /*
@@ -1042,18 +1042,18 @@ function normalizarActividad(
   const cuposDisponibles =
     prepararEntero(
       actividad.cuposDisponibles ??
-        actividad.cupos_disponibles ??
-        actividad.cupos,
+      actividad.cupos_disponibles ??
+      actividad.cupos,
       null,
     )
 
   const cuposTotales =
     prepararEntero(
       actividad.cuposTotales ??
-        actividad.cupos_totales ??
-        actividad.cupos,
+      actividad.cupos_totales ??
+      actividad.cupos,
       obtenerCuposIniciales(id) ??
-        cuposDisponibles,
+      cuposDisponibles,
     )
 
   return {
@@ -1061,7 +1061,7 @@ function normalizarActividad(
 
     titulo: prepararTexto(
       actividad.titulo ??
-        actividad.nombre,
+      actividad.nombre,
     ),
 
     descripcion: prepararTexto(
@@ -1070,26 +1070,26 @@ function normalizarActividad(
 
     fecha: prepararTexto(
       actividad.fecha ??
-        actividad.fecha_actividad,
+      actividad.fecha_actividad,
     ),
 
     horaInicio: prepararTexto(
       actividad.horaInicio ??
-        actividad.hora_inicio ??
-        actividad.hora,
+      actividad.hora_inicio ??
+      actividad.hora,
     ),
 
     horaFinalizacion: prepararTexto(
       actividad.horaFinalizacion ??
-        actividad.hora_finalizacion ??
-        actividad.horaFinal ??
-        actividad.hora_final ??
-        actividad.hora_fin,
+      actividad.hora_finalizacion ??
+      actividad.horaFinal ??
+      actividad.hora_final ??
+      actividad.hora_fin,
     ),
 
     lugar: prepararTexto(
       actividad.lugar ??
-        actividad.ubicacion,
+      actividad.ubicacion,
     ),
 
     cuposTotales,
@@ -1098,9 +1098,9 @@ function normalizarActividad(
     horasAcreditables:
       prepararEntero(
         actividad.horasAcreditables ??
-          actividad.horas_acreditables ??
-          actividad.horas_asignar ??
-          actividad.horas,
+        actividad.horas_acreditables ??
+        actividad.horas_asignar ??
+        actividad.horas,
         0,
       ),
 
@@ -1123,36 +1123,36 @@ function normalizarActividad(
      */
     entradaHabilitada:
       actividad.entradaHabilitada ===
-        true ||
+      true ||
       actividad.entrada_habilitada ===
-        true ||
+      true ||
       actividad.qrEntradaHabilitado ===
-        true ||
+      true ||
       actividad.qr_entrada_habilitado ===
-        true,
+      true,
 
     entradaHabilitadaEn:
       prepararTexto(
         actividad.entradaHabilitadaEn ??
-          actividad.entrada_habilitada_en ??
-          actividad.qrEntradaHabilitadaEn ??
-          actividad.qr_entrada_habilitada_en,
+        actividad.entrada_habilitada_en ??
+        actividad.qrEntradaHabilitadaEn ??
+        actividad.qr_entrada_habilitada_en,
       ) || null,
 
     entradaHabilitadaHasta:
       prepararTexto(
         actividad.entradaHabilitadaHasta ??
-          actividad.entrada_habilitada_hasta ??
-          actividad.qrEntradaExpiraEn ??
-          actividad.qr_entrada_expira_en,
+        actividad.entrada_habilitada_hasta ??
+        actividad.qrEntradaExpiraEn ??
+        actividad.qr_entrada_expira_en,
       ) || null,
 
     tokenEntradaSimulado:
       prepararTexto(
         actividad.tokenEntradaSimulado ??
-          actividad.token_entrada_simulado ??
-          actividad.tokenEntrada ??
-          actividad.token_entrada,
+        actividad.token_entrada_simulado ??
+        actividad.tokenEntrada ??
+        actividad.token_entrada,
       ) || null,
 
     /*
@@ -1162,60 +1162,60 @@ function normalizarActividad(
 
     salidaHabilitada:
       actividad.salidaHabilitada ===
-        true ||
+      true ||
       actividad.salida_habilitada ===
-        true ||
+      true ||
       actividad.qrSalidaHabilitado ===
-        true ||
+      true ||
       actividad.qr_salida_habilitado ===
-        true,
+      true,
 
     salidaHabilitadaEn:
       prepararTexto(
         actividad.salidaHabilitadaEn ??
-          actividad.salida_habilitada_en ??
-          actividad.qrSalidaHabilitadaEn ??
-          actividad.qr_salida_habilitada_en,
+        actividad.salida_habilitada_en ??
+        actividad.qrSalidaHabilitadaEn ??
+        actividad.qr_salida_habilitada_en,
       ) || null,
 
     salidaHabilitadaHasta:
       prepararTexto(
         actividad.salidaHabilitadaHasta ??
-          actividad.salida_habilitada_hasta ??
-          actividad.qrSalidaExpiraEn ??
-          actividad.qr_salida_expira_en,
+        actividad.salida_habilitada_hasta ??
+        actividad.qrSalidaExpiraEn ??
+        actividad.qr_salida_expira_en,
       ) || null,
 
     tokenSalidaSimulado:
       prepararTexto(
         actividad.tokenSalidaSimulado ??
-          actividad.token_salida_simulado ??
-          actividad.tokenSalida ??
-          actividad.token_salida,
+        actividad.token_salida_simulado ??
+        actividad.tokenSalida ??
+        actividad.token_salida,
       ) || null,
 
     desactivadaEn:
       prepararTexto(
         actividad.desactivadaEn ??
-          actividad.desactivada_en,
+        actividad.desactivada_en,
       ) || null,
 
     eliminadaEn:
       prepararTexto(
         actividad.eliminadaEn ??
-          actividad.eliminada_en,
+        actividad.eliminada_en,
       ) || null,
 
     creadaEn:
       prepararTexto(
         actividad.creadaEn ??
-          actividad.creada_en,
+        actividad.creada_en,
       ) || null,
 
     actualizadaEn:
       prepararTexto(
         actividad.actualizadaEn ??
-          actividad.actualizada_en,
+        actividad.actualizada_en,
       ) || null,
   }
 }
@@ -1239,8 +1239,8 @@ function normalizarInscripcion(
   const estadoAsistencia =
     prepararTexto(
       inscripcion.estadoAsistencia ??
-        inscripcion.estado_asistencia ??
-        inscripcion.estado,
+      inscripcion.estado_asistencia ??
+      inscripcion.estado,
     ) || 'Pendiente'
 
   /*
@@ -1279,24 +1279,24 @@ function normalizarInscripcion(
   return {
     id: prepararTexto(
       inscripcion.id ??
-        inscripcion.id_inscripcion,
+      inscripcion.id_inscripcion,
     ),
 
     actividadId: prepararTexto(
       inscripcion.actividadId ??
-        inscripcion.actividad_id ??
-        actividad?.id,
+      inscripcion.actividad_id ??
+      actividad?.id,
     ),
 
     numeroCuenta: prepararTexto(
       inscripcion.numeroCuenta ??
-        inscripcion.num_cuenta,
+      inscripcion.num_cuenta,
     ),
 
     estadoInscripcion:
       normalizarEstado(
         inscripcion.estadoInscripcion ??
-          inscripcion.estado_inscripcion,
+        inscripcion.estado_inscripcion,
       ) || 'inscrita',
 
     estadoAsistencia,
@@ -1307,23 +1307,23 @@ function normalizarInscripcion(
     entradaRegistradaEn:
       prepararTexto(
         inscripcion.entradaRegistradaEn ??
-          inscripcion.entrada_registrada_en ??
-          inscripcion.horaEntrada ??
-          inscripcion.hora_entrada,
+        inscripcion.entrada_registrada_en ??
+        inscripcion.horaEntrada ??
+        inscripcion.hora_entrada,
       ) || null,
 
     salidaRegistradaEn:
       prepararTexto(
         inscripcion.salidaRegistradaEn ??
-          inscripcion.salida_registrada_en ??
-          inscripcion.horaSalida ??
-          inscripcion.hora_salida,
+        inscripcion.salida_registrada_en ??
+        inscripcion.horaSalida ??
+        inscripcion.hora_salida,
       ) || null,
 
     horasRegistradas:
       prepararEntero(
         inscripcion.horasRegistradas ??
-          inscripcion.horas_registradas,
+        inscripcion.horas_registradas,
         null,
       ),
 
@@ -1334,13 +1334,13 @@ function normalizarInscripcion(
     creadaEn:
       prepararTexto(
         inscripcion.creadaEn ??
-          inscripcion.creada_en,
+        inscripcion.creada_en,
       ) || null,
 
     actualizadaEn:
       prepararTexto(
         inscripcion.actualizadaEn ??
-          inscripcion.actualizada_en,
+        inscripcion.actualizada_en,
       ) || null,
 
     actividad,
@@ -1409,7 +1409,7 @@ function leerColeccion(
 
     return datos
   } catch (
-    errorAlmacenamiento
+  errorAlmacenamiento
   ) {
     if (
       errorAlmacenamiento instanceof
@@ -1472,7 +1472,7 @@ function leerInscripcionesSimuladas() {
       (inscripcion) =>
         Boolean(
           inscripcion?.id &&
-            inscripcion.actividadId,
+          inscripcion.actividadId,
         ),
     )
 }
@@ -1510,7 +1510,7 @@ function obtenerNumeroCuentaActual() {
   if (
     usarDatosSimulados &&
     numeroCuenta !==
-      NUMERO_CUENTA_ESTUDIANTE_PRUEBA
+    NUMERO_CUENTA_ESTUDIANTE_PRUEBA
   ) {
     throw new EstudianteActividadesError(
       'La cuenta actual no corresponde al estudiante de prueba.',
@@ -1529,7 +1529,7 @@ function actividadEstaDisponible(
     ESTADOS_ACTIVIDAD_DISPONIBLE
       .includes(actividad.estado) &&
     actividad.fecha >=
-      obtenerFechaHoy() &&
+    obtenerFechaHoy() &&
     Number.isInteger(
       actividad.cuposDisponibles,
     ) &&
@@ -1645,12 +1645,12 @@ async function listarActividadesDesdeApi() {
     Array.isArray(respuesta)
       ? respuesta
       : Array.isArray(
-            respuesta?.actividades,
-          )
+        respuesta?.actividades,
+      )
         ? respuesta.actividades
         : Array.isArray(
-              respuesta?.data,
-            )
+          respuesta?.data,
+        )
           ? respuesta.data
           : null
 
@@ -1680,12 +1680,12 @@ function crearActividadDesdeInscripcionApi(
 ) {
   const fecha = prepararTexto(
     inscripcion?.fecha_actividad ??
-      inscripcion?.fecha,
+    inscripcion?.fecha,
   )
 
   const estadoCalculado =
     fecha &&
-    fecha < obtenerFechaHoy()
+      fecha < obtenerFechaHoy()
       ? 'finalizada'
       : 'programada'
 
@@ -1729,12 +1729,12 @@ async function listarInscripcionesDesdeApi(
     Array.isArray(respuesta)
       ? respuesta
       : Array.isArray(
-            respuesta?.inscripciones,
-          )
+        respuesta?.inscripciones,
+      )
         ? respuesta.inscripciones
         : Array.isArray(
-              respuesta?.data,
-            )
+          respuesta?.data,
+        )
           ? respuesta.data
           : null
 
@@ -1780,7 +1780,7 @@ async function obtenerColeccionesEstudianteDesdeApi(
   if (
     !consultaColeccionesApiEnCurso ||
     cuentaConsultaColeccionesApi !==
-      numeroCuenta
+    numeroCuenta
   ) {
     cuentaConsultaColeccionesApi =
       numeroCuenta
@@ -1895,10 +1895,10 @@ export async function listarActividadesDisponibles() {
       .filter(
         (inscripcion) =>
           inscripcion.numeroCuenta ===
-            numeroCuenta &&
+          numeroCuenta &&
           inscripcion
             .estadoInscripcion !==
-            'cancelada',
+          'cancelada',
       )
 
   const actividadesInscritas =
@@ -1946,7 +1946,7 @@ export async function listarProximasActividadesInscritas() {
           (inscripcion) =>
             inscripcion
               .estadoInscripcion !==
-              'cancelada' &&
+            'cancelada' &&
             !(
               inscripcion
                 .entradaRegistrada &&
@@ -1959,10 +1959,10 @@ export async function listarProximasActividadesInscritas() {
         .filter(
           (actividad) =>
             actividad.fecha >=
-              obtenerFechaHoy() ||
+            obtenerFechaHoy() ||
             actividad
               .situacionAsistencia ===
-              'incompleta',
+            'incompleta',
         )
 
     return clonarDatos(
@@ -1990,10 +1990,10 @@ export async function listarProximasActividadesInscritas() {
       .filter(
         (inscripcion) =>
           inscripcion.numeroCuenta ===
-            numeroCuenta &&
+          numeroCuenta &&
           inscripcion
             .estadoInscripcion !==
-            'cancelada' &&
+          'cancelada' &&
           !(
             inscripcion
               .entradaRegistrada &&
@@ -2011,12 +2011,12 @@ export async function listarProximasActividadesInscritas() {
       .filter(
         (actividad) =>
           actividad &&
-        (
-          actividad.fecha >=
+          (
+            actividad.fecha >=
             obtenerFechaHoy() ||
-          actividad
-            .situacionAsistencia === 'incompleta'
-        ),
+            actividad
+              .situacionAsistencia === 'incompleta'
+          ),
       )
 
   return clonarDatos(
@@ -2025,6 +2025,40 @@ export async function listarProximasActividadesInscritas() {
     ),
   )
 }
+
+/*
+ * Obtiene las próximas actividades futuras para el Dashboard.
+ * Descarta las actividades pasadas (tanto por fecha como por hora).
+ */
+export async function listarTodasLasProximasActividades() {
+  const [disponibles, inscritas] = await Promise.all([
+    listarActividadesDisponibles(),
+    listarProximasActividadesInscritas(),
+  ])
+
+  const combinadas = [...inscritas, ...disponibles]
+
+  // Eliminamos duplicados por ID
+  const actividadesUnicasMap = new Map()
+  for (const actividad of combinadas) {
+    if (!actividadesUnicasMap.has(actividad.id)) {
+      actividadesUnicasMap.set(actividad.id, actividad)
+    }
+  }
+
+  const listaUnificada = Array.from(actividadesUnicasMap.values())
+  const ahora = new Date()
+
+  // FILTRO CLAVE: Excluimos actividades que ya hayan finalizado por hora/fecha
+  const soloFuturas = listaUnificada.filter((actividad) => {
+    return !actividadHaFinalizado(actividad, ahora)
+  })
+
+  return clonarDatos(ordenarPorFechaAscendente(soloFuturas))
+}
+
+
+
 
 export async function listarHistorialActividades() {
   const numeroCuenta =
@@ -2045,7 +2079,7 @@ export async function listarHistorialActividades() {
           (inscripcion) =>
             inscripcion
               .estadoInscripcion !==
-              'cancelada' &&
+            'cancelada' &&
             inscripcion
               .entradaRegistrada &&
             inscripcion
@@ -2083,7 +2117,7 @@ export async function listarHistorialActividades() {
       .filter(
         (inscripcion) =>
           inscripcion.numeroCuenta ===
-            numeroCuenta &&
+          numeroCuenta &&
           inscripcion
             .entradaRegistrada &&
           inscripcion
@@ -2136,7 +2170,7 @@ export async function obtenerActividadEstudiante(
         (elemento) =>
           elemento.actividadId === id &&
           elemento.estadoInscripcion !==
-            'cancelada',
+          'cancelada',
       ) ?? null
 
     const actividadActual =
@@ -2187,85 +2221,85 @@ export async function obtenerActividadEstudiante(
     })
   }
 
- const actividades = leerActividadesSimuladas()
+  const actividades = leerActividadesSimuladas()
 
- const inscripcion = leerInscripcionesSimuladas()
-  .find(
-    (elemento) => elemento.numeroCuenta ===
-      numeroCuenta && elemento.actividadId === id &&
-      elemento.estadoInscripcion !== 'cancelada',
-  )
+  const inscripcion = leerInscripcionesSimuladas()
+    .find(
+      (elemento) => elemento.numeroCuenta ===
+        numeroCuenta && elemento.actividadId === id &&
+        elemento.estadoInscripcion !== 'cancelada',
+    )
 
   /*
   * Primero buscamos la version actual de la actividad.
   * Si ya no esta publicada, utilizamos la copia guardada
   * en la inscripcion para conservar accesible el historial. 
   */
- const actividadActual = actividades.find(
-  (elemento) => elemento.id === id &&
-    elemento.eliminada !== true,
- )
+  const actividadActual = actividades.find(
+    (elemento) => elemento.id === id &&
+      elemento.eliminada !== true,
+  )
 
- const actividad = actividadActual ?? inscripcion?.actividad ?? null
+  const actividad = actividadActual ?? inscripcion?.actividad ?? null
 
- if (!actividad) {
-  return null
- }
+  if (!actividad) {
+    return null
+  }
 
-const detalleActividad = {
-  ...actividad,
+  const detalleActividad = {
+    ...actividad,
 
-  inscrito:
-    Boolean(inscripcion),
+    inscrito:
+      Boolean(inscripcion),
 
-  inscripcionId:
-    inscripcion?.id ?? null,
+    inscripcionId:
+      inscripcion?.id ?? null,
 
-  estadoInscripcion:
-    inscripcion?.estadoInscripcion ??
-    null,
+    estadoInscripcion:
+      inscripcion?.estadoInscripcion ??
+      null,
 
-  estadoAsistencia:
-    inscripcion?.estadoAsistencia ??
-    null,
+    estadoAsistencia:
+      inscripcion?.estadoAsistencia ??
+      null,
 
-  entradaRegistrada:
-    inscripcion?.entradaRegistrada ===
-    true,
+    entradaRegistrada:
+      inscripcion?.entradaRegistrada ===
+      true,
 
-  entradaRegistradaEn:
-    inscripcion?.entradaRegistradaEn ??
-    null,
+    entradaRegistradaEn:
+      inscripcion?.entradaRegistradaEn ??
+      null,
 
-  salidaRegistrada:
-    inscripcion?.salidaRegistrada ===
-    true,
+    salidaRegistrada:
+      inscripcion?.salidaRegistrada ===
+      true,
 
-  salidaRegistradaEn:
-    inscripcion?.salidaRegistradaEn ??
-    null,
+    salidaRegistradaEn:
+      inscripcion?.salidaRegistradaEn ??
+      null,
 
-  tieneDetalleMarcaciones:
-    inscripcion
-      ?.tieneDetalleMarcaciones ??
-    false,
+    tieneDetalleMarcaciones:
+      inscripcion
+        ?.tieneDetalleMarcaciones ??
+      false,
 
-  horasRegistradas:
-    inscripcion?.horasRegistradas ??
-    null,
+    horasRegistradas:
+      inscripcion?.horasRegistradas ??
+      null,
 
-  fechaInscripcion:
-    inscripcion?.creadaEn ?? null,
-}
+    fechaInscripcion:
+      inscripcion?.creadaEn ?? null,
+  }
 
-return clonarDatos({
-  ...detalleActividad,
+  return clonarDatos({
+    ...detalleActividad,
 
-  situacionAsistencia:
-    obtenerSituacionAsistenciaActividad(
-      detalleActividad,
-    ),
-})
+    situacionAsistencia:
+      obtenerSituacionAsistenciaActividad(
+        detalleActividad,
+      ),
+  })
 }
 
 export async function inscribirEstudianteEnActividad(
@@ -2335,11 +2369,11 @@ export async function inscribirEstudianteEnActividad(
     inscripciones.some(
       (inscripcion) =>
         inscripcion.numeroCuenta ===
-          numeroCuenta &&
+        numeroCuenta &&
         inscripcion.actividadId === id &&
         inscripcion
           .estadoInscripcion !==
-          'cancelada',
+        'cancelada',
     )
 
   if (inscripcionExistente) {
@@ -2449,11 +2483,11 @@ export async function cancelarInscripcionActividad(
     inscripciones.findIndex(
       (inscripcion) =>
         inscripcion.numeroCuenta ===
-          numeroCuenta &&
+        numeroCuenta &&
         inscripcion.actividadId === id &&
         inscripcion
           .estadoInscripcion !==
-          'cancelada',
+        'cancelada',
     )
 
   if (indiceInscripcion === -1) {
@@ -2591,10 +2625,10 @@ export async function registrarAsistenciaPorQr({
 
   if (!usarDatosSimulados) {
     const respuesta = await apiFetch(
-        `/asistencias/${tipoPreparado}` +
-        `?token=${encodeURIComponent(
-          tokenPreparado,
-        )}`,
+      `/asistencias/${tipoPreparado}` +
+      `?token=${encodeURIComponent(
+        tokenPreparado,
+      )}`,
       {
         method: 'GET',
       },
@@ -2608,7 +2642,7 @@ export async function registrarAsistenciaPorQr({
         instanteActual.toISOString(),
       estadoAsistencia:
         tipoPreparado ===
-        TIPOS_MARCACION_ASISTENCIA.salida
+          TIPOS_MARCACION_ASISTENCIA.salida
           ? 'Asistió'
           : 'Pendiente',
       mensaje:
@@ -2636,11 +2670,11 @@ export async function registrarAsistenciaPorQr({
     inscripciones.findIndex(
       (inscripcion) =>
         inscripcion.numeroCuenta ===
-          numeroCuenta &&
+        numeroCuenta &&
         inscripcion.actividadId ===
-          datosQr.actividadId &&
+        datosQr.actividadId &&
         inscripcion.estadoInscripcion !==
-          'cancelada',
+        'cancelada',
     )
 
   if (indiceInscripcion === -1) {
@@ -2672,7 +2706,7 @@ export async function registrarAsistenciaPorQr({
     )
   }
 
-    if (
+  if (
     actividadActual &&
     (
       actividadActual.eliminada === true ||
@@ -2681,7 +2715,7 @@ export async function registrarAsistenciaPorQr({
         actividadActual.estado,
       ) === 'cancelada'
     )
-    ) {
+  ) {
     throw new EstudianteActividadesError(
       'La actividad asociada al código QR ya no se encuentra activa.',
     )
@@ -2719,7 +2753,7 @@ export async function registrarAsistenciaPorQr({
   if (
     configuracionActual.token &&
     configuracionActual.token !==
-      tokenPreparado
+    tokenPreparado
   ) {
     throw new EstudianteActividadesError(
       'Este código QR fue reemplazado por uno más reciente.',
@@ -2770,27 +2804,27 @@ export async function registrarAsistenciaPorQr({
 
   const inscripcionActualizada = esEntrada
     ? {
-        ...inscripcion,
-        estadoInscripcion: 'inscrita',
-        estadoAsistencia: 'Pendiente',
-        entradaRegistrada: true,
-        entradaRegistradaEn:
-          fechaMarcacion,
-        actualizadaEn: fechaMarcacion,
-        actividad,
-      }
+      ...inscripcion,
+      estadoInscripcion: 'inscrita',
+      estadoAsistencia: 'Pendiente',
+      entradaRegistrada: true,
+      entradaRegistradaEn:
+        fechaMarcacion,
+      actualizadaEn: fechaMarcacion,
+      actividad,
+    }
     : {
-        ...inscripcion,
-        estadoInscripcion: 'completada',
-        estadoAsistencia: 'Asistió',
-        salidaRegistrada: true,
-        salidaRegistradaEn:
-          fechaMarcacion,
-        horasRegistradas:
-          horasAcreditables,
-        actualizadaEn: fechaMarcacion,
-        actividad,
-      }
+      ...inscripcion,
+      estadoInscripcion: 'completada',
+      estadoAsistencia: 'Asistió',
+      salidaRegistrada: true,
+      salidaRegistradaEn:
+        fechaMarcacion,
+      horasRegistradas:
+        horasAcreditables,
+      actualizadaEn: fechaMarcacion,
+      actividad,
+    }
 
   inscripciones[indiceInscripcion] =
     inscripcionActualizada
@@ -2877,10 +2911,10 @@ export async function restablecerActividadesEstudiante() {
     inscripciones.filter(
       (inscripcion) =>
         inscripcion.numeroCuenta ===
-          numeroCuenta &&
+        numeroCuenta &&
         inscripcion
           .estadoInscripcion !==
-          'cancelada' &&
+        'cancelada' &&
         inscripcion.cupoDescontado,
     )
 

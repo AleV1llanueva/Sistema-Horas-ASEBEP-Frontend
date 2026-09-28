@@ -48,22 +48,18 @@ import '../styles/AppLayout.css'
 import '../styles/Activities.css'
 
 /*
- * Identificadores internos de las tres vistas.
- *
- * Estos valores relacionan cada pestaña con su colección
- * de actividades y evitan repetir cadenas en el componente.
+ * Identificadores internos de las vistas.
+ * Se añadió 'enCurso' para separar lo que está pasando ahorita.
  */
 const VISTAS = Object.freeze({
   disponibles: 'disponibles',
+  enCurso: 'enCurso',
   proximas: 'proximas',
   historial: 'historial',
 })
 
 /*
  * Tipos de marcación aceptados por el servicio.
- *
- * Se mantienen en minúsculas porque también forman parte
- * de las rutas generadas por los códigos QR.
  */
 const TIPOS_MARCACION = Object.freeze({
   entrada: 'entrada',
@@ -72,9 +68,6 @@ const TIPOS_MARCACION = Object.freeze({
 
 /*
  * Estados utilizados por el cuadro del lector QR.
- *
- * Cada estado controla qué mensaje, icono y acciones
- * debe mostrar el diálogo.
  */
 const ESTADOS_LECTOR = Object.freeze({
   iniciando: 'iniciando',
@@ -84,10 +77,6 @@ const ESTADOS_LECTOR = Object.freeze({
   exito: 'exito',
 })
 
-/*
- * Identificador del elemento en el que html5-qrcode
- * insertará el video generado por la cámara.
- */
 const ID_CONTENEDOR_LECTOR =
   'student-attendance-qr-reader'
 
@@ -100,23 +89,25 @@ const INFORMACION_VISTAS =
       mensajeVacio: 'No hay actividades disponibles en este momento.',
     },
 
+    [VISTAS.enCurso]: {
+      nombre: 'En curso',
+      descripcion: 'Actividades que se están llevando a cabo en este momento.',
+      mensajeVacio: 'No tienes actividades en curso actualmente.',
+    },
+
     [VISTAS.proximas]: {
       nombre: 'Mis próximas actividades',
-      descripcion: 'Revisa tus actividades inscritas y registra tu entrada y salida.',
-      mensajeVacio: 'Todavía no estás inscrito en una próxima actividad.',
+      descripcion: 'Revisa tus actividades inscritas futuras.',
+      mensajeVacio: 'Todavía no estás inscrito en una actividad futura.',
     },
 
     [VISTAS.historial]: {
       nombre: 'Historial',
-      descripcion: 'Consulta las actividades en las que tu asistencia fue confirmada.',
-      mensajeVacio: 'Todavía no tienes actividades completadas en el historial.',
+      descripcion: 'Consulta las actividades pasadas y completadas.',
+      mensajeVacio: 'Todavía no tienes actividades en el historial.',
     },
   })
 
-/*
- * Información utilizada por los botones y el lector
- * para cada tipo de marcación.
- */
 const INFORMACION_MARCACIONES =
   Object.freeze({
     [TIPOS_MARCACION.entrada]: {
@@ -138,12 +129,6 @@ const INFORMACION_MARCACIONES =
     },
   })
 
-/*
- * Prepara los textos utilizados en el buscador.
- *
- * La conversión a minúsculas permite encontrar resultados
- * sin importar cómo se escribió originalmente el texto.
- */
 function normalizarBusqueda(valor) {
   return String(valor ?? '')
     .trim()
@@ -151,9 +136,23 @@ function normalizarBusqueda(valor) {
 }
 
 /*
- * Convierte una fecha YYYY-MM-DD en los valores
- * necesarios para la tarjeta.
+ * FUNCIÓN NUEVA: Clasifica temporalmente una actividad
+ * verificando con precisión su fecha y rango de horas.
  */
+function clasificarActividadTemporalmente(actividad, ahora = new Date()) {
+  if (!actividad.fecha) return 'futura'
+
+  const horaInicio = actividad.horaInicio || '00:00'
+  const horaFin = actividad.horaFinalizacion || '23:59'
+
+  const inicio = new Date(`${actividad.fecha}T${horaInicio}`)
+  const fin = new Date(`${actividad.fecha}T${horaFin}`)
+
+  if (ahora > fin) return 'pasada'
+  if (ahora >= inicio && ahora <= fin) return 'en-curso'
+  return 'futura'
+}
+
 function obtenerPartesFecha(fecha) {
   if (
     typeof fecha !== 'string' ||
@@ -183,15 +182,11 @@ function obtenerPartesFecha(fecha) {
     dia,
   )
 
-  /*
-   * Comprobamos que la fecha exista.
-   * Esto evita aceptar valores como 2026-02-31.
-   */
   const fechaValida =
     fechaLocal.getFullYear() ===
-      anio &&
+    anio &&
     fechaLocal.getMonth() ===
-      mes - 1 &&
+    mes - 1 &&
     fechaLocal.getDate() === dia
 
   if (!fechaValida) {
@@ -270,12 +265,6 @@ function formatearHora(hora) {
   ).format(fechaHora)
 }
 
-/*
- * Construye el intervalo mostrado en cada tarjeta.
- *
- * Si falta alguna de las dos horas, evitamos
- * presentar información incompleta.
- */
 function obtenerHorario(actividad) {
   const horaInicio =
     formatearHora(
@@ -300,24 +289,18 @@ function obtenerHorario(actividad) {
   )
 }
 
-/*
- * Agrega la forma singular o plural correspondiente
- * a la cantidad de horas acreditables.
- */
 function obtenerTextoHoras(cantidad) {
   const horas = Math.max(
     0,
     Number(cantidad) || 0,
   )
 
-  return `${horas} ${
-    horas === 1
+  return `${horas} ${horas === 1
       ? 'hora'
       : 'horas'
-  }`
+    }`
 }
 
-// Calcula el porcentaje utilizado en la barra de cupos.
 function obtenerPorcentajeCupos(
   actividad,
 ) {
@@ -355,10 +338,6 @@ function obtenerPorcentajeCupos(
   )
 }
 
-/*
- * Convierte la fecha de una marcación en un texto
- * breve para la tarjeta.
- */
 function formatearInstanteMarcacion(
   valor,
 ) {
@@ -385,12 +364,6 @@ function formatearInstanteMarcacion(
   return `Registrada a las ${hora}`
 }
 
-/*
- * Construye el tiempo restante del QR.
- *
- * El cálculo utiliza el reloj del navegador para que
- * la cuenta disminuya sin volver a consultar el servicio.
- */
 function obtenerTiempoRestante(
   expiraEn,
   ahora,
@@ -418,7 +391,7 @@ function obtenerTiempoRestante(
   const segundosTotales =
     Math.ceil(
       milisegundosRestantes /
-        1000,
+      1000,
     )
 
   const minutos =
@@ -429,23 +402,17 @@ function obtenerTiempoRestante(
   const segundos =
     segundosTotales % 60
 
-  return `${
-    String(minutos).padStart(
+  return `${String(minutos).padStart(
+    2,
+    '0',
+  )
+    }:${String(segundos).padStart(
       2,
       '0',
     )
-  }:${
-    String(segundos).padStart(
-      2,
-      '0',
-    )
-  } restantes`
+    } restantes`
 }
 
-/*
- * Obtiene el mensaje que debe aparecer debajo
- * del nombre de cada botón de asistencia.
- */
 function obtenerDetalleMarcacion({
   actividad,
   tipo,
@@ -458,17 +425,17 @@ function obtenerDetalleMarcacion({
 
   const registrada = esEntrada
     ? actividad.entradaRegistrada ===
-      true
+    true
     : actividad.salidaRegistrada ===
-      true
+    true
 
   if (registrada) {
     return formatearInstanteMarcacion(
       esEntrada
         ? actividad
-            .entradaRegistradaEn
+          .entradaRegistradaEn
         : actividad
-            .salidaRegistradaEn,
+          .salidaRegistradaEn,
     )
   }
 
@@ -489,10 +456,6 @@ function obtenerDetalleMarcacion({
   return disponibilidad.mensaje
 }
 
-/*
- * Traduce los errores técnicos de acceso a cámara
- * a mensajes comprensibles para el estudiante.
- */
 function obtenerMensajeErrorCamara(
   error,
 ) {
@@ -549,13 +512,6 @@ function obtenerMensajeErrorCamara(
   return 'No fue posible iniciar la cámara. Revisa sus permisos e inténtalo nuevamente.'
 }
 
-/*
- * Detiene una instancia del lector y limpia los elementos
- * creados por html5-qrcode.
- *
- * Los errores se ignoran intencionalmente porque el lector
- * también puede encontrarse detenido o haber sido limpiado.
- */
 async function detenerInstanciaLector(
   lector,
 ) {
@@ -568,23 +524,14 @@ async function detenerInstanciaLector(
       await lector.stop()
     }
   } catch {
-    // La cámara ya se encontraba detenida.
   }
 
   try {
     lector.clear()
   } catch {
-    // El contenedor ya se encontraba limpio.
   }
 }
 
-/*
- * Botón reutilizable para entrada y salida.
- *
- * El servicio decide si el botón está disponible.
- * De esta manera la interfaz respeta la habilitación
- * realizada por el administrador.
- */
 function AttendanceButton({
   actividad,
   tipo,
@@ -601,9 +548,9 @@ function AttendanceButton({
 
   const registrada = esEntrada
     ? actividad.entradaRegistrada ===
-      true
+    true
     : actividad.salidaRegistrada ===
-      true
+    true
 
   const detalle =
     obtenerDetalleMarcacion({
@@ -619,7 +566,7 @@ function AttendanceButton({
 
   const etiqueta = registrada
     ? informacion
-        .etiquetaRegistrada
+      .etiquetaRegistrada
     : informacion.etiqueta
 
   const clases = [
@@ -667,12 +614,6 @@ function AttendanceButton({
   )
 }
 
-/*
- * Tarjeta reutilizable para las tres vistas.
- *
- * Los controles de asistencia aparecen únicamente
- * dentro de "Mis próximas actividades".
- */
 function ActivityCard({
   actividad,
   vista,
@@ -691,21 +632,18 @@ function ActivityCard({
   const esHistorial =
     vista === VISTAS.historial
 
-  const esProxima =
-    vista === VISTAS.proximas
+  // Determina si debemos mostrar los botones de marcación
+  const permiteMarcacion =
+    vista === VISTAS.proximas || vista === VISTAS.enCurso
 
-  /*
-   * En el historial tienen prioridad las horas
-   * realmente registradas.
-   */
   const horasMostradas =
     esHistorial
       ? actividad
-          .horasRegistradas ??
-        actividad
-          .horasAcreditables
+        .horasRegistradas ??
+      actividad
+        .horasAcreditables
       : actividad
-          .horasAcreditables
+        .horasAcreditables
 
   const cuposTotales =
     Number.isInteger(
@@ -719,51 +657,42 @@ function ActivityCard({
       actividad.cuposDisponibles,
     )
       ? actividad
-          .cuposDisponibles
+        .cuposDisponibles
       : 0
 
-  /*
-   * La disponibilidad se obtiene desde el servicio.
-   *
-   * El reloj recibido como propiedad permite que un QR
-   * venza visualmente sin recargar la página.
-   */
   const disponibilidadEntrada =
-    esProxima
+    permiteMarcacion
       ? obtenerDisponibilidadMarcacionActividad(
-          actividad,
-          TIPOS_MARCACION.entrada,
-          ahora,
-        )
+        actividad,
+        TIPOS_MARCACION.entrada,
+        ahora,
+      )
       : null
 
   const disponibilidadSalida =
-    esProxima
+    permiteMarcacion
       ? obtenerDisponibilidadMarcacionActividad(
-          actividad,
-          TIPOS_MARCACION.salida,
-          ahora,
-        )
+        actividad,
+        TIPOS_MARCACION.salida,
+        ahora,
+      )
       : null
 
-  const claseTarjeta = esProxima
+  const claseTarjeta = permiteMarcacion
     ? 'student-activity-card student-activity-card--attendance'
     : 'student-activity-card'
 
   return (
     <article className={claseTarjeta}>
-      {/* Fecha resumida de la actividad. */}
       <time
         className="student-activity-date"
         dateTime={actividad.fecha}
         aria-label={fechaCompleta}
       >
         <strong>{dia}</strong>
-
         <span>{mes}</span>
       </time>
 
-      {/* Información principal publicada por el administrador. */}
       <div className="student-activity-card__content">
         <h3>{actividad.titulo}</h3>
 
@@ -773,11 +702,9 @@ function ActivityCard({
         </p>
       </div>
 
-      {/* Horario y lugar de realización. */}
       <div className="student-activity-card__schedule">
         <span>
           <Clock3 aria-hidden="true" />
-
           {obtenerHorario(
             actividad,
           )}
@@ -785,13 +712,11 @@ function ActivityCard({
 
         <span>
           <MapPin aria-hidden="true" />
-
           {actividad.lugar ||
             'Lugar pendiente'}
         </span>
       </div>
 
-      {/* Horas, cupos o estado de asistencia. */}
       <div className="student-activity-card__summary">
         <strong>
           {obtenerTextoHoras(
@@ -801,7 +726,7 @@ function ActivityCard({
 
         {esHistorial ? (
           <span className="student-activity-attendance">
-            Asistencia confirmada
+            Actividad pasada
           </span>
         ) : (
           <>
@@ -811,10 +736,6 @@ function ActivityCard({
               disponibles
             </span>
 
-            {/*
-             * Barra accesible que representa los cupos
-             * todavía disponibles en la actividad.
-             */}
             <div
               className="student-activity-capacity"
               role="progressbar"
@@ -843,11 +764,7 @@ function ActivityCard({
         )}
       </div>
 
-      {/*
-       * Marcaciones disponibles únicamente para
-       * las actividades inscritas.
-       */}
-      {esProxima && (
+      {permiteMarcacion && (
         <div className="student-activity-card__attendance">
           <AttendanceButton
             actividad={actividad}
@@ -879,7 +796,6 @@ function ActivityCard({
         </div>
       )}
 
-      {/* Abre la vista completa de la actividad seleccionada. */}
       <button
         className="student-activity-card__view"
         type="button"
@@ -899,10 +815,6 @@ function ActivityCard({
   )
 }
 
-/*
- * Cuadro encargado de iniciar la cámara,
- * leer el código QR y registrar la asistencia.
- */
 function AttendanceQrReaderDialog({
   seleccion,
   onCerrar,
@@ -925,10 +837,6 @@ function AttendanceQrReaderDialog({
     setResultadoMarcacion,
   ] = useState(null)
 
-  /*
-   * Este contador permite crear una instancia nueva
-   * cuando el acceso inicial a la cámara falla.
-   */
   const [
     intentoInicio,
     setIntentoInicio,
@@ -936,28 +844,18 @@ function AttendanceQrReaderDialog({
 
   const lectorRef = useRef(null)
 
-  /*
-   * Evita que varios fotogramas del mismo QR ejecuten
-   * el registro más de una vez.
-   */
   const lecturaProcesadaRef =
     useRef(false)
 
   const informacion =
     INFORMACION_MARCACIONES[
-      seleccion.tipo
+    seleccion.tipo
     ]
 
   const procesando =
     estadoLector ===
     ESTADOS_LECTOR.procesando
 
-  /*
-   * Inicia el lector cuando se abre el cuadro.
-   *
-   * También se ejecuta cuando el usuario solicita
-   * volver a intentar el acceso a la cámara.
-   */
   useEffect(() => {
     let efectoCancelado = false
 
@@ -1004,10 +902,6 @@ function AttendanceQrReaderDialog({
 
     lectorRef.current = lector
 
-    /*
-     * Procesa únicamente la primera lectura válida
-     * entregada por la cámara.
-     */
     async function procesarCodigoQr(
       contenidoQr,
     ) {
@@ -1021,10 +915,6 @@ function AttendanceQrReaderDialog({
       lecturaProcesadaRef.current =
         true
 
-      /*
-       * Pausamos la cámara mientras el servicio
-       * comprueba el token y registra la asistencia.
-       */
       try {
         if (
           lector.getState() ===
@@ -1034,7 +924,6 @@ function AttendanceQrReaderDialog({
           lector.pause(true)
         }
       } catch {
-        // El bloqueo lógico evita igualmente una lectura duplicada.
       }
 
       setEstadoLector(
@@ -1046,10 +935,6 @@ function AttendanceQrReaderDialog({
       )
 
       try {
-        /*
-         * Primero comprobamos que el enlace pertenezca
-         * al tipo de botón elegido.
-         */
         const datosQr =
           interpretarCodigoQrAsistencia(
             contenidoQr,
@@ -1066,10 +951,6 @@ function AttendanceQrReaderDialog({
           return
         }
 
-        /*
-         * La cámara deja de ser necesaria después
-         * de completar correctamente el registro.
-         */
         await detenerInstanciaLector(
           lector,
         )
@@ -1100,7 +981,7 @@ function AttendanceQrReaderDialog({
         notificarExito({
           titulo:
             seleccion.tipo ===
-            TIPOS_MARCACION.entrada
+              TIPOS_MARCACION.entrada
               ? 'Entrada registrada'
               : 'Salida registrada',
 
@@ -1154,11 +1035,6 @@ function AttendanceQrReaderDialog({
           },
           {
             fps: 10,
-
-            /*
-             * El área de lectura conserva una forma cuadrada
-             * y se adapta al tamaño disponible.
-             */
             qrbox: (
               anchoDisponible,
               altoDisponible,
@@ -1185,12 +1061,7 @@ function AttendanceQrReaderDialog({
               contenidoQr,
             )
           },
-
-          /*
-           * No mostramos un error por cada fotograma
-           * en el que todavía no se encuentre un QR.
-           */
-          () => {},
+          () => { },
         )
 
         if (efectoCancelado) {
@@ -1201,10 +1072,6 @@ function AttendanceQrReaderDialog({
           return
         }
 
-        /*
-         * Evita reemplazar el estado "procesando"
-         * si el QR fue reconocido inmediatamente.
-         */
         if (
           !lecturaProcesadaRef.current
         ) {
@@ -1235,10 +1102,6 @@ function AttendanceQrReaderDialog({
 
     void iniciarCamara()
 
-    /*
-     * Al cerrar el cuadro o abandonar la página
-     * detenemos la cámara y limpiamos el lector.
-     */
     return () => {
       efectoCancelado = true
 
@@ -1260,12 +1123,6 @@ function AttendanceQrReaderDialog({
     seleccion,
   ])
 
-  /*
-   * Si el lector quedó pausado por un QR inválido,
-   * reutilizamos la misma cámara.
-   *
-   * Si la cámara nunca inició, se crea una instancia nueva.
-   */
   async function reintentarLectura() {
     const lector =
       lectorRef.current
@@ -1293,7 +1150,6 @@ function AttendanceQrReaderDialog({
           return
         }
       } catch {
-        // Se creará una instancia nueva del lector.
       }
 
       lectorRef.current = null
@@ -1322,10 +1178,6 @@ function AttendanceQrReaderDialog({
     )
   }
 
-  /*
-   * Durante el registro evitamos cerrar el cuadro
-   * para que el estudiante reciba el resultado final.
-   */
   function manejarCierre() {
     if (procesando) {
       return
@@ -1350,7 +1202,7 @@ function AttendanceQrReaderDialog({
 
   const IconoEncabezado =
     estadoLector ===
-    ESTADOS_LECTOR.exito
+      ESTADOS_LECTOR.exito
       ? CheckCircle2
       : ScanLine
 
@@ -1371,12 +1223,11 @@ function AttendanceQrReaderDialog({
             manejarEscape
           }
         >
-          {/* Encabezado e identidad del lector. */}
           <header className="student-qr-dialog__header">
             <span
               className={
                 estadoLector ===
-                ESTADOS_LECTOR.exito
+                  ESTADOS_LECTOR.exito
                   ? 'student-qr-dialog__icon student-qr-dialog__icon--success'
                   : 'student-qr-dialog__icon'
               }
@@ -1408,43 +1259,38 @@ function AttendanceQrReaderDialog({
             </button>
           </header>
 
-          {/*
-           * html5-qrcode insertará aquí el video.
-           * Se oculta después de completar la marcación.
-           */}
           {estadoLector !==
             ESTADOS_LECTOR.exito && (
-            <div className="student-qr-reader">
-              <div
-                id={
-                  ID_CONTENEDOR_LECTOR
-                }
-                className="student-qr-reader__camera"
-              />
+              <div className="student-qr-reader">
+                <div
+                  id={
+                    ID_CONTENEDOR_LECTOR
+                  }
+                  className="student-qr-reader__camera"
+                />
 
-              {estadoLector ===
-                ESTADOS_LECTOR.iniciando && (
-                <div className="student-qr-reader__loading">
-                  <LoaderCircle
-                    aria-hidden="true"
-                  />
+                {estadoLector ===
+                  ESTADOS_LECTOR.iniciando && (
+                    <div className="student-qr-reader__loading">
+                      <LoaderCircle
+                        aria-hidden="true"
+                      />
 
-                  <span>
-                    Iniciando cámara
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+                      <span>
+                        Iniciando cámara
+                      </span>
+                    </div>
+                  )}
+              </div>
+            )}
 
-          {/* Mensajes correspondientes al estado del lector. */}
           <div
             className={
               `student-qr-dialog__status student-qr-dialog__status--${estadoLector}`
             }
             role={
               estadoLector ===
-              ESTADOS_LECTOR.error
+                ESTADOS_LECTOR.error
                 ? 'alert'
                 : 'status'
             }
@@ -1452,18 +1298,18 @@ function AttendanceQrReaderDialog({
           >
             {estadoLector ===
               ESTADOS_LECTOR.procesando && (
-              <LoaderCircle
-                className="student-qr-dialog__spinner"
-                aria-hidden="true"
-              />
-            )}
+                <LoaderCircle
+                  className="student-qr-dialog__spinner"
+                  aria-hidden="true"
+                />
+              )}
 
             {estadoLector ===
               ESTADOS_LECTOR.exito && (
-              <CheckCircle2
-                aria-hidden="true"
-              />
-            )}
+                <CheckCircle2
+                  aria-hidden="true"
+                />
+              )}
 
             <div>
               <strong>
@@ -1487,7 +1333,7 @@ function AttendanceQrReaderDialog({
                   ESTADOS_LECTOR.exito &&
                   (
                     seleccion.tipo ===
-                    TIPOS_MARCACION.entrada
+                      TIPOS_MARCACION.entrada
                       ? 'Entrada registrada'
                       : 'Salida registrada'
                   )}
@@ -1497,41 +1343,40 @@ function AttendanceQrReaderDialog({
 
               {estadoLector ===
                 ESTADOS_LECTOR.exito && (
-                <small>
-                  {
-                    resultadoMarcacion
-                      ?.actividadTitulo ??
-                    seleccion.actividad
-                      .titulo
-                  }
-                </small>
-              )}
+                  <small>
+                    {
+                      resultadoMarcacion
+                        ?.actividadTitulo ??
+                      seleccion.actividad
+                        .titulo
+                    }
+                  </small>
+                )}
             </div>
           </div>
 
-          {/* Acciones disponibles según el resultado. */}
           <footer className="student-qr-dialog__actions">
             {estadoLector ===
               ESTADOS_LECTOR.error && (
-              <button
-                className="student-qr-dialog__button student-qr-dialog__button--primary"
-                type="button"
-                onClick={
-                  reintentarLectura
-                }
-              >
-                <RotateCcw
-                  aria-hidden="true"
-                />
+                <button
+                  className="student-qr-dialog__button student-qr-dialog__button--primary"
+                  type="button"
+                  onClick={
+                    reintentarLectura
+                  }
+                >
+                  <RotateCcw
+                    aria-hidden="true"
+                  />
 
-                Intentar nuevamente
-              </button>
-            )}
+                  Intentar nuevamente
+                </button>
+              )}
 
             <button
               className={
                 estadoLector ===
-                ESTADOS_LECTOR.exito
+                  ESTADOS_LECTOR.exito
                   ? 'student-qr-dialog__button student-qr-dialog__button--primary'
                   : 'student-qr-dialog__button student-qr-dialog__button--secondary'
               }
@@ -1540,7 +1385,7 @@ function AttendanceQrReaderDialog({
               onClick={manejarCierre}
             >
               {estadoLector ===
-              ESTADOS_LECTOR.exito
+                ESTADOS_LECTOR.exito
                 ? 'Volver a actividades'
                 : 'Cerrar'}
             </button>
@@ -1554,10 +1399,6 @@ function AttendanceQrReaderDialog({
 function Activities() {
   const navigate = useNavigate()
 
-  /*
-   * La pantalla inicia mostrando las actividades
-   * disponibles para el estudiante.
-   */
   const [
     vistaActiva,
     setVistaActiva,
@@ -1570,16 +1411,12 @@ function Activities() {
     setBusqueda,
   ] = useState('')
 
-  /*
-   * Cada vista mantiene su propia colección.
-   * Esto evita volver a consultar el servicio
-   * cada vez que el estudiante cambia de pestaña.
-   */
   const [
     actividades,
     setActividades,
   ] = useState({
     [VISTAS.disponibles]: [],
+    [VISTAS.enCurso]: [],
     [VISTAS.proximas]: [],
     [VISTAS.historial]: [],
   })
@@ -1594,16 +1431,11 @@ function Activities() {
     setErrorCarga,
   ] = useState('')
 
-  /*
-   * Incrementar este valor permite repetir la consulta
-   * después de una marcación o un error de carga.
-   */
   const [
     intentoCarga,
     setIntentoCarga,
   ] = useState(0)
 
-  // Mantiene actualizada la vigencia visual de los QR.
   const [
     instanteActual,
     setInstanteActual,
@@ -1611,16 +1443,11 @@ function Activities() {
     () => new Date(),
   )
 
-  /*
-   * Contiene la actividad y el tipo de marcación
-   * correspondientes al lector abierto.
-   */
   const [
     seleccionMarcacion,
     setSeleccionMarcacion,
   ] = useState(null)
 
-  // Consultamos las tres colecciones desde el servicio.
   useEffect(() => {
     let componenteActivo = true
 
@@ -1639,47 +1466,56 @@ function Activities() {
           listarHistorialActividades(),
         ])
 
-        /*
-         * Evita actualizar el estado si el usuario abandona
-         * la página antes de completar las consultas.
-         */
         if (!componenteActivo) {
           return
         }
 
+        const ahora = new Date()
+
+        // 1. Disponibles (Ignoramos las pasadas para limpiar el listado)
+        const disponiblesFiltradas = (Array.isArray(disponibles) ? disponibles : [])
+          .filter(act => clasificarActividadTemporalmente(act, ahora) !== 'pasada')
+
+        // 2. Procesamos Próximas para separar "En Curso", "Futuras" y "Pasadas"
+        const proximasValidas = Array.isArray(proximas) ? proximas : []
+        const misEnCurso = []
+        const misProximas = []
+        const misPasadas = []
+
+        proximasValidas.forEach(act => {
+          const estado = clasificarActividadTemporalmente(act, ahora)
+          if (estado === 'en-curso') misEnCurso.push(act)
+          else if (estado === 'futura') misProximas.push(act)
+          else misPasadas.push(act)
+        })
+
+        // 3. Unificamos el historial: original + las pasadas que estaban atoradas en próximas
+        const historialValido = Array.isArray(historial) ? historial : []
+        const historialUnificadoMap = new Map()
+
+        historialValido.forEach(act => historialUnificadoMap.set(act.id || act.inscripcionId, act))
+        misPasadas.forEach(act => historialUnificadoMap.set(act.id || act.inscripcionId, act))
+
+        const historialFinal = Array.from(historialUnificadoMap.values()).sort((a, b) => {
+          const fechaA = new Date(`${a.fecha}T${a.horaInicio || '00:00'}`)
+          const fechaB = new Date(`${b.fecha}T${b.horaInicio || '00:00'}`)
+          return fechaB - fechaA // Descendente (más reciente primero)
+        })
+
         setActividades({
-          [VISTAS.disponibles]:
-            Array.isArray(
-              disponibles,
-            )
-              ? disponibles
-              : [],
-
-          [VISTAS.proximas]:
-            Array.isArray(
-              proximas,
-            )
-              ? proximas
-              : [],
-
-          [VISTAS.historial]:
-            Array.isArray(
-              historial,
-            )
-              ? historial
-              : [],
+          [VISTAS.disponibles]: disponiblesFiltradas,
+          [VISTAS.enCurso]: misEnCurso,
+          [VISTAS.proximas]: misProximas,
+          [VISTAS.historial]: historialFinal,
         })
       } catch (error) {
         if (!componenteActivo) {
           return
         }
 
-        /*
-         * Si ocurre un error, limpiamos todas las colecciones
-         * para no conservar información anterior como válida.
-         */
         setActividades({
           [VISTAS.disponibles]: [],
+          [VISTAS.enCurso]: [],
           [VISTAS.proximas]: [],
           [VISTAS.historial]: [],
         })
@@ -1703,14 +1539,10 @@ function Activities() {
     }
   }, [intentoCarga])
 
-  /*
-   * Actualiza el reloj una vez por segundo solamente
-   * dentro de "Mis próximas actividades".
-   */
   useEffect(() => {
     if (
-      vistaActiva !==
-      VISTAS.proximas
+      vistaActiva !== VISTAS.proximas &&
+      vistaActiva !== VISTAS.enCurso
     ) {
       return undefined
     }
@@ -1734,20 +1566,14 @@ function Activities() {
 
   const informacionVista =
     INFORMACION_VISTAS[
-      vistaActiva
+    vistaActiva
     ]
 
-  /*
-   * El buscador trabaja solamente con la colección
-   * perteneciente a la pestaña seleccionada.
-   *
-   * Se permite buscar por título, descripción y lugar.
-   */
   const actividadesFiltradas =
     useMemo(() => {
       const actividadesVista =
         actividades[
-          vistaActiva
+        vistaActiva
         ] ?? []
 
       const termino =
@@ -1782,10 +1608,6 @@ function Activities() {
       vistaActiva,
     ])
 
-  /*
-   * Después de una marcación volvemos a consultar
-   * próximas actividades e historial.
-   */
   const actualizarDespuesMarcacion =
     useCallback(() => {
       setIntentoCarga(
@@ -1794,7 +1616,6 @@ function Activities() {
       )
     }, [])
 
-  // Limpia la búsqueda al cambiar de pestaña.
   function cambiarVista(
     nuevaVista,
   ) {
@@ -1805,8 +1626,8 @@ function Activities() {
     setBusqueda('')
 
     if (
-      nuevaVista ===
-      VISTAS.proximas
+      nuevaVista === VISTAS.proximas ||
+      nuevaVista === VISTAS.enCurso
     ) {
       setInstanteActual(
         new Date(),
@@ -1814,7 +1635,6 @@ function Activities() {
     }
   }
 
-  // Restablece el buscador de la pestaña activa.
   function limpiarFiltrosActividades() {
     setBusqueda('')
   }
@@ -1826,10 +1646,6 @@ function Activities() {
     )
   }
 
-  /*
-   * Abre el detalle correspondiente a la actividad
-   * seleccionada mediante su identificador.
-   */
   function abrirDetalleActividad(
     actividad,
   ) {
@@ -1843,21 +1659,13 @@ function Activities() {
     }
 
     navigate(
-      `/actividades/${
-        encodeURIComponent(
-          identificador,
-        )
+      `/actividades/${encodeURIComponent(
+        identificador,
+      )
       }`,
     )
   }
 
-  /*
-   * Comprueba nuevamente la disponibilidad justo
-   * antes de abrir la cámara.
-   *
-   * Esta segunda comprobación cubre el caso en que
-   * el QR vence entre el último render y el clic.
-   */
   function abrirLectorAsistencia(
     actividad,
     tipo,
@@ -1902,11 +1710,9 @@ function Activities() {
 
   return (
     <div className="app-layout">
-      {/* Navegación lateral compartida del portal. */}
       <AppSidebar />
 
       <section className="app-content">
-        {/* Encabezado superior compartido. */}
         <header className="app-topbar">
           <div className="app-topbar__brand">
             <GraduationCap
@@ -1922,7 +1728,6 @@ function Activities() {
         </header>
 
         <main className="student-activities-main">
-          {/* Presentación general del módulo. */}
           <header className="student-activities-heading">
             <p>
               Oportunidades de participación
@@ -1939,65 +1744,63 @@ function Activities() {
           </header>
 
           <section className="student-activities-panel">
-            {/*
-             * Navegación interna del módulo.
-             * No cambia la URL porque las tres vistas
-             * pertenecen a la misma página.
-             */}
-            <div
-              className="student-activities-tabs"
-              role="tablist"
-              aria-label="Vistas de actividades"
-            >
-              {Object.entries(
-                INFORMACION_VISTAS,
-              ).map(
-                ([
-                  identificador,
-                  informacion,
-                ]) => (
-                  <button
-                    key={
-                      identificador
-                    }
-                    id={
-                      `tab-${identificador}`
-                    }
-                    type="button"
-                    role="tab"
-                    aria-selected={
-                      vistaActiva ===
-                      identificador
-                    }
-                    aria-controls="panel-actividades"
-                    className={
-                      vistaActiva ===
-                      identificador
-                        ? 'student-activities-tab student-activities-tab--active'
-                        : 'student-activities-tab'
-                    }
-                    onClick={() =>
-                      cambiarVista(
-                        identificador,
-                      )
-                    }
-                  >
-                    {informacion.nombre}
-
-                    <span>
-                      {
-                        actividades[
-                          identificador
-                        ].length
+            {/* Contenedor responsivo para las pestañas (Scroll Horizontal) */}
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '8px', marginBottom: '8px' }}>
+              <div
+                className="student-activities-tabs"
+                role="tablist"
+                aria-label="Vistas de actividades"
+                style={{ display: 'flex', whiteSpace: 'nowrap', minWidth: 'max-content' }}
+              >
+                {Object.entries(
+                  INFORMACION_VISTAS,
+                ).map(
+                  ([
+                    identificador,
+                    informacion,
+                  ]) => (
+                    <button
+                      key={
+                        identificador
                       }
-                    </span>
-                  </button>
-                ),
-              )}
+                      id={
+                        `tab-${identificador}`
+                      }
+                      type="button"
+                      role="tab"
+                      aria-selected={
+                        vistaActiva ===
+                        identificador
+                      }
+                      aria-controls="panel-actividades"
+                      className={
+                        vistaActiva ===
+                          identificador
+                          ? 'student-activities-tab student-activities-tab--active'
+                          : 'student-activities-tab'
+                      }
+                      onClick={() =>
+                        cambiarVista(
+                          identificador,
+                        )
+                      }
+                    >
+                      {informacion.nombre}
+
+                      <span>
+                        {
+                          actividades[
+                            identificador
+                          ].length
+                        }
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
 
             <div className="student-activities-search">
-              {/* Campo compartido por las tres vistas. */}
               <div className="student-activities-search__field">
                 <Search
                   aria-hidden="true"
@@ -2023,7 +1826,6 @@ function Activities() {
                 />
               </div>
 
-              {/* Restablece el único filtro de actividades. */}
               <button
                 className="student-activities-clear"
                 type="button"
@@ -2042,10 +1844,6 @@ function Activities() {
               </button>
             </div>
 
-            {/*
-             * Contenedor accesible asociado con
-             * la pestaña seleccionada.
-             */}
             <div
               key={vistaActiva}
               id="panel-actividades"
@@ -2089,7 +1887,6 @@ function Activities() {
                   )}
               </header>
 
-              {/* Estado mostrado durante la consulta. */}
               {cargando && (
                 <div
                   className="student-activities-state"
@@ -2111,7 +1908,6 @@ function Activities() {
                 </div>
               )}
 
-              {/* Estado mostrado si el servicio falla. */}
               {!cargando &&
                 errorCarga && (
                   <div
@@ -2144,11 +1940,6 @@ function Activities() {
                   </div>
                 )}
 
-              {/*
-               * Estado vacío. El mensaje cambia dependiendo
-               * de si no existen actividades o si la búsqueda
-               * actual no encontró coincidencias.
-               */}
               {!cargando &&
                 !errorCarga &&
                 actividadesFiltradas
@@ -2167,12 +1958,11 @@ function Activities() {
                       {busqueda.trim()
                         ? 'No existen resultados que coincidan con tu búsqueda.'
                         : informacionVista
-                            .mensajeVacio}
+                          .mensajeVacio}
                     </p>
                   </div>
                 )}
 
-              {/* Listado correspondiente a la pestaña activa. */}
               {!cargando &&
                 !errorCarga &&
                 actividadesFiltradas
@@ -2210,17 +2000,9 @@ function Activities() {
           </section>
         </main>
 
-        {/* Navegación inferior para dispositivos móviles. */}
         <MobileNavigation />
       </section>
 
-      {/*
-       * El lector se monta solamente cuando existe
-       * una actividad y un tipo de marcación seleccionados.
-       *
-       * Al desmontarse, su efecto detiene automáticamente
-       * la cámara del dispositivo.
-       */}
       {seleccionMarcacion && (
         <AttendanceQrReaderDialog
           seleccion={

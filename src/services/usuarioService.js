@@ -196,7 +196,7 @@ function normalizarUsuario(datosApi) {
         prepararTexto(
           personales
             .correo_institucional ??
-            personales.correo_inst,
+          personales.correo_inst,
         ),
 
       carrera: prepararTexto(
@@ -225,7 +225,7 @@ function normalizarUsuario(datosApi) {
 
       horasAcumuladas:
         prepararNumero(
-          becario.horas_acumuladas,
+          becario.horas_totales,
         ),
 
       horasFaltantes:
@@ -283,9 +283,7 @@ async function consultarUsuarioDesdeApi(
 
   if (rolSesion === ROL_BECARIO) {
     return apiFetch(
-      `/usuarios/${encodeURIComponent(
-        numeroCuenta,
-      )}`,
+      `/usuarios/me`,
       {
         method: 'GET',
       },
