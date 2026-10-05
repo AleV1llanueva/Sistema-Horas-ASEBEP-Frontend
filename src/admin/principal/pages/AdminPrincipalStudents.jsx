@@ -59,9 +59,6 @@ const PESTANAS_ESTUDIANTES = [
   },
 ]
 
-  // Cada pagina del listado general mostrara como maximo 10 estudiantes.
-  const ESTUDIANTES_POR_PAGINA = 5
-
 /*
  * Convierte el texto de búsqueda a una forma consistente.
  * Esto permite encontrar nombres aunque se escriban sin tildes.
@@ -171,11 +168,6 @@ function AdminPrincipalStudents() {
     pestanaActiva,
     setPestanaActiva,
   ] = useState('activos')
-
-  const [
-    paginaActual,
-    setPaginaActual,
-  ] = useState(1)
 
   /*
    * La acción pendiente conserva al estudiante seleccionado
@@ -363,69 +355,6 @@ function AdminPrincipalStudents() {
       busqueda,
     ])
 
-    /*
-    * Calcula la cantidad de páginas disponibles.
-    *
-    * Siempre se conserva al menos una página para
-    * mantener estable el estado del componente.
-    */
-    const totalPaginas =
-      useMemo(
-        () =>
-          Math.max(
-            1,
-            Math.ceil(
-              estudiantesFiltrados.length /
-                ESTUDIANTES_POR_PAGINA,
-            ),
-          ),
-        [estudiantesFiltrados.length],
-      )
-
-    /*
-    * Obtiene únicamente los estudiantes que pertenecen
-    * a la página seleccionada.
-    */
-    const estudiantesPagina =
-      useMemo(() => {
-        const indiceInicial =
-          (paginaActual - 1) *
-          ESTUDIANTES_POR_PAGINA
-
-        return estudiantesFiltrados.slice(
-          indiceInicial,
-          indiceInicial +
-            ESTUDIANTES_POR_PAGINA,
-        )
-      }, [
-        estudiantesFiltrados,
-        paginaActual,
-      ])
-
-    /*
-    * Cuando cambia la pestaña o la búsqueda,
-    * el listado regresa automáticamente a la página uno.
-    */
-    useEffect(() => {
-      setPaginaActual(1)
-    }, [
-      pestanaActiva,
-      busqueda,
-    ])
-
-    /*
-    * Evita permanecer en una página inexistente cuando
-    * un estudiante cambia de estado o disminuyen los resultados.
-    */
-    useEffect(() => {
-      setPaginaActual(
-        (paginaSeleccionada) =>
-          Math.min(
-            paginaSeleccionada,
-            totalPaginas,
-          ),
-      )
-    }, [totalPaginas])
 
   const existenEstudiantes =
     estudiantesDisponibles.length > 0
@@ -433,17 +362,6 @@ function AdminPrincipalStudents() {
   const existenResultados =
     estudiantesFiltrados.length > 0
 
-  const primerEstudianteMostrado =
-    existenResultados
-      ? (paginaActual - 1) * ESTUDIANTES_POR_PAGINA +
-        1
-      : 0
-
-  const ultimoEstudianteMostrado =
-    Math.min(
-      paginaActual * ESTUDIANTES_POR_PAGINA,
-      estudiantesFiltrados.length,
-    )
 
   const hayFiltrosAplicados =
     Boolean(busqueda.trim())
@@ -540,7 +458,7 @@ function AdminPrincipalStudents() {
           estudiantesActuales.map(
             (estudianteActual) =>
               estudianteActual.id ===
-              estudianteActualizado.id
+                estudianteActualizado.id
                 ? estudianteActualizado
                 : estudianteActual,
           ),
@@ -695,7 +613,7 @@ function AdminPrincipalStudents() {
                     <small>
                       {
                         cantidadesPorPestana[
-                          pestana.id
+                        pestana.id
                         ]
                       }
                     </small>
@@ -871,321 +789,321 @@ function AdminPrincipalStudents() {
               </div>
             ) : (
               <>
-              <div className="admin-students-table-wrapper">
-                <table className="admin-students-table">
-                  <caption>
-                    {
+                <div className="admin-students-table-wrapper">
+                  <table className="admin-students-table">
+                    <caption>{
                       configuracionPestana
                         .tituloListado
                     }
-                  </caption>
+                    </caption>
 
-                  <thead>
-                    <tr>
-                      <th scope="col">
-                        Estudiante
-                      </th>
+                    <thead>
+                      <tr>
+                        <th scope="col">
+                          Estudiante
+                        </th>
 
-                      <th scope="col">
-                        Carrera
-                      </th>
+                        <th scope="col">
+                          Carrera
+                        </th>
 
-                      <th scope="col">
-                        Progreso de horas
-                      </th>
+                        <th scope="col">
+                          Progreso de horas
+                        </th>
 
-                      <th scope="col">
-                        Aportaciones pendientes
-                      </th>
+                        <th scope="col">
+                          Aportaciones pendientes
+                        </th>
 
-                      <th scope="col">
-                        Estado
-                      </th>
+                        <th scope="col">
+                          Estado
+                        </th>
 
-                      <th scope="col">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
+                        <th scope="col">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    {estudiantesPagina.map(
-                      (estudiante) => {
-                        const datosPersonales =
-                          estudiante
-                            .datosPersonales ?? {}
+                    <tbody>
+                      {estudiantesFiltrados.map(
+                        (estudiante) => {
+                          const datosPersonales =
+                            estudiante
+                              .datosPersonales ?? {}
 
-                        const datosBecario =
-                          estudiante
-                            .datosBecario ?? {}
+                          const datosBecario =
+                            estudiante
+                              .datosBecario ?? {}
 
-                        const activo =
-                          estudiante
-                            .credenciales
-                            ?.activo !== false
+                          const activo =
+                            estudiante
+                              .credenciales
+                              ?.activo !== false
 
-                        const procesando =
-                          estudianteProcesando ===
-                          estudiante.id
+                          const procesando =
+                            estudianteProcesando ===
+                            estudiante.id
 
-                        const numeroCuenta =
-                          datosPersonales
-                            .numeroCuenta
+                          const numeroCuenta =
+                            datosPersonales
+                              .numeroCuenta
 
-                        const nombreCompleto =
-                          datosPersonales
-                            .nombreCompleto ||
-                          'Estudiante sin nombre'
+                          const nombreCompleto =
+                            datosPersonales
+                              .nombreCompleto ||
+                            'Estudiante sin nombre'
 
-                        return (
-                          <tr key={estudiante.id}>
-                            <th scope="row" data-label="Estudiante">
-                              <div className="admin-student-identity">
-                                <span
-                                  className="admin-student-identity__avatar"
-                                  aria-hidden="true"
-                                >
-                                  {obtenerIniciales(
-                                    nombreCompleto,
-                                  )}
+                          return (
+                            <tr key={estudiante.id}>
+                              <th scope="row" data-label="Estudiante">
+                                <div className="admin-student-identity">
+                                  <span
+                                    className="admin-student-identity__avatar"
+                                    aria-hidden="true"
+                                  >
+                                    {obtenerIniciales(
+                                      nombreCompleto,
+                                    )}
+                                  </span>
+
+                                  <div>
+                                    <strong>
+                                      {nombreCompleto}
+                                    </strong>
+
+                                    <small>
+                                      N.º{' '}
+                                      {numeroCuenta ||
+                                        'Sin cuenta'}
+                                    </small>
+                                  </div>
+                                </div>
+                              </th>
+
+                              <td data-label="Carrera">
+                                <span className="admin-student-career">
+                                  {datosPersonales
+                                    .carrera ||
+                                    'Carrera no disponible'}
                                 </span>
+                              </td>
 
-                                <div>
+                              <td data-label="Progreso de horas">
+                                <div className="admin-student-hours">
                                   <strong>
-                                    {nombreCompleto}
+                                    {prepararCantidad(
+                                      datosBecario
+                                        .horasAcumuladas,
+                                    )}{' '}
+                                    acumuladas
                                   </strong>
 
                                   <small>
-                                    N.º{' '}
-                                    {numeroCuenta ||
-                                      'Sin cuenta'}
+                                    {prepararCantidad(
+                                      datosBecario
+                                        .horasFaltantes,
+                                    )}{' '}
+                                    faltantes
                                   </small>
                                 </div>
-                              </div>
-                            </th>
+                              </td>
 
-                            <td data-label="Carrera">
-                              <span className="admin-student-career">
-                                {datosPersonales
-                                  .carrera ||
-                                  'Carrera no disponible'}
-                              </span>
-                            </td>
+                              <td data-label="Aportaciones">
+                                <div className="admin-student-contributions">
+                                  <strong>
+                                    {formatearLempiras(
+                                      estudiante
+                                        .saldoAportacionesPendientes,
+                                    )}
+                                  </strong>
 
-                            <td data-label="Progreso de horas">
-                              <div className="admin-student-hours">
-                                <strong>
-                                  {prepararCantidad(
-                                    datosBecario
-                                      .horasAcumuladas,
-                                  )}{' '}
-                                  acumuladas
-                                </strong>
+                                  <small>
+                                    {describirMesesPendientes(
+                                      datosBecario
+                                        .mesesSinPagar,
+                                    )}
+                                  </small>
+                                </div>
+                              </td>
 
-                                <small>
-                                  {prepararCantidad(
-                                    datosBecario
-                                      .horasFaltantes,
-                                  )}{' '}
-                                  faltantes
-                                </small>
-                              </div>
-                            </td>
+                              <td data-label="Estado">
+                                <span
+                                  className={
+                                    activo
+                                      ? 'admin-student-status admin-student-status--active'
+                                      : 'admin-student-status admin-student-status--inactive'
+                                  }
+                                >
+                                  {activo
+                                    ? 'Activo'
+                                    : 'Inactivo'}
+                                </span>
+                              </td>
 
-                            <td data-label="Aportaciones">
-                              <div className="admin-student-contributions">
-                                <strong>
-                                  {formatearLempiras(
-                                    estudiante
-                                      .saldoAportacionesPendientes,
-                                  )}
-                                </strong>
+                              <td data-label="Acciones">
+                                <div className="admin-student-actions">
+                                  <Link
+                                    to={
+                                      '/admin-principal/estudiantes/' +
+                                      encodeURIComponent(
+                                        numeroCuenta,
+                                      )
+                                    }
+                                    title="Ver estudiante"
+                                    aria-label={
+                                      `Ver información de ${nombreCompleto}`
+                                    }
+                                  >
+                                    <Eye aria-hidden="true" />
+                                  </Link>
 
-                                <small>
-                                  {describirMesesPendientes(
-                                    datosBecario
-                                      .mesesSinPagar,
-                                  )}
-                                </small>
-                              </div>
-                            </td>
-
-                            <td data-label="Estado">
-                              <span
-                                className={
-                                  activo
-                                    ? 'admin-student-status admin-student-status--active'
-                                    : 'admin-student-status admin-student-status--inactive'
-                                }
-                              >
-                                {activo
-                                  ? 'Activo'
-                                  : 'Inactivo'}
-                              </span>
-                            </td>
-
-                            <td data-label="Acciones">
-                              <div className="admin-student-actions">
-                                <Link
-                                  to={
-                                    '/admin-principal/estudiantes/' +
+                                  <Link to={'/admin-principal/estudiantes/' +
                                     encodeURIComponent(
                                       numeroCuenta,
-                                    )
+                                    ) +
+                                    '/editar'
                                   }
-                                  title="Ver estudiante"
-                                  aria-label={
-                                    `Ver información de ${nombreCompleto}`
-                                  }
-                                >
-                                  <Eye aria-hidden="true" />
-                                </Link>
+                                    title="Editar estudiante"
+                                    aria-label={
+                                      `Editar información de ${nombreCompleto}`
+                                    }
+                                  >
+                                    <Pencil aria-hidden="true" />
+                                  </Link>
 
-                                <Link to={'/admin-principal/estudiantes/' +
-                                          encodeURIComponent(
-                                            numeroCuenta,
-                                          ) +
-                                          '/editar'
-                                }
-                                title="Editar estudiante"
-                                aria-label={
-                                  `Editar información de ${nombreCompleto}`
-                                }
-                                >
-                                  <Pencil aria-hidden="true" />
-                                </Link>
+                                  <button
+                                    type="button"
+                                    title={
+                                      activo
+                                        ? 'Desactivar estudiante'
+                                        : 'Activar estudiante'
+                                    }
+                                    aria-label={
+                                      activo
+                                        ? `Desactivar a ${nombreCompleto}`
+                                        : `Activar a ${nombreCompleto}`
+                                    }
+                                    disabled={procesando}
+                                    onClick={() =>
+                                      solicitarCambioEstado(
+                                        estudiante,
+                                      )
+                                    }
+                                  >
+                                    {procesando ? (
+                                      <LoaderCircle
+                                        className="admin-student-actions__loader"
+                                        aria-hidden="true"
+                                      />
+                                    ) : (
+                                      <Power aria-hidden="true" />
+                                    )}
+                                  </button>
 
-                                <button
-                                  type="button"
-                                  title={
-                                    activo
-                                      ? 'Desactivar estudiante'
-                                      : 'Activar estudiante'
-                                  }
-                                  aria-label={
-                                    activo
-                                      ? `Desactivar a ${nombreCompleto}`
-                                      : `Activar a ${nombreCompleto}`
-                                  }
-                                  disabled={procesando}
-                                  onClick={() =>
-                                    solicitarCambioEstado(
-                                      estudiante,
-                                    )
-                                  }
-                                >
-                                  {procesando ? (
-                                    <LoaderCircle
-                                      className="admin-student-actions__loader"
-                                      aria-hidden="true"
-                                    />
-                                  ) : (
-                                    <Power aria-hidden="true" />
-                                  )}
-                                </button>
+                                  <button
+                                    className="admin-student-actions__delete"
+                                    type="button"
+                                    title="Eliminar estudiante"
+                                    aria-label={
+                                      `Eliminar a ${nombreCompleto}`
+                                    }
+                                    disabled={procesando}
+                                    onClick={() =>
+                                      mostrarEliminacionPendiente(
+                                        estudiante,
+                                      )
+                                    }
+                                  >
+                                    <Trash2 aria-hidden="true" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        },
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                                <button
-                                  className="admin-student-actions__delete"
-                                  type="button"
-                                  title="Eliminar estudiante"
-                                  aria-label={
-                                    `Eliminar a ${nombreCompleto}`
-                                  }
-                                  disabled={procesando}
-                                  onClick={() =>
-                                    mostrarEliminacionPendiente(
-                                      estudiante,
-                                    )
-                                  }
-                                >
-                                  <Trash2 aria-hidden="true" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      },
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                {/* PAGINACIÓN DEL LISTADO GENERAL */}
+                <div className="admin-students-pagination">
+                  <p>
+                    Mostrando{' '}
+                    {primerEstudianteMostrado} a{' '}
+                    {ultimoEstudianteMostrado} de{' '}
+                    {estudiantesFiltrados.length}{' '}
+                    {estudiantesFiltrados.length === 1
+                      ? 'resultado'
+                      : 'resultados'}
+                  </p>
 
-              {/* PAGINACIÓN DEL LISTADO GENERAL */}
-              <div className="admin-students-pagination">
-                <p>
-                  Mostrando{' '}
-                  {primerEstudianteMostrado} a{' '}
-                  {ultimoEstudianteMostrado} de{' '}
-                  {estudiantesFiltrados.length}{' '}
-                  {estudiantesFiltrados.length === 1
-                    ? 'resultado'
-                    : 'resultados'}
-                </p>
-
-                <nav aria-label="Paginación de estudiantes">
-                  <button
-                    type="button"
-                    disabled={paginaActual === 1}
-                    aria-label="Ir a la página anterior"
-                    onClick={() =>
-                      setPaginaActual(
-                        (paginaSeleccionada) =>
-                          paginaSeleccionada - 1,
-                      )
-                    }
-                  >
-                    <ChevronLeft aria-hidden="true" />
-                  </button>
-
-                  {Array.from(
-                    {
-                      length: totalPaginas,
-                    },
-                    (_, indice) => indice + 1,
-                  ).map((pagina) => (
+                  <nav aria-label="Paginación de estudiantes">
                     <button
-                      key={pagina}
                       type="button"
-                      className={
-                        pagina === paginaActual
-                          ? 'admin-students-pagination__page admin-students-pagination__page--active'
-                          : 'admin-students-pagination__page'
-                      }
-                      aria-current={
-                        pagina === paginaActual
-                          ? 'page'
-                          : undefined
-                      }
-                      aria-label={`Ir a la página ${pagina}`}
+                      disabled={paginaActual === 1}
+                      aria-label="Ir a la página anterior"
                       onClick={() =>
-                        setPaginaActual(pagina)
+                        setPaginaActual(
+                          (paginaSeleccionada) =>
+                            paginaSeleccionada - 1,
+                        )
                       }
                     >
-                      {pagina}
+                      <ChevronLeft aria-hidden="true" />
                     </button>
-                  ))}
 
-                  <button
-                    type="button"
-                    disabled={
-                      paginaActual === totalPaginas
-                    }
-                    aria-label="Ir a la página siguiente"
-                    onClick={() =>
-                      setPaginaActual(
-                        (paginaSeleccionada) =>
-                          paginaSeleccionada + 1,
-                      )
-                    }
-                  >
-                    <ChevronRight aria-hidden="true" />
-                  </button>
-                </nav>
-              </div>
+                    {Array.from(
+                      {
+                        length: totalPaginas,
+                      },
+                      (_, indice) => indice + 1,
+                    ).map((pagina) => (
+                      <button
+                        key={pagina}
+                        type="button"
+                        className={
+                          pagina === paginaActual
+                            ? 'admin-students-pagination__page admin-students-pagination__page--active'
+                            : 'admin-students-pagination__page'
+                        }
+                        aria-current={
+                          pagina === paginaActual
+                            ? 'page'
+                            : undefined
+                        }
+                        aria-label={`Ir a la página ${pagina}`}
+                        onClick={() =>
+                          setPaginaActual(pagina)
+                        }
+                      >
+                        {pagina}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      disabled={
+                        paginaActual === totalPaginas
+                      }
+                      aria-label="Ir a la página siguiente"
+                      onClick={() =>
+                        setPaginaActual(
+                          (paginaSeleccionada) =>
+                            paginaSeleccionada + 1,
+                        )
+                      }
+                    >
+                      <ChevronRight aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
               </>
             )}
           </section>
-        )}
+        )
+      }
 
       {/* Confirmación para activar o desactivar al estudiante. */}
       <AlertDialog.Root
@@ -1286,7 +1204,7 @@ function AdminPrincipalStudents() {
           </AlertDialog.Content>
         </AlertDialog.Portal>
       </AlertDialog.Root>
-    </div>
+    </div >
   )
 }
 
