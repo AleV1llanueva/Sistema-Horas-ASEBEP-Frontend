@@ -277,9 +277,9 @@ function normalizarRevision(
 
   if (
     estado !==
-      ESTADOS_APORTACION.APROBADO &&
+    ESTADOS_APORTACION.APROBADO &&
     estado !==
-      ESTADOS_APORTACION.RECHAZADO
+    ESTADOS_APORTACION.RECHAZADO
   ) {
     throw new AportacionAdminError(
       'Una aportación solamente puede aprobarse o rechazarse.',
@@ -294,16 +294,16 @@ function normalizarRevision(
    */
   const mesesAprobados =
     estado ===
-    ESTADOS_APORTACION.RECHAZADO
+      ESTADOS_APORTACION.RECHAZADO
       ? 0
       : prepararEnteroNoNegativo(
-          revision.meses_aprobados ?? 0,
-          'Los meses aprobados',
-        )
+        revision.meses_aprobados ?? 0,
+        'Los meses aprobados',
+      )
 
   if (
     estado ===
-      ESTADOS_APORTACION.APROBADO &&
+    ESTADOS_APORTACION.APROBADO &&
     mesesAprobados <= 0
   ) {
     throw new AportacionAdminError(
@@ -333,17 +333,17 @@ function normalizarIdentidadEstudiante(
     esObjeto(usuario.datosPersonales)
       ? usuario.datosPersonales
       : esObjeto(
-          usuario.datos_personales,
-        )
+        usuario.datos_personales,
+      )
         ? usuario.datos_personales
         : {}
 
   const numeroCuenta =
     prepararTexto(
       datosPersonales.numeroCuenta ??
-        datosPersonales.num_cuenta ??
-        usuario.numeroCuenta ??
-        usuario.num_cuenta,
+      datosPersonales.num_cuenta ??
+      usuario.numeroCuenta ??
+      usuario.num_cuenta,
     )
 
   if (!numeroCuenta) {
@@ -353,31 +353,31 @@ function normalizarIdentidadEstudiante(
   const primerNombre =
     prepararTexto(
       datosPersonales.primerNombre ??
-        datosPersonales.p_nombre,
+      datosPersonales.p_nombre,
     )
 
   const segundoNombre =
     prepararTexto(
       datosPersonales.segundoNombre ??
-        datosPersonales.s_nombre,
+      datosPersonales.s_nombre,
     )
 
   const primerApellido =
     prepararTexto(
       datosPersonales.primerApellido ??
-        datosPersonales.p_apellido,
+      datosPersonales.p_apellido,
     )
 
   const segundoApellido =
     prepararTexto(
       datosPersonales.segundoApellido ??
-        datosPersonales.s_apellido,
+      datosPersonales.s_apellido,
     )
 
   const nombreCompleto =
     prepararTexto(
       datosPersonales.nombreCompleto ??
-        datosPersonales.nombre_completo,
+      datosPersonales.nombre_completo,
     ) ||
     [
       primerNombre,
@@ -755,25 +755,35 @@ export async function listarAportaciones() {
 }
 
 // Devuelve unicamente las aportaciones pertenecientes al estudiante identificado por su numero de cuenta.
-export async function listarAportacionesPorEstudiante(
-  numeroCuenta,
-) {
-  const cuenta = prepararTexto(numeroCuenta)
+export async function listarAportacionesPorEstudiante(numeroCuenta) {
+  const cuenta = prepararTexto(numeroCuenta);
 
   if (!/^\d{11}$/.test(cuenta)) {
     throw new AportacionAdminError(
       'El número de cuenta del estudiante no es válido.',
-    )
+    );
   }
 
-  const registros = await listarAportaciones()
+  const aportacionesRecibidas = await peticionApi('/aportaciones/pendientes');
 
-  return registros.filter(
-    (registro) =>
-      registro.aportacion.num_cuenta === cuenta,
-  )
+  if (!Array.isArray(aportacionesRecibidas)) {
+    throw new AportacionAdminError(
+      'El servidor no devolvió una lista válida de aportaciones.',
+    );
+  }
+
+  const aportacionesEstudiante = aportacionesRecibidas.filter(
+    (aportacion) => String(aportacion.num_cuenta) === cuenta
+  );
+
+  return aportacionesEstudiante.map((aportacion) => ({
+    aportacion: normalizarAportacion(aportacion),
+    estudiante: {
+      num_cuenta: cuenta,
+      nombre_completo: null
+    }
+  }));
 }
-
 /*
  * Busca una aportación por su identificador.
  *
@@ -859,7 +869,7 @@ export async function revisarAportacion(
 
       mensaje:
         revision.estado ===
-        ESTADOS_APORTACION.APROBADO
+          ESTADOS_APORTACION.APROBADO
           ? 'La aportación fue aprobada correctamente.'
           : 'La aportación fue rechazada correctamente.',
     }
@@ -900,7 +910,7 @@ export async function revisarAportacion(
       ) ||
       (
         revision.estado ===
-        ESTADOS_APORTACION.APROBADO
+          ESTADOS_APORTACION.APROBADO
           ? 'La aportación fue aprobada correctamente.'
           : 'La aportación fue rechazada correctamente.'
       ),

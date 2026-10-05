@@ -246,7 +246,7 @@ function calcularTotalPaginas(
     1,
     Math.ceil(
       totalRegistros /
-        REGISTROS_POR_PAGINA,
+      REGISTROS_POR_PAGINA,
     ),
   )
 }
@@ -262,7 +262,7 @@ function obtenerRegistrosPagina(
   return registros.slice(
     indiceInicial,
     indiceInicial +
-      REGISTROS_POR_PAGINA,
+    REGISTROS_POR_PAGINA,
   )
 }
 
@@ -306,12 +306,12 @@ function PaginacionRegistros({
 
   const primerRegistro =
     (paginaActual - 1) *
-      REGISTROS_POR_PAGINA +
+    REGISTROS_POR_PAGINA +
     1
 
   const ultimoRegistro = Math.min(
     paginaActual *
-      REGISTROS_POR_PAGINA,
+    REGISTROS_POR_PAGINA,
     totalRegistros,
   )
 
@@ -402,8 +402,8 @@ function AdminPrincipalStudentDetail() {
     location.state?.origen ===
       'detalle-actividad'
       ? prepararTexto(
-          location.state.actividadId,
-        )
+        location.state.actividadId,
+      )
       : ''
 
   const vieneDesdeActividad =
@@ -412,8 +412,8 @@ function AdminPrincipalStudentDetail() {
   const rutaRegreso =
     vieneDesdeActividad
       ? `/admin-principal/actividades/${encodeURIComponent(
-          actividadOrigenId,
-        )}`
+        actividadOrigenId,
+      )}`
       : '/admin-principal/estudiantes'
 
   const etiquetaRegreso =
@@ -613,7 +613,7 @@ function AdminPrincipalStudentDetail() {
 
       const estadoSeleccionado =
         estadosPorFiltro[
-          filtroAportaciones
+        filtroAportaciones
         ]
 
       if (!estadoSeleccionado) {
@@ -1280,12 +1280,12 @@ function AdminPrincipalStudentDetail() {
 
                   <p>
                     {filtroAportaciones ===
-                    'pendientes'
-                    ? 'El estudiante no tiene aportaciones pendientes.'
-                    : filtroAportaciones ===
-                      'aprobadas'
-                    ? 'El estudiante no tiene aportaciones aprobadas.'
-                    : 'El estudiante no tiene aportaciones rechazadas.'}
+                      'pendientes'
+                      ? 'El estudiante no tiene aportaciones pendientes.'
+                      : filtroAportaciones ===
+                        'aprobadas'
+                        ? 'El estudiante no tiene aportaciones aprobadas.'
+                        : 'El estudiante no tiene aportaciones rechazadas.'}
                   </p>
                 </div>
               ) : (
@@ -1441,9 +1441,9 @@ function AdminPrincipalStudentDetail() {
                 >
                   {formatearEstado(
                     datosBecario.estadoBeca ||
-                      (activo
-                        ? 'activo'
-                        : 'inactivo'),
+                    (activo
+                      ? 'activo'
+                      : 'inactivo'),
                   )}
                 </strong>
               </div>
@@ -1490,8 +1490,8 @@ function AdminPrincipalStudentDetail() {
                 <strong>
                   {ultimaActividad
                     ? formatearFecha(
-                        ultimaActividad.fecha,
-                      )
+                      ultimaActividad.fecha,
+                    )
                     : errorActividades
                       ? 'No disponible'
                       : 'Sin actividad'}
