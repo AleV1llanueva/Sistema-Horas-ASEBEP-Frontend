@@ -86,6 +86,7 @@ function validarRespuestaUsuario(datosApi) {
     )
   }
 
+
   const seccionesEsperadas = [
     'credenciales',
     'datos_personales',

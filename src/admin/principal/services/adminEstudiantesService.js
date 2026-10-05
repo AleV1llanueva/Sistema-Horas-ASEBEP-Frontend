@@ -218,15 +218,15 @@ function normalizarActividadReciente(
     horasAcreditadas:
       prepararNumeroNoNegativo(
         actividad.horasAcreditadas ??
-          actividad.horas_acreditadas ??
-          0,
+        actividad.horas_acreditadas ??
+        0,
         'Las horas acreditadas',
       ),
 
     registradoPor:
       prepararTexto(
         actividad.registradoPor ??
-          actividad.registrado_por,
+        actividad.registrado_por,
       ) || 'ASEBEP',
   }
 }
@@ -273,14 +273,14 @@ function normalizarAportacion(
     monto:
       prepararNumeroNoNegativo(
         aportacion.monto ??
-          CUOTA_MENSUAL_APORTACION,
+        CUOTA_MENSUAL_APORTACION,
         'El monto de la aportación',
       ),
 
     fechaPago:
       prepararTexto(
         aportacion.fechaPago ??
-          aportacion.fecha_pago,
+        aportacion.fecha_pago,
       ) || null,
 
     estado,
@@ -330,7 +330,7 @@ function calcularMesesActivos(
     anio < fechaActual.getFullYear() ||
     (
       anio ===
-        fechaActual.getFullYear() &&
+      fechaActual.getFullYear() &&
       mes <= fechaActual.getMonth() + 1
     )
   ) {
@@ -379,8 +379,8 @@ function normalizarEstudiante(
     esObjeto(estudiante.datosPersonales)
       ? estudiante.datosPersonales
       : esObjeto(
-          estudiante.datos_personales,
-        )
+        estudiante.datos_personales,
+      )
         ? estudiante.datos_personales
         : {}
 
@@ -388,19 +388,19 @@ function normalizarEstudiante(
     esObjeto(estudiante.datosBecario)
       ? estudiante.datosBecario
       : esObjeto(
-          estudiante.datos_becario,
-        )
+        estudiante.datos_becario,
+      )
         ? estudiante.datos_becario
         : esObjeto(
-            estudiante.perfil_becario,
-          )
+          estudiante.perfil_becario,
+        )
           ? estudiante.perfil_becario
           : {}
 
   const numeroCuenta = prepararTexto(
     datosPersonales.numeroCuenta ??
-      datosPersonales.num_cuenta ??
-      estudiante.num_cuenta,
+    datosPersonales.num_cuenta ??
+    estudiante.num_cuenta,
   )
 
   if (!numeroCuenta) {
@@ -411,26 +411,26 @@ function normalizarEstudiante(
 
   const primerNombre = prepararTexto(
     datosPersonales.primerNombre ??
-      datosPersonales.p_nombre ??
-      estudiante.primer_nombre,
+    datosPersonales.p_nombre ??
+    estudiante.primer_nombre,
   )
 
   const segundoNombre = prepararTexto(
     datosPersonales.segundoNombre ??
-      datosPersonales.s_nombre ??
-      estudiante.segundo_nombre,
+    datosPersonales.s_nombre ??
+    estudiante.segundo_nombre,
   )
 
   const primerApellido = prepararTexto(
     datosPersonales.primerApellido ??
-      datosPersonales.p_apellido ??
-      estudiante.primer_apellido,
+    datosPersonales.p_apellido ??
+    estudiante.primer_apellido,
   )
 
   const segundoApellido = prepararTexto(
     datosPersonales.segundoApellido ??
-      datosPersonales.s_apellido ??
-      estudiante.segundo_apellido,
+    datosPersonales.s_apellido ??
+    estudiante.segundo_apellido,
   )
 
   const nombreCompleto =
@@ -470,31 +470,31 @@ function normalizarEstudiante(
   const rolId =
     prepararEnteroOpcional(
       credenciales.rolId ??
-        credenciales.rol_id ??
-        estudiante.rol_id,
+      credenciales.rol_id ??
+      estudiante.rol_id,
       'El identificador del rol',
     )
 
   const carreraId =
     prepararEnteroOpcional(
       datosPersonales.carreraId ??
-        datosPersonales.carrera_id ??
-        estudiante.carrera_id,
+      datosPersonales.carrera_id ??
+      estudiante.carrera_id,
       'El identificador de la carrera',
     )
 
   const mesInicio =
     prepararEnteroOpcional(
       datosBecario.mesInicio ??
-        datosBecario.mes_inicio,
+      datosBecario.mes_inicio,
       'El mes de inicio',
     )
 
   const mesesSinPagar =
     prepararEnteroNoNegativo(
       datosBecario.mesesSinPagar ??
-        datosBecario.meses_sin_pagar ??
-        0,
+      datosBecario.meses_sin_pagar ??
+      0,
       'Los meses sin pagar',
     )
 
@@ -503,18 +503,18 @@ function normalizarEstudiante(
       estudiante.actividadesRecientes,
     )
       ? estudiante.actividadesRecientes
-          .map(
-            normalizarActividadReciente,
-          )
-          .sort(
-            (
-              actividadA,
-              actividadB,
-            ) =>
-              actividadB.fecha.localeCompare(
-                actividadA.fecha,
-              ),
-          )
+        .map(
+          normalizarActividadReciente,
+        )
+        .sort(
+          (
+            actividadA,
+            actividadB,
+          ) =>
+            actividadB.fecha.localeCompare(
+              actividadA.fecha,
+            ),
+        )
       : []
 
   const aportaciones =
@@ -522,8 +522,8 @@ function normalizarEstudiante(
       estudiante.aportaciones,
     )
       ? estudiante.aportaciones.map(
-          normalizarAportacion,
-        )
+        normalizarAportacion,
+      )
       : []
 
   return {
@@ -535,7 +535,7 @@ function normalizarEstudiante(
       rol:
         prepararTexto(
           credenciales.rol ??
-            credenciales.role,
+          credenciales.role,
         ) || 'becario',
 
       rolId,
@@ -554,25 +554,25 @@ function normalizarEstudiante(
         prepararTexto(
           datosPersonales
             .correoPersonal ??
-            datosPersonales
-              .correo_personal ??
-            estudiante.correo_personal,
+          datosPersonales
+            .correo_personal ??
+          estudiante.correo_personal,
         ),
 
       correoInstitucional:
         prepararTexto(
           datosPersonales
             .correoInstitucional ??
-            datosPersonales
-              .correo_institucional ??
-            estudiante
-              .correo_institucional,
+          datosPersonales
+            .correo_institucional ??
+          estudiante
+            .correo_institucional,
         ),
 
       carrera:
         prepararTexto(
           datosPersonales.carrera ??
-            estudiante.carrera,
+          estudiante.carrera,
         ),
 
       carreraId,
@@ -580,15 +580,15 @@ function normalizarEstudiante(
       telefono:
         prepararTexto(
           datosPersonales.telefono ??
-            estudiante.telefono,
+          estudiante.telefono,
         ),
 
       anioNacimiento:
         prepararEnteroOpcional(
           datosPersonales
             .anioNacimiento ??
-            datosPersonales
-              .anio_nacimiento,
+          datosPersonales
+            .anio_nacimiento,
           'El año de nacimiento',
         ),
     },
@@ -598,14 +598,14 @@ function normalizarEstudiante(
         prepararTexto(
           datosBecario
             .periodoInicio ??
-            datosBecario
-              .periodo_inicio,
+          datosBecario
+            .periodo_inicio,
         ),
 
       anioInicio:
         prepararEnteroOpcional(
           datosBecario.anioInicio ??
-            datosBecario.anio_inicio,
+          datosBecario.anio_inicio,
           'El año de inicio',
         ),
 
@@ -615,9 +615,9 @@ function normalizarEstudiante(
         prepararNumeroNoNegativo(
           datosBecario
             .horasAcumuladas ??
-            datosBecario
-              .horas_acumuladas ??
-            0,
+          datosBecario
+            .horas_acumuladas ??
+          0,
           'Las horas acumuladas',
         ),
 
@@ -625,9 +625,9 @@ function normalizarEstudiante(
         prepararNumeroNoNegativo(
           datosBecario
             .horasFaltantes ??
-            datosBecario
-              .horas_faltantes ??
-            0,
+          datosBecario
+            .horas_faltantes ??
+          0,
           'Las horas faltantes',
         ),
 
@@ -637,16 +637,16 @@ function normalizarEstudiante(
         eliminado
           ? 'inactivo'
           : prepararTexto(
-                datosBecario
-                  .estadoBeca ??
-                  datosBecario
-                    .estado_beca,
-              ).toLowerCase() ||
-            (
-              activo
-                ? 'activo'
-                : 'inactivo'
-            ),
+            datosBecario
+              .estadoBeca ??
+            datosBecario
+              .estado_beca,
+          ).toLowerCase() ||
+          (
+            activo
+              ? 'activo'
+              : 'inactivo'
+          ),
     },
 
     actividadesRecientes,
@@ -843,8 +843,8 @@ function prepararDatosCreacion(
     esObjeto(estudiante.datosPersonales)
       ? estudiante.datosPersonales
       : esObjeto(
-          estudiante.datos_personales,
-        )
+        estudiante.datos_personales,
+      )
         ? estudiante.datos_personales
         : {}
 
@@ -852,8 +852,8 @@ function prepararDatosCreacion(
     esObjeto(estudiante.datosBecario)
       ? estudiante.datosBecario
       : esObjeto(
-          estudiante.datos_becario,
-        )
+        estudiante.datos_becario,
+      )
         ? estudiante.datos_becario
         : {}
 
@@ -865,9 +865,9 @@ function prepararDatosCreacion(
   const numeroCuenta =
     prepararTexto(
       datosPersonales.numeroCuenta ??
-        datosPersonales.num_cuenta ??
-        estudiante.numeroCuenta ??
-        estudiante.num_cuenta,
+      datosPersonales.num_cuenta ??
+      estudiante.numeroCuenta ??
+      estudiante.num_cuenta,
     )
 
   if (!/^\d{11}$/.test(numeroCuenta)) {
@@ -879,9 +879,9 @@ function prepararDatosCreacion(
   const primerNombre =
     prepararTexto(
       datosPersonales.primerNombre ??
-        datosPersonales.p_nombre ??
-        estudiante.primerNombre ??
-        estudiante.primer_nombre,
+      datosPersonales.p_nombre ??
+      estudiante.primerNombre ??
+      estudiante.primer_nombre,
     )
 
   if (!primerNombre) {
@@ -893,17 +893,17 @@ function prepararDatosCreacion(
   const segundoNombre =
     prepararTexto(
       datosPersonales.segundoNombre ??
-        datosPersonales.s_nombre ??
-        estudiante.segundoNombre ??
-        estudiante.segundo_nombre,
+      datosPersonales.s_nombre ??
+      estudiante.segundoNombre ??
+      estudiante.segundo_nombre,
     )
 
   const primerApellido =
     prepararTexto(
       datosPersonales.primerApellido ??
-        datosPersonales.p_apellido ??
-        estudiante.primerApellido ??
-        estudiante.primer_apellido,
+      datosPersonales.p_apellido ??
+      estudiante.primerApellido ??
+      estudiante.primer_apellido,
     )
 
   if (!primerApellido) {
@@ -915,21 +915,21 @@ function prepararDatosCreacion(
   const segundoApellido =
     prepararTexto(
       datosPersonales.segundoApellido ??
-        datosPersonales.s_apellido ??
-        estudiante.segundoApellido ??
-        estudiante.segundo_apellido,
+      datosPersonales.s_apellido ??
+      estudiante.segundoApellido ??
+      estudiante.segundo_apellido,
     )
 
   const correoInstitucional =
     prepararTexto(
       datosPersonales
         .correoInstitucional ??
-        datosPersonales
-          .correo_institucional ??
-        estudiante
-          .correoInstitucional ??
-        estudiante
-          .correo_institucional,
+      datosPersonales
+        .correo_institucional ??
+      estudiante
+        .correoInstitucional ??
+      estudiante
+        .correo_institucional,
     ).toLowerCase()
 
   if (
@@ -945,10 +945,10 @@ function prepararDatosCreacion(
   const correoPersonal =
     prepararTexto(
       datosPersonales.correoPersonal ??
-        datosPersonales
-          .correo_personal ??
-        estudiante.correoPersonal ??
-        estudiante.correo_personal,
+      datosPersonales
+        .correo_personal ??
+      estudiante.correoPersonal ??
+      estudiante.correo_personal,
     ).toLowerCase()
 
   if (
@@ -963,7 +963,7 @@ function prepararDatosCreacion(
   const telefono =
     prepararTexto(
       datosPersonales.telefono ??
-        estudiante.telefono,
+      estudiante.telefono,
     )
       .replaceAll('-', '')
       .replaceAll(' ', '')
@@ -979,27 +979,27 @@ function prepararDatosCreacion(
   const carreraId =
     prepararEnteroPositivo(
       datosPersonales.carreraId ??
-        datosPersonales.carrera_id ??
-        estudiante.carreraId ??
-        estudiante.carrera_id,
+      datosPersonales.carrera_id ??
+      estudiante.carreraId ??
+      estudiante.carrera_id,
       'La carrera seleccionada',
     )
 
   const rolId =
     prepararEnteroPositivo(
       credenciales.rolId ??
-        credenciales.rol_id ??
-        estudiante.rolId ??
-        estudiante.rol_id,
+      credenciales.rol_id ??
+      estudiante.rolId ??
+      estudiante.rol_id,
       'El rol seleccionado',
     )
 
   const mesInicio =
     prepararEnteroPositivo(
       datosBecario.mesInicio ??
-        datosBecario.mes_inicio ??
-        estudiante.mesInicio ??
-        estudiante.mes_inicio,
+      datosBecario.mes_inicio ??
+      estudiante.mesInicio ??
+      estudiante.mes_inicio,
       'El mes de inicio',
     )
 
@@ -1015,9 +1015,9 @@ function prepararDatosCreacion(
   const anioInicio =
     prepararEnteroPositivo(
       datosBecario.anioInicio ??
-        datosBecario.anio_inicio ??
-        estudiante.anioInicio ??
-        estudiante.anio_inicio,
+      datosBecario.anio_inicio ??
+      estudiante.anioInicio ??
+      estudiante.anio_inicio,
       'El año de inicio',
     )
 
@@ -1047,8 +1047,8 @@ function prepararDatosCreacion(
     carreraNombre:
       prepararTexto(
         datosPersonales.carrera ??
-          estudiante.carreraNombre ??
-          estudiante.carrera,
+        estudiante.carreraNombre ??
+        estudiante.carrera,
       ),
 
     rolId,
@@ -1056,8 +1056,8 @@ function prepararDatosCreacion(
     rolNombre:
       prepararTexto(
         credenciales.rol ??
-          estudiante.rolNombre ??
-          estudiante.rol,
+        estudiante.rolNombre ??
+        estudiante.rol,
       ),
 
     mesInicio,
@@ -1126,8 +1126,8 @@ function convertirCambiosParaBackend(
     esObjeto(cambios.datosPersonales)
       ? cambios.datosPersonales
       : esObjeto(
-          cambios.datos_personales,
-        )
+        cambios.datos_personales,
+      )
         ? cambios.datos_personales
         : {}
 
@@ -1246,60 +1246,74 @@ export async function listarEstudiantes() {
   )
 }
 
-export async function obtenerEstudiante(
-  identificador,
-) {
-  const valorBuscado =
-    prepararTexto(identificador)
+export async function obtenerEstudiante(num_cuenta) {
 
-  if (!valorBuscado) {
+  const respuesta =
+    await peticionApi(`/usuarios/${num_cuenta}`)
+
+  if (respuesta == null) {
     throw new EstudianteAdminError(
-      'El identificador del estudiante es obligatorio.',
+      'El servidor no encontró al estudiante.',
     )
   }
 
-  if (!usarDatosAdminSimulados) {
-    /*
-     * El listado administrativo contiene la información
-     * disponible para el administrador principal.
-     */
-    const estudiantes =
-      await listarEstudiantes()
-
-    return (
-      estudiantes.find(
-        (estudiante) =>
-          estudiante.id ===
-            valorBuscado ||
-          estudiante.datosPersonales
-            .numeroCuenta ===
-            valorBuscado,
-      ) ?? null
-    )
-  }
-
-  const estudiantes =
-    leerEstudiantes()
-
-  const indiceEstudiante =
-    buscarIndiceEstudiante(
-      estudiantes,
-      valorBuscado,
-    )
-
-  if (
-    indiceEstudiante === -1 ||
-    estudiantes[indiceEstudiante]
-      .eliminado === true
-  ) {
-    return null
-  }
-
-  return clonarDatos(
-    estudiantes[indiceEstudiante],
-  )
+  return normalizarEstudiante(respuesta);
 }
 
+// export async function obtenerEstudiante(
+//   identificador,
+// ) {
+//   const valorBuscado =
+//     prepararTexto(identificador)
+//
+//   if (!valorBuscado) {
+//     throw new EstudianteAdminError(
+//       'El identificador del estudiante es obligatorio.',
+//     )
+//   }
+//
+//   if (!usarDatosAdminSimulados) {
+//     /*
+//      * El listado administrativo contiene la información
+//      * disponible para el administrador principal.
+//      */
+//     const estudiantes =
+//       await listarEstudiantes()
+//
+//     return (
+//       estudiantes.find(
+//         (estudiante) =>
+//           estudiante.id ===
+//             valorBuscado ||
+//           estudiante.datosPersonales
+//             .numeroCuenta ===
+//             valorBuscado,
+//       ) ?? null
+//     )
+//   }
+//
+//   const estudiantes =
+//     leerEstudiantes()
+//
+//   const indiceEstudiante =
+//     buscarIndiceEstudiante(
+//       estudiantes,
+//       valorBuscado,
+//     )
+//
+//   if (
+//     indiceEstudiante === -1 ||
+//     estudiantes[indiceEstudiante]
+//       .eliminado === true
+//   ) {
+//     return null
+//   }
+//
+//   return clonarDatos(
+//     estudiantes[indiceEstudiante],
+//   )
+// }
+//
 /* Creación de estudiantes. */
 
 export async function crearEstudiante(
@@ -1803,7 +1817,7 @@ export async function actualizarEstudiante(
       )
         ? cambios.actividadesRecientes
         : estudianteActual
-            .actividadesRecientes,
+          .actividadesRecientes,
 
     aportaciones:
       Array.isArray(
