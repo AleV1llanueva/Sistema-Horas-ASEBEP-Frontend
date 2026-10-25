@@ -139,6 +139,7 @@ function normalizarBusqueda(valor) {
  * FUNCIÓN NUEVA: Clasifica temporalmente una actividad
  * verificando con precisión su fecha y rango de horas.
  */
+
 function clasificarActividadTemporalmente(actividad, ahora = new Date()) {
   if (!actividad.fecha) return 'futura'
 
@@ -148,8 +149,21 @@ function clasificarActividadTemporalmente(actividad, ahora = new Date()) {
   const inicio = new Date(`${actividad.fecha}T${horaInicio}`)
   const fin = new Date(`${actividad.fecha}T${horaFin}`)
 
-  if (ahora > fin) return 'pasada'
-  if (ahora >= inicio && ahora <= fin) return 'en-curso'
+  /*
+   * Si la actividad ya terminó pero el estudiante registró su
+   * entrada y todavía no su salida, la mantenemos "en curso"
+   * para que la tarjeta siga mostrando el botón de salida.
+   * Si se manda al historial, la tarjeta deja de permitir marcación.
+   */
+  const salidaPendiente =
+    actividad.entradaRegistrada === true &&
+    actividad.salidaRegistrada !== true
+
+  if (ahora > fin) {
+    return salidaPendiente ? 'en-curso' : 'pasada'
+  }
+
+  if (ahora >= inicio) return 'en-curso'
   return 'futura'
 }
 
@@ -627,14 +641,21 @@ function ActivityCard({
     fechaCompleta,
   } = obtenerPartesFecha(
     actividad.fecha,
-  )
+    )
+
 
   const esHistorial =
     vista === VISTAS.historial
 
-  // Determina si debemos mostrar los botones de marcación
+  const salidaPendiente =
+    actividad.entradaRegistrada === true &&
+    actividad.salidaRegistrada !== true
+
   const permiteMarcacion =
-    vista === VISTAS.proximas || vista === VISTAS.enCurso
+    vista === VISTAS.proximas ||
+    vista === VISTAS.enCurso ||
+    (esHistorial && salidaPendiente)
+
 
   const horasMostradas =
     esHistorial

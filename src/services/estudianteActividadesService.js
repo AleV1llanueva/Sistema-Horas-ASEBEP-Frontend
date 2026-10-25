@@ -1641,18 +1641,13 @@ async function listarActividadesDesdeApi() {
   const respuesta =
     await apiFetch('/actividades')
 
-  const coleccion =
-    Array.isArray(respuesta)
-      ? respuesta
-      : Array.isArray(
-        respuesta?.actividades,
-      )
-        ? respuesta.actividades
-        : Array.isArray(
-          respuesta?.data,
-        )
-          ? respuesta.data
-          : null
+  const candidatas = [
+    respuesta,
+    respuesta?.actividades,
+    respuesta?.data,
+  ];
+
+  const coleccion = candidatas.find(Array.isArray) ?? null;
 
   if (!coleccion) {
     throw new EstudianteActividadesError(
@@ -1766,53 +1761,27 @@ async function listarInscripcionesDesdeApi(
     )
 }
 
-/*
- * Las tres pestañas de Activities se cargan al mismo tiempo.
- * Conservamos la consulta en curso para que esa carga inicial
- * realice una sola petición por endpoint, en lugar de repetirlas.
- */
-let consultaColeccionesApiEnCurso = null
-let cuentaConsultaColeccionesApi = null
 
-async function obtenerColeccionesEstudianteDesdeApi(
-  numeroCuenta,
-) {
-  if (
-    !consultaColeccionesApiEnCurso ||
-    cuentaConsultaColeccionesApi !==
-    numeroCuenta
-  ) {
-    cuentaConsultaColeccionesApi =
-      numeroCuenta
+//Buscar inscripciones y enlazarlo junto a sus actividades
+const peticionesEnCurso = new Map();
 
-    consultaColeccionesApiEnCurso =
-      Promise.all([
-        listarActividadesDesdeApi(),
-        listarInscripcionesDesdeApi(
-          numeroCuenta,
-        ),
-      ]).then(
-        ([actividades, inscripciones]) => ({
-          actividades,
-          inscripciones,
-        }),
-      )
+async function obtenerColeccionesEstudianteDesdeApi(numeroCuenta) {
+  if (peticionesEnCurso.has(numeroCuenta)) {
+    return peticionesEnCurso.get(numeroCuenta);
   }
 
-  const consultaActual =
-    consultaColeccionesApiEnCurso
+  const promesaConsulta = Promise.all([
+    listarActividadesDesdeApi(),
+    listarInscripcionesDesdeApi(numeroCuenta),
+  ])
+    .then(([actividades, inscripciones]) => ({ actividades, inscripciones }))
+    .finally(() => {
+      peticionesEnCurso.delete(numeroCuenta);
+    });
 
-  try {
-    return await consultaActual
-  } finally {
-    if (
-      consultaColeccionesApiEnCurso ===
-      consultaActual
-    ) {
-      consultaColeccionesApiEnCurso = null
-      cuentaConsultaColeccionesApi = null
-    }
-  }
+  peticionesEnCurso.set(numeroCuenta, promesaConsulta);
+
+  return promesaConsulta;
 }
 
 /*
@@ -1927,6 +1896,13 @@ export async function listarActividadesDisponibles() {
   )
 }
 
+// export async function listarProximasActividadesInscritas() {
+//   const numeroCuenta = obtenerNumeroCuentaActual()
+//
+//
+// }
+
+
 export async function listarProximasActividadesInscritas() {
   const numeroCuenta =
     obtenerNumeroCuentaActual()
@@ -1971,59 +1947,6 @@ export async function listarProximasActividadesInscritas() {
       ),
     )
   }
-
-  const actividades =
-    leerActividadesSimuladas()
-
-  const actividadesPorId =
-    new Map(
-      actividades.map(
-        (actividad) => [
-          actividad.id,
-          actividad,
-        ],
-      ),
-    )
-
-  const proximas =
-    leerInscripcionesSimuladas()
-      .filter(
-        (inscripcion) =>
-          inscripcion.numeroCuenta ===
-          numeroCuenta &&
-          inscripcion
-            .estadoInscripcion !==
-          'cancelada' &&
-          !(
-            inscripcion
-              .entradaRegistrada &&
-            inscripcion
-              .salidaRegistrada
-          ),
-      )
-      .map(
-        (inscripcion) =>
-          combinarInscripcionConActividad(
-            inscripcion,
-            actividadesPorId,
-          ),
-      )
-      .filter(
-        (actividad) =>
-          actividad &&
-          (
-            actividad.fecha >=
-            obtenerFechaHoy() ||
-            actividad
-              .situacionAsistencia === 'incompleta'
-          ),
-      )
-
-  return clonarDatos(
-    ordenarPorFechaAscendente(
-      proximas,
-    ),
-  )
 }
 
 /*
@@ -2233,7 +2156,7 @@ export async function obtenerActividadEstudiante(
   /*
   * Primero buscamos la version actual de la actividad.
   * Si ya no esta publicada, utilizamos la copia guardada
-  * en la inscripcion para conservar accesible el historial. 
+  * en la inscripcion para conservar accesible el historial.
   */
   const actividadActual = actividades.find(
     (elemento) => elemento.id === id &&

@@ -6,6 +6,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true, // Esto expone el servidor a 0.0.0.0 automáticamente
-    port: 5173
+    port: 5173,
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: {
+      '/api': {
+
+        target: 'http://backend_api:8000',   // nombre del servicio, NO localhost
+              changeOrigin: true,
+              rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
   }
 })
