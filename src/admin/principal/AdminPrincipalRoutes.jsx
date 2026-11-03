@@ -22,6 +22,8 @@ import AdminPrincipalEditStudent from './pages/AdminPrincipalEditStudent.jsx'
 import AdminPrincipalContributions from './pages/AdminPrincipalContributions.jsx'
 import AdminPrincipalContributionDetail from './pages/AdminPrincipalContributionDetail.jsx'
 
+import AdminPrincipalFines from './pages/AdminPrincipalFines.jsx'
+
 import AdminPrincipalProfile from './pages/AdminPrincipalProfile.jsx'
 import { Navigate } from 'react-router'
 
@@ -60,6 +62,9 @@ function AdminPrincipalRoutes() {
         {/* Vistas para consultar, confirmar y rechazar aportaciones */}
         <Route path="aportaciones" element={<AdminPrincipalContributions />} />
         <Route path="aportaciones/:aportacionId" element={<AdminPrincipalContributionDetail />} />
+
+        {/* Vistas para revisar multas y sus comprobantes de pago. */}
+        <Route path="multas" element={<AdminPrincipalFines />} />
         
         {/* Perfil de la cuenta administrativa autenticada */}
         <Route path="perfil" element={<AdminPrincipalProfile />} />

@@ -1,0 +1,868 @@
+/*
+ * Vista de multas del administrador principal.
+ * Reutiliza las variables visuales definidas en AdminLayout.css.
+ */
+
+.admin-fines-page {
+  width: min(100%, 1420px);
+  margin: 0 auto;
+}
+
+/* Encabezado */
+.admin-fines-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 24px;
+}
+
+.admin-fines-heading > div:first-child {
+  min-width: 0;
+}
+
+.admin-fines-heading__eyebrow {
+  margin: 0 0 7px;
+  color: var(--admin-focus);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-fines-heading h1 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size:
+    clamp(1.75rem, 2.6vw, 2.25rem);
+  line-height: 1.12;
+}
+
+.admin-fines-heading
+  > div:first-child
+  > p:last-child {
+  max-width: 680px;
+  margin: 9px 0 0;
+  color: var(--admin-text-soft);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.admin-fines-heading__summary {
+  width: 215px;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 12px 16px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f3f9fc 100%
+    );
+  box-shadow:
+    0 8px 24px
+    rgb(10 39 64 / 6%);
+}
+
+.admin-fines-heading__summary > svg {
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+  border:
+    1px solid #cce2ef;
+  border-radius: 10px;
+  background: #e2f0fa;
+}
+
+.admin-fines-heading__summary > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-fines-heading__summary strong {
+  color: var(--admin-text);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.admin-fines-heading__summary span {
+  color: var(--admin-text-soft);
+  font-size: 0.67rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* Pestañas */
+.admin-fines-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 6px;
+  overflow-x: auto;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbfd 0%,
+      #f1f7fb 100%
+    );
+}
+
+.admin-fines-tab {
+  min-width: 170px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  padding: 0 13px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 720;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.admin-fines-tab:hover {
+  color: var(--admin-navy);
+  border-color: #d6e4ed;
+  background: rgb(255 255 255 / 72%);
+}
+
+.admin-fines-tab--active {
+  color: var(--admin-navy);
+  border-color: #bdd8e8;
+  background: var(--admin-white);
+  box-shadow:
+    0 5px 14px
+    rgb(20 67 98 / 9%);
+}
+
+.admin-fines-tab > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--admin-blue);
+}
+
+.admin-fines-tab > small {
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-grid;
+  place-items: center;
+  padding: 2px 7px;
+  color: var(--admin-text-soft);
+  border-radius: 999px;
+  background: #e7eef3;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.admin-fines-tab--active > small {
+  color: #075580;
+  background: #dceef8;
+}
+
+/* Búsqueda */
+.admin-fines-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(280px, 1fr)
+    auto;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 17px 18px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-white);
+  box-shadow:
+    0 8px 24px
+    rgb(10 39 64 / 5%);
+}
+
+.admin-fines-search {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.admin-fines-search > span {
+  color: var(--admin-text-soft);
+  font-size: 0.69rem;
+  font-weight: 750;
+}
+
+.admin-fines-search__control {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.admin-fines-search__control:focus-within {
+  border-color: var(--admin-focus);
+  background: var(--admin-white);
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.admin-fines-search__control svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--admin-muted);
+}
+
+.admin-fines-search__control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--admin-text);
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.admin-fines-clear-button {
+  min-width: 142px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #f8fafb;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-fines-clear-button:hover:not(:disabled) {
+  color: var(--admin-navy);
+  background: #eef4f8;
+}
+
+.admin-fines-clear-button:disabled {
+  color: #9aa6af;
+  background: #f3f5f6;
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.admin-fines-clear-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Estados de carga, error y vacío */
+.admin-fines-state {
+  min-height: 310px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 40px 24px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-white);
+  text-align: center;
+}
+
+.admin-fines-state > svg {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 5px;
+  color: var(--admin-blue);
+}
+
+.admin-fines-state--error > svg {
+  color: var(--admin-danger);
+}
+
+.admin-fines-state h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1.1rem;
+}
+
+.admin-fines-state p {
+  max-width: 500px;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.admin-fines-state button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  padding: 0 15px;
+  color: var(--admin-white);
+  border: 0;
+  border-radius: 8px;
+  background: var(--admin-navy);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-fines-state button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-fines-state__loader {
+  animation:
+    admin-fines-spin
+    850ms linear infinite;
+}
+
+/* Listado */
+.admin-fines-list {
+  overflow: hidden;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-white);
+  box-shadow:
+    0 10px 28px
+    rgb(10 39 64 / 5%);
+}
+
+.admin-fines-list__header {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 20px;
+  border-bottom:
+    1px solid var(--admin-border);
+  background:
+    linear-gradient(
+      90deg,
+      #f8fbfd,
+      #ffffff
+    );
+}
+
+.admin-fines-list__header p {
+  margin: 0 0 4px;
+  color: var(--admin-focus);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-fines-list__header h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1rem;
+}
+
+.admin-fines-list__header > span {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  color: #075580;
+  border:
+    1px solid #d5e6f0;
+  border-radius: 999px;
+  background: #e8f3f9;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.admin-fines-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-fines-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.admin-fines-table caption {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.admin-fines-table th,
+.admin-fines-table td {
+  padding: 14px 16px;
+  border-bottom:
+    1px solid #e3e9ee;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-fines-table thead th {
+  color: var(--admin-text-soft);
+  background: #f6f8fa;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-fines-table tbody tr:last-child
+  th,
+.admin-fines-table tbody tr:last-child
+  td {
+  border-bottom: 0;
+}
+
+.admin-fines-table tbody tr:hover {
+  background: #fbfdfe;
+}
+
+/* Identidad */
+.admin-fine-identity {
+  min-width: 215px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.admin-fine-identity__avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--admin-navy);
+  border:
+    1px solid #c8ddea;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      135deg,
+      #e2f0fa,
+      #f2f8fc
+    );
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.admin-fine-identity > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-fine-identity strong {
+  max-width: 230px;
+  overflow: hidden;
+  color: var(--admin-text);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-fine-identity small {
+  color: var(--admin-muted);
+  font-size: 0.63rem;
+}
+
+/* Motivo, monto y fecha */
+.admin-fine-motivo {
+  min-width: 210px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-fine-motivo span {
+  color: var(--admin-text-soft);
+  font-size: 0.73rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.admin-fine-motivo small {
+  color: var(--admin-muted);
+  font-size: 0.63rem;
+}
+
+.admin-fine-monto {
+  color: #9a5a18;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.admin-fine-fecha {
+  color: var(--admin-text-soft);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.admin-fine-comprobante {
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-fine-comprobante span {
+  color: var(--admin-text);
+  font-size: 0.71rem;
+  font-weight: 650;
+}
+
+.admin-fine-comprobante small {
+  color: var(--admin-muted);
+  font-size: 0.62rem;
+}
+
+.admin-fine-sin-comprobante {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #9a5a18;
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.admin-fine-sin-comprobante svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Acciones */
+.admin-fine-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.admin-fine-actions button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-white);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.admin-fine-actions button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-fine-actions button:hover:not(:disabled) {
+  background: #eef4f8;
+}
+
+.admin-fine-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-fine-actions__approve:hover:not(:disabled) {
+  color: #23724b;
+  border-color: #bfe0cd;
+  background: #eaf7f0;
+}
+
+.admin-fine-actions__reject:hover:not(:disabled) {
+  color: var(--admin-danger);
+  border-color: #efc9ce;
+  background: #fff4f5;
+}
+
+.admin-fine-actions__loader {
+  animation:
+    admin-fines-spin
+    850ms linear infinite;
+}
+
+.admin-fine-actions__hint {
+  color: var(--admin-muted);
+  font-size: 0.66rem;
+}
+
+/* Diálogo */
+.admin-fine-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(9 27 42 / 45%);
+}
+
+.admin-fine-dialog__content {
+  width: min(calc(100vw - 32px), 460px);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  padding: 28px 26px 22px;
+  border-radius: 14px;
+  background: var(--admin-white);
+  box-shadow:
+    0 24px 60px
+    rgb(9 27 42 / 28%);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.admin-fine-dialog__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  border-radius: 12px;
+}
+
+.admin-fine-dialog__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.admin-fine-dialog__icon--approve {
+  color: #23724b;
+  border: 1px solid #bfe0cd;
+  background: #eaf7f0;
+}
+
+.admin-fine-dialog__icon--reject {
+  color: var(--admin-danger);
+  border: 1px solid #efc9ce;
+  background: #fff4f5;
+}
+
+.admin-fine-dialog__title {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1.05rem;
+}
+
+.admin-fine-dialog__description {
+  margin: 9px 0 0;
+  color: var(--admin-text-soft);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.admin-fine-dialog__detail {
+  display: grid;
+  gap: 3px;
+  margin: 16px 0;
+  padding: 12px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 9px;
+  background: #fafcfd;
+}
+
+.admin-fine-dialog__detail strong {
+  color: var(--admin-text);
+  font-size: 0.76rem;
+}
+
+.admin-fine-dialog__detail span {
+  color: var(--admin-muted);
+  font-size: 0.68rem;
+}
+
+.admin-fine-dialog__actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.admin-fine-dialog__actions button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-fine-dialog__actions button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-fine-dialog__cancel {
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  background: var(--admin-white);
+}
+
+.admin-fine-dialog__confirm {
+  color: var(--admin-white);
+  border: 1px solid transparent;
+}
+
+.admin-fine-dialog__confirm--approve {
+  border-color: #23724b;
+  background: #23724b;
+}
+
+.admin-fine-dialog__confirm--reject {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger);
+}
+
+.admin-fine-dialog__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.admin-fine-dialog__loader {
+  animation:
+    admin-fines-spin
+    850ms linear infinite;
+}
+
+@keyframes admin-fines-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Accesibilidad */
+.admin-fines-tab:focus-visible,
+.admin-fines-clear-button:focus-visible,
+.admin-fines-state button:focus-visible,
+.admin-fine-actions button:focus-visible,
+.admin-fine-dialog__actions button:focus-visible {
+  outline:
+    3px solid
+    rgb(75 145 196 / 30%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .admin-fines-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-fines-heading__summary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-fines-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-fines-clear-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-fines-tab {
+    min-width: 145px;
+    padding: 0 10px;
+  }
+
+  .admin-fines-list__header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 15px;
+  }
+
+  .admin-fines-state {
+    min-height: 260px;
+    padding: 32px 18px;
+  }
+
+  .admin-fine-dialog__content {
+    width:
+      min(calc(100vw - 22px), 460px);
+    padding: 24px 18px 18px;
+  }
+
+  .admin-fine-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-fine-dialog__actions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-fines-state__loader,
+  .admin-fine-actions__loader,
+  .admin-fine-dialog__loader {
+    animation: none;
+  }
+
+  .admin-fines-tab,
+  .admin-fines-clear-button,
+  .admin-fine-actions button {
+    transition: none;
+  }
+}

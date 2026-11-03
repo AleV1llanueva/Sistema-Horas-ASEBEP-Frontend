@@ -1,6 +1,7 @@
 import {
     CalendarDays,
     FileText,
+    Gavel,
     LayoutDashboard,
     LogOut,
     UsersRound,
@@ -78,6 +79,16 @@ function AdminMobileNavigation() {
         <FileText aria-hidden="true" />
         
         <span>Aportes </span>
+      </NavLink>
+
+      {/* Revision de multas y comprobantes de pago. */}
+      <NavLink
+        className={obtenerClase}
+        to="/admin-principal/multas"
+      >
+        <Gavel aria-hidden="true" />
+
+        <span>Multas</span>
       </NavLink>
 
       {/* Utiliza la misma confirmación global de cierre de sesión. */}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   CalendarDays,
   FileText,
+  Gavel,
   LayoutDashboard,
   LogOut,
   PanelLeftClose,
@@ -50,6 +51,13 @@ const enlacesAdminPrincipal = [
     texto: 'Aportaciones',
     destino: '/admin-principal/aportaciones',
     icono: FileText,
+    fin: false,
+  },
+  {
+    id: 'multas',
+    texto: 'Multas',
+    destino: '/admin-principal/multas',
+    icono: Gavel,
     fin: false,
   },
   {
