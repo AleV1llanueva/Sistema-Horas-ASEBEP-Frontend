@@ -244,10 +244,15 @@ function obtenerPartesFecha(fecha) {
 }
 
 function formatearHora(hora) {
+  /*
+   * El backend serializa las columnas `time` como HH:mm:ss
+   * y los datos simulados usan HH:mm. Se aceptan ambos formatos;
+   * las horas incompletas se siguen descartando.
+   */
   if (
     typeof hora !== 'string' ||
-    !/^([01]\d|2[0-3]):[0-5]\d$/.test(
-      hora,
+    !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(
+      hora.trim(),
     )
   ) {
     return ''
@@ -257,6 +262,7 @@ function formatearHora(hora) {
     horas,
     minutos,
   ] = hora
+    .trim()
     .split(':')
     .map(Number)
 
