@@ -5,9 +5,11 @@ import {
   Eye,
   GraduationCap,
   LoaderCircle,
+  MailWarning,
   Pencil,
   Plus,
   Power,
+  RefreshCw,
   Search,
   Trash2,
   TriangleAlert,
@@ -26,8 +28,11 @@ import {
 import { Link } from 'react-router'
 
 import {
+  asignarCorreoInstitucional,
   cambiarEstadoEstudiante,
-  listarEstudiantes,
+  contarEstudiantesPorEstado,
+  listarEstudiantesPaginados,
+  listarEstudiantesSinCorreo,
 } from '../services/adminEstudiantesService.js'
 
 import {
@@ -58,6 +63,18 @@ const PESTANAS_ESTUDIANTES = [
     icono: UserX,
   },
 ]
+
+/*
+ * Con más de mil usuarios registrados, el listado se muestra
+ * por páginas para no renderizar todas las filas a la vez.
+ */
+const ESTUDIANTES_POR_PAGINA = 10
+
+/*
+ * A partir de esta cantidad, la sección de correos pendientes
+ * se muestra colapsada para no empujar el listado principal.
+ */
+const LIMITE_CORREOS_VISIBLES = 4
 
 /*
  * Convierte el texto de búsqueda a una forma consistente.
@@ -144,6 +161,27 @@ function AdminPrincipalStudents() {
     setEstudiantes,
   ] = useState([])
 
+  /*
+   * Totales que devuelve el backend para la página consultada.
+   */
+  const [
+    totalEstudiantes,
+    setTotalEstudiantes,
+  ] = useState(0)
+
+  const [
+    totalPaginas,
+    setTotalPaginas,
+  ] = useState(1)
+
+  const [
+    cantidadesPorPestana,
+    setCantidadesPorPestana,
+  ] = useState({
+    activos: 0,
+    inactivos: 0,
+  })
+
   const [
     cargando,
     setCargando,
@@ -169,6 +207,11 @@ function AdminPrincipalStudents() {
     setPestanaActiva,
   ] = useState('activos')
 
+  const [
+    paginaActual,
+    setPaginaActual,
+  ] = useState(1)
+
   /*
    * La acción pendiente conserva al estudiante seleccionado
    * mientras se muestra y se cierra el diálogo.
@@ -193,8 +236,74 @@ function AdminPrincipalStudents() {
   ] = useState('')
 
   /*
+   * Sección independiente para los becarios que todavía
+   * no tienen correo institucional asignado. Tiene su propio
+   * estado para que un fallo no oculte el listado principal.
+   */
+  const [
+    estudiantesSinCorreo,
+    setEstudiantesSinCorreo,
+  ] = useState([])
+
+  const [
+    cargandoSinCorreo,
+    setCargandoSinCorreo,
+  ] = useState(true)
+
+  const [
+    errorSinCorreo,
+    setErrorSinCorreo,
+  ] = useState('')
+
+  const [
+    recargaSinCorreo,
+    setRecargaSinCorreo,
+  ] = useState(0)
+
+  const [
+    busquedaSinCorreo,
+    setBusquedaSinCorreo,
+  ] = useState('')
+
+  const [
+    correosExpandidos,
+    setCorreosExpandidos,
+  ] = useState(false)
+
+  /*
+   * Diálogo para asignar el correo institucional a un becario
+   * que todavía no lo tiene.
+   */
+  const [
+    correoEnEdicion,
+    setCorreoEnEdicion,
+  ] = useState(null)
+
+  const [
+    dialogoCorreoAbierto,
+    setDialogoCorreoAbierto,
+  ] = useState(false)
+
+  const [
+    cuentaProcesandoCorreo,
+    setCuentaProcesandoCorreo,
+  ] = useState('')
+
+  /*
+   * Configuración de la pestaña seleccionada. Se declara antes
+   * del efecto porque forma parte de sus dependencias.
+   */
+  const configuracionPestana =
+    PESTANAS_ESTUDIANTES.find(
+      (pestana) =>
+        pestana.id === pestanaActiva,
+    ) ?? PESTANAS_ESTUDIANTES[0]
+
+  /*
    * La vista solamente consume las funciones públicas
    * del servicio y no necesita conocer el origen de los datos.
+   * La búsqueda, el filtro por estado, el orden y el conteo
+   * se resuelven en el servidor.
    */
   useEffect(() => {
     let componenteMontado = true
@@ -204,19 +313,23 @@ function AdminPrincipalStudents() {
       setError('')
 
       try {
-        const estudiantesObtenidos =
-          await listarEstudiantes()
+        const paginaObtenida =
+          await listarEstudiantesPaginados({
+            pagina: paginaActual,
+            limite: ESTUDIANTES_POR_PAGINA,
+            busqueda,
+            activo:
+              configuracionPestana.activo,
+          })
 
         if (!componenteMontado) {
           return
         }
 
-        setEstudiantes(
-          Array.isArray(
-            estudiantesObtenidos,
-          )
-            ? estudiantesObtenidos
-            : [],
+        setEstudiantes(paginaObtenida.elementos)
+        setTotalEstudiantes(paginaObtenida.total)
+        setTotalPaginas(
+          paginaObtenida.totalPaginas,
         )
       } catch (errorCarga) {
         if (!componenteMontado) {
@@ -229,6 +342,8 @@ function AdminPrincipalStudents() {
         )
 
         setEstudiantes([])
+        setTotalEstudiantes(0)
+        setTotalPaginas(1)
 
         setError(
           errorCarga instanceof Error
@@ -247,102 +362,182 @@ function AdminPrincipalStudents() {
     return () => {
       componenteMontado = false
     }
+  }, [
+    recarga,
+    paginaActual,
+    busqueda,
+    configuracionPestana.activo,
+  ])
+
+  /*
+   * Los contadores de las pestañas no dependen de la búsqueda
+   * ni de la página actual, por eso se consultan por separado.
+   */
+  useEffect(() => {
+    let componenteMontado = true
+
+    async function cargarCantidades() {
+      try {
+        const cantidades =
+          await contarEstudiantesPorEstado()
+
+        if (componenteMontado) {
+          setCantidadesPorPestana(
+            cantidades,
+          )
+        }
+      } catch (errorConteo) {
+        console.log(
+          'Error al contar estudiantes: ',
+          errorConteo,
+        )
+      }
+    }
+
+    cargarCantidades()
+
+    return () => {
+      componenteMontado = false
+    }
   }, [recarga])
 
   /*
-   * Los estudiantes eliminados no deben regresar
-   * al listado normal de activos o inactivos.
+   * Carga los usuarios sin correo institucional mediante
+   * el endpoint dedicado, sin mezclarse con el listado general.
    */
-  const estudiantesDisponibles =
-    useMemo(
-      () =>
-        estudiantes.filter(
-          (estudiante) =>
-            estudiante.eliminado !== true,
-        ),
-      [estudiantes],
-    )
+  useEffect(() => {
+    let componenteMontado = true
+
+    async function cargarEstudiantesSinCorreo() {
+      setCargandoSinCorreo(true)
+      setErrorSinCorreo('')
+
+      try {
+        const estudiantesObtenidos =
+          await listarEstudiantesSinCorreo()
+
+        if (!componenteMontado) {
+          return
+        }
+
+        setEstudiantesSinCorreo(
+          Array.isArray(
+            estudiantesObtenidos,
+          )
+            ? estudiantesObtenidos
+            : [],
+        )
+      } catch (errorCarga) {
+        if (!componenteMontado) {
+          return
+        }
+
+        console.log(
+          'Error de estudiantes sin correo: ',
+          errorCarga,
+        )
+
+        setEstudiantesSinCorreo([])
+
+        setErrorSinCorreo(
+          errorCarga instanceof Error
+            ? errorCarga.message
+            : 'No fue posible cargar los estudiantes sin correo.',
+        )
+      } finally {
+        if (componenteMontado) {
+          setCargandoSinCorreo(false)
+        }
+      }
+    }
+
+    cargarEstudiantesSinCorreo()
+
+    return () => {
+      componenteMontado = false
+    }
+  }, [recargaSinCorreo])
 
   /*
-   * Los contadores no dependen de la búsqueda.
-   * Siempre muestran la cantidad real de cada pestaña.
+   * El backend ya devuelve únicamente la página, el estado
+   * y la búsqueda solicitados, por lo que el listado se usa tal cual.
    */
-  const cantidadesPorPestana =
-    useMemo(
-      () => ({
-        activos:
-          estudiantesDisponibles.filter(
-            (estudiante) =>
-              estudiante.credenciales
-                ?.activo !== false,
-          ).length,
+  const estudiantesPagina = estudiantes
 
-        inactivos:
-          estudiantesDisponibles.filter(
-            (estudiante) =>
-              estudiante.credenciales
-                ?.activo === false,
-          ).length,
-      }),
-      [estudiantesDisponibles],
-    )
+  const existenEstudiantes =
+    totalEstudiantes > 0
 
-  const configuracionPestana =
-    PESTANAS_ESTUDIANTES.find(
-      (pestana) =>
-        pestana.id === pestanaActiva,
-    ) ?? PESTANAS_ESTUDIANTES[0]
+  const existenResultados =
+    estudiantesPagina.length > 0
 
   /*
-   * Primero se seleccionan los estudiantes del estado
-   * correspondiente y después se aplica la búsqueda.
+   * Al cambiar de pestaña o de búsqueda regresamos al inicio
+   * para no quedar en una página que ya no existe.
    */
-  const estudiantesPestana =
-    useMemo(
-      () =>
-        estudiantesDisponibles.filter(
-          (estudiante) => {
-            const activo =
-              estudiante.credenciales
-                ?.activo !== false
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [pestanaActiva, busqueda])
 
-            return (
-              activo ===
-              configuracionPestana.activo
-            )
-          },
-        ),
-      [
-        estudiantesDisponibles,
-        configuracionPestana,
-      ],
+  /*
+   * Si la página solicitada quedó fuera de rango (por ejemplo
+   * al desactivar al último estudiante de la última página),
+   * regresamos a la última página disponible.
+   */
+  useEffect(() => {
+    if (
+      !cargando &&
+      !error &&
+      paginaActual > totalPaginas
+    ) {
+      setPaginaActual(totalPaginas)
+    }
+  }, [
+    cargando,
+    error,
+    paginaActual,
+    totalPaginas,
+  ])
+
+  const primerEstudianteMostrado =
+    existenResultados
+      ? (paginaActual - 1) *
+        ESTUDIANTES_POR_PAGINA +
+        1
+      : 0
+
+  const ultimoEstudianteMostrado =
+    Math.min(
+      paginaActual *
+        ESTUDIANTES_POR_PAGINA,
+      totalEstudiantes,
     )
 
-  const estudiantesFiltrados =
+  const hayFiltrosAplicados =
+    Boolean(busqueda.trim())
+
+  const accionEsActivacion =
+    accionPendiente?.nuevoEstado === true
+
+  const estudiantesSinCorreoFiltrados =
     useMemo(() => {
       const textoBuscado =
-        normalizarBusqueda(busqueda)
+        normalizarBusqueda(busquedaSinCorreo)
 
       if (!textoBuscado) {
-        return estudiantesPestana
+        return estudiantesSinCorreo
       }
 
-      return estudiantesPestana.filter(
+      return estudiantesSinCorreo.filter(
         (estudiante) => {
           const datosPersonales =
             estudiante.datosPersonales ?? {}
-
-          const credenciales =
-            estudiante.credenciales ?? {}
 
           return [
             datosPersonales.nombreCompleto,
             datosPersonales.numeroCuenta,
             datosPersonales.carrera,
             datosPersonales.correoPersonal,
-            datosPersonales
-              .correoInstitucional,
-            credenciales.rol,
+            datosPersonales.telefono,
           ].some((campo) =>
             normalizarBusqueda(
               campo,
@@ -351,23 +546,144 @@ function AdminPrincipalStudents() {
         },
       )
     }, [
-      estudiantesPestana,
-      busqueda,
+      estudiantesSinCorreo,
+      busquedaSinCorreo,
     ])
 
+  /*
+   * Abre el diálogo de asignación de correo con el estudiante
+   * seleccionado y un valor inicial sugerido.
+   */
+  function abrirDialogoCorreo(estudiante) {
+    const numeroCuenta =
+      estudiante?.datosPersonales
+        ?.numeroCuenta
 
-  const existenEstudiantes =
-    estudiantesDisponibles.length > 0
+    if (!numeroCuenta || cuentaProcesandoCorreo) {
+      return
+    }
 
-  const existenResultados =
-    estudiantesFiltrados.length > 0
+    setCorreoEnEdicion({
+      estudiante,
+      correo: '',
+      error: '',
+    })
 
+    setDialogoCorreoAbierto(true)
+  }
 
-  const hayFiltrosAplicados =
-    Boolean(busqueda.trim())
+  function cerrarDialogoCorreo() {
+    if (cuentaProcesandoCorreo) {
+      return
+    }
 
-  const accionEsActivacion =
-    accionPendiente?.nuevoEstado === true
+    setDialogoCorreoAbierto(false)
+  }
+
+  async function confirmarAsignacionCorreo() {
+    const estudiante =
+      correoEnEdicion?.estudiante
+
+    const numeroCuenta =
+      estudiante?.datosPersonales
+        ?.numeroCuenta
+
+    if (!numeroCuenta || cuentaProcesandoCorreo) {
+      return
+    }
+
+    const correo =
+      correoEnEdicion.correo.trim()
+
+    if (!correo) {
+      setCorreoEnEdicion(
+        (actual) => ({
+          ...actual,
+          error:
+            'El correo institucional es obligatorio.',
+        }),
+      )
+
+      return
+    }
+
+    setCuentaProcesandoCorreo(numeroCuenta)
+
+    try {
+      await asignarCorreoInstitucional(
+        numeroCuenta,
+        correo,
+      )
+
+      /*
+       * El registro deja de pertenecer a esta sección,
+       * y también aparece en el listado principal.
+       */
+      setEstudiantesSinCorreo(
+        (actuales) =>
+          actuales.filter(
+            (actual) =>
+              actual.datosPersonales
+                ?.numeroCuenta !==
+              numeroCuenta,
+          ),
+      )
+
+      setCantidadesPorPestana(
+        (actuales) => ({
+          activos: actuales.activos + 1,
+          inactivos: actuales.inactivos,
+        }),
+      )
+
+      setDialogoCorreoAbierto(false)
+
+      notificarExito({
+        id: `correo-asignado-${numeroCuenta}`,
+        titulo: 'Correo institucional asignado',
+        descripcion:
+          'El estudiante ya puede iniciar sesión con su correo institucional.',
+      })
+
+      setRecarga((valorActual) => valorActual + 1)
+    } catch (errorAsignacion) {
+      setCorreoEnEdicion(
+        (actual) => ({
+          ...actual,
+          error:
+            errorAsignacion instanceof Error
+              ? errorAsignacion.message
+              : 'Ocurrió un error inesperado.',
+        }),
+      )
+    } finally {
+      setCuentaProcesandoCorreo('')
+    }
+  }
+
+  function reintentarCargaSinCorreo() {
+    setRecargaSinCorreo(
+      (valorActual) =>
+        valorActual + 1,
+    )
+  }
+
+  /*
+   * La sección de correos pendientes se recorta para que
+   * no desplace el listado principal fuera de la vista.
+   */
+  const correosRequierenRecorte =
+    estudiantesSinCorreoFiltrados.length >
+    LIMITE_CORREOS_VISIBLES
+
+  const correosVisibles =
+    correosRequierenRecorte &&
+      !correosExpandidos
+      ? estudiantesSinCorreoFiltrados.slice(
+        0,
+        LIMITE_CORREOS_VISIBLES,
+      )
+      : estudiantesSinCorreoFiltrados
 
   function reintentarCarga() {
     setRecarga(
@@ -447,21 +763,9 @@ function AdminPrincipalStudents() {
     )
 
     try {
-      const estudianteActualizado =
-        await cambiarEstadoEstudiante(
-          estudianteSeleccionado.id,
-          nuevoEstado,
-        )
-
-      setEstudiantes(
-        (estudiantesActuales) =>
-          estudiantesActuales.map(
-            (estudianteActual) =>
-              estudianteActual.id ===
-                estudianteActualizado.id
-                ? estudianteActualizado
-                : estudianteActual,
-          ),
+      await cambiarEstadoEstudiante(
+        estudianteSeleccionado.id,
+        nuevoEstado,
       )
 
       setDialogoAccionAbierto(false)
@@ -476,6 +780,12 @@ function AdminPrincipalStudents() {
           ? 'El estudiante vuelve a estar activo dentro del sistema.'
           : 'El estudiante fue desactivado correctamente.',
       })
+
+      /*
+       * El estudiante puede dejar de pertenecer a la página o
+       * a la pestaña actual, y los contadores cambian.
+       */
+      setRecarga((valorActual) => valorActual + 1)
     } catch (errorActualizacion) {
       notificarError({
         id:
@@ -539,11 +849,11 @@ function AdminPrincipalStudents() {
 
             <div>
               <strong>
-                {estudiantesDisponibles.length}
+                {totalEstudiantes}
               </strong>
 
               <span>
-                {estudiantesDisponibles.length === 1
+                {totalEstudiantes === 1
                   ? 'Estudiante registrado'
                   : 'Estudiantes registrados'}
               </span>
@@ -561,6 +871,342 @@ function AdminPrincipalStudents() {
           </Link>
         </div>
       </header>
+
+      {/*
+        * Sección separada de los becarios que aún no tienen
+        * correo institucional asignado (/usuarios/sin-correo).
+        * Se ubica antes del listado porque requiere acción
+        * y no debería quedar al final de una tabla extensa.
+        */}
+      <section
+        className="admin-students-missing-email"
+        aria-labelledby="admin-students-missing-email-title"
+      >
+        <header className="admin-students-missing-email__header">
+          <div className="admin-students-missing-email__heading">
+            <span
+              className="admin-students-missing-email__icon"
+              aria-hidden="true"
+            >
+              <MailWarning />
+            </span>
+
+            <div>
+              <p>Correos pendientes</p>
+
+              <h2 id="admin-students-missing-email-title">
+                Estudiantes sin correo institucional
+              </h2>
+
+              <span>
+                Becarios registrados a los que
+                todavía no se les ha asignado un
+                correo institucional.
+              </span>
+            </div>
+          </div>
+
+          <div className="admin-students-missing-email__actions">
+            <span className="admin-students-missing-email__count">
+              {cargandoSinCorreo
+                ? '…'
+                : estudiantesSinCorreo.length}
+            </span>
+
+            <button
+              className="admin-students-missing-email__refresh"
+              type="button"
+              disabled={cargandoSinCorreo}
+              onClick={reintentarCargaSinCorreo}
+            >
+              <RefreshCw
+                className={
+                  cargandoSinCorreo
+                    ? 'admin-students-missing-email__refresh-icon'
+                    : undefined
+                }
+                aria-hidden="true"
+              />
+
+              Actualizar
+            </button>
+          </div>
+        </header>
+
+        {cargandoSinCorreo && (
+          <div
+            className="admin-students-missing-email__state"
+            role="status"
+            aria-live="polite"
+          >
+            <LoaderCircle
+              className="admin-students-state__loader"
+              aria-hidden="true"
+            />
+
+            <p>
+              Buscando estudiantes sin correo…
+            </p>
+          </div>
+        )}
+
+        {!cargandoSinCorreo && errorSinCorreo && (
+          <div
+            className="admin-students-missing-email__state admin-students-missing-email__state--error"
+            role="alert"
+          >
+            <TriangleAlert aria-hidden="true" />
+
+            <p>{errorSinCorreo}</p>
+
+            <button
+              type="button"
+              onClick={reintentarCargaSinCorreo}
+            >
+              Intentar nuevamente
+            </button>
+          </div>
+        )}
+
+        {!cargandoSinCorreo &&
+          !errorSinCorreo &&
+          estudiantesSinCorreo.length === 0 && (
+            <div className="admin-students-missing-email__state">
+              <MailWarning aria-hidden="true" />
+
+              <p>
+                Todos los estudiantes
+                registrados tienen correo
+                institucional asignado.
+              </p>
+            </div>
+          )}
+
+        {!cargandoSinCorreo &&
+          !errorSinCorreo &&
+          estudiantesSinCorreo.length > 0 && (
+            <>
+              <div className="admin-students-missing-email__toolbar">
+                <label className="admin-students-search">
+                  <span>
+                    Buscar en esta sección
+                  </span>
+
+                  <div className="admin-students-search__control">
+                    <Search aria-hidden="true" />
+
+                    <input
+                      type="search"
+                      value={busquedaSinCorreo}
+                      placeholder="Buscar por nombre, cuenta o carrera"
+                      onChange={(evento) =>
+                        setBusquedaSinCorreo(
+                          evento.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {estudiantesSinCorreoFiltrados.length === 0 ? (
+                <div className="admin-students-missing-email__state">
+                  <Search aria-hidden="true" />
+
+                  <p>
+                    No encontramos estudiantes
+                    sin correo con esa
+                    búsqueda.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBusquedaSinCorreo('')
+                    }
+                  >
+                    <X aria-hidden="true" />
+                    Limpiar búsqueda
+                  </button>
+                </div>
+              ) : (
+                <ul className="admin-students-missing-email__grid">
+                  {correosVisibles.map(
+                    (estudiante) => {
+                      const datosPersonales =
+                        estudiante
+                          .datosPersonales ?? {}
+
+                      const numeroCuenta =
+                        datosPersonales
+                          .numeroCuenta
+
+                      const nombreCompleto =
+                        datosPersonales
+                          .nombreCompleto ||
+                        'Estudiante sin nombre'
+
+                      const activo =
+                        estudiante.credenciales
+                          ?.activo !== false
+
+                      return (
+                        <li
+                          key={
+                            estudiante.id ??
+                            numeroCuenta
+                          }
+                          className="admin-students-missing-email__card"
+                        >
+                          <div className="admin-students-missing-email__card-head">
+                            <div className="admin-student-identity">
+                              <span
+                                className="admin-student-identity__avatar"
+                                aria-hidden="true"
+                              >
+                                {obtenerIniciales(
+                                  nombreCompleto,
+                                )}
+                              </span>
+
+                              <div>
+                                <strong>
+                                  {nombreCompleto}
+                                </strong>
+
+                                <small>
+                                  N.º{' '}
+                                  {numeroCuenta ||
+                                    'Sin cuenta'}
+                                </small>
+                              </div>
+                            </div>
+
+                            <span
+                              className={
+                                activo
+                                  ? 'admin-student-status admin-student-status--active'
+                                  : 'admin-student-status admin-student-status--inactive'
+                              }
+                            >
+                              {activo
+                                ? 'Activo'
+                                : 'Inactivo'}
+                            </span>
+                          </div>
+
+                          <dl className="admin-students-missing-email__details">
+                            <div>
+                              <dt>Carrera</dt>
+
+                              <dd>
+                                {datosPersonales
+                                  .carrera ||
+                                  'Carrera no disponible'}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt>Teléfono</dt>
+
+                              <dd>
+                                {datosPersonales
+                                  .telefono ||
+                                  'Sin teléfono'}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt>
+                                Correo personal
+                              </dt>
+
+                              <dd>
+                                {datosPersonales
+                                  .correoPersonal ||
+                                  'Sin correo personal'}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt>
+                                Correo institucional
+                              </dt>
+
+                              <dd className="admin-students-missing-email__missing-email">
+                                No asignado
+                              </dd>
+                            </div>
+                          </dl>
+
+                          <div className="admin-students-missing-email__card-actions">
+                            <button
+                              className="admin-students-missing-email__assign"
+                              type="button"
+                              disabled={
+                                cuentaProcesandoCorreo ===
+                                numeroCuenta
+                              }
+                              aria-label={
+                                `Asignar correo institucional a ${nombreCompleto}`
+                              }
+                              onClick={() =>
+                                abrirDialogoCorreo(
+                                  estudiante,
+                                )
+                              }
+                            >
+                              {cuentaProcesandoCorreo ===
+                                numeroCuenta ? (
+                                <LoaderCircle
+                                  className="admin-student-actions__loader"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <MailWarning aria-hidden="true" />
+                              )}
+
+                              Asignar correo
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    },
+                  )}
+                </ul>
+              )}
+
+              {correosRequierenRecorte && (
+                <button
+                  className="admin-students-missing-email__toggle"
+                  type="button"
+                  aria-expanded={correosExpandidos}
+                  onClick={() =>
+                    setCorreosExpandidos(
+                      (expandido) => !expandido,
+                    )
+                  }
+                >
+                  {correosExpandidos
+                    ? 'Mostrar menos'
+                    : `Mostrar los ${estudiantesSinCorreoFiltrados.length - LIMITE_CORREOS_VISIBLES} restantes`}
+
+                  {correosExpandidos ? (
+                    <ChevronLeft
+                      className="admin-students-missing-email__toggle-icon"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <ChevronRight
+                      className="admin-students-missing-email__toggle-icon"
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              )}
+            </>
+          )}
+      </section>
 
       {!cargando && !error && (
         <>
@@ -753,8 +1399,8 @@ function AdminPrincipalStudents() {
               </div>
 
               <span>
-                {estudiantesFiltrados.length}{' '}
-                {estudiantesFiltrados.length === 1
+                {totalEstudiantes}{' '}
+                {totalEstudiantes === 1
                   ? 'resultado'
                   : 'resultados'}
               </span>
@@ -765,15 +1411,15 @@ function AdminPrincipalStudents() {
                 <Search aria-hidden="true" />
 
                 <h3>
-                  {estudiantesPestana.length === 0
-                    ? 'No hay estudiantes en esta sección'
-                    : 'No encontramos resultados'}
+                  {hayFiltrosAplicados
+                    ? 'No encontramos resultados'
+                    : 'No hay estudiantes en esta sección'}
                 </h3>
 
                 <p>
-                  {estudiantesPestana.length === 0
-                    ? 'Los estudiantes aparecerán aquí cuando tengan este estado.'
-                    : 'Cambia la búsqueda o limpia los filtros aplicados.'}
+                  {hayFiltrosAplicados
+                    ? 'Cambia la búsqueda o limpia los filtros aplicados.'
+                    : 'Los estudiantes aparecerán aquí cuando tengan este estado.'}
                 </p>
 
                 {hayFiltrosAplicados && (
@@ -826,7 +1472,7 @@ function AdminPrincipalStudents() {
                     </thead>
 
                     <tbody>
-                      {estudiantesFiltrados.map(
+                      {estudiantesPagina.map(
                         (estudiante) => {
                           const datosPersonales =
                             estudiante
@@ -1026,11 +1672,203 @@ function AdminPrincipalStudents() {
                     </tbody>
                   </table>
                 </div>
+
+                {totalPaginas > 1 && (
+                  <div className="admin-students-pagination">
+                    <p>
+                      Mostrando{' '}
+                      {primerEstudianteMostrado} a{' '}
+                      {ultimoEstudianteMostrado} de{' '}
+                      {totalEstudiantes}{' '}
+                      {totalEstudiantes === 1
+                        ? 'estudiante'
+                        : 'estudiantes'}
+                    </p>
+
+                    <nav aria-label="Paginación de estudiantes">
+                      <button
+                        type="button"
+                        disabled={paginaActual === 1}
+                        aria-label="Ir a la página anterior"
+                        onClick={() =>
+                          setPaginaActual(
+                            (paginaSeleccionada) =>
+                              paginaSeleccionada - 1,
+                          )
+                        }
+                      >
+                        <ChevronLeft aria-hidden="true" />
+                      </button>
+
+                      {Array.from(
+                        {
+                          length: totalPaginas,
+                        },
+                        (_, indice) => indice + 1,
+                      ).map((pagina) => (
+                        <button
+                          key={pagina}
+                          className={
+                            pagina === paginaActual
+                              ? 'admin-students-pagination__page admin-students-pagination__page--active'
+                              : 'admin-students-pagination__page'
+                          }
+                          type="button"
+                          aria-current={
+                            pagina === paginaActual
+                              ? 'page'
+                              : undefined
+                          }
+                          aria-label={
+                            `Ir a la página ${pagina}`
+                          }
+                          onClick={() =>
+                            setPaginaActual(pagina)
+                          }
+                        >
+                          {pagina}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        disabled={
+                          paginaActual === totalPaginas
+                        }
+                        aria-label="Ir a la página siguiente"
+                        onClick={() =>
+                          setPaginaActual(
+                            (paginaSeleccionada) =>
+                              paginaSeleccionada + 1,
+                          )
+                        }
+                      >
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    </nav>
+                  </div>
+                )}
               </>
             )}
           </section>
         )
       }
+
+      {/* Diálogo para asignar el correo institucional pendiente. */}
+      <AlertDialog.Root
+        open={dialogoCorreoAbierto}
+        onOpenChange={(abierto) => {
+          if (!cuentaProcesandoCorreo) {
+            setDialogoCorreoAbierto(abierto)
+          }
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="admin-student-confirm-dialog__overlay" />
+
+          <AlertDialog.Content className="admin-student-confirm-dialog__content">
+            <div className="admin-student-confirm-dialog__icon admin-student-confirm-dialog__icon--activate">
+              <MailWarning aria-hidden="true" />
+            </div>
+
+            <AlertDialog.Title className="admin-student-confirm-dialog__title">
+              Asignar correo institucional
+            </AlertDialog.Title>
+
+            <AlertDialog.Description className="admin-student-confirm-dialog__description">
+              El correo debe pertenecer al dominio
+              institucional. Se guardará en
+              minúsculas y sin espacios.
+            </AlertDialog.Description>
+
+            <p className="admin-student-confirm-dialog__student">
+              {
+                correoEnEdicion?.estudiante
+                  ?.datosPersonales
+                  ?.nombreCompleto
+              }{' '}
+            </p>
+
+            <label className="admin-students-missing-email__field">
+              <span>Correo institucional</span>
+
+              <input
+                type="email"
+                value={correoEnEdicion?.correo ?? ''}
+                placeholder="usuario@unah.hn"
+                autoComplete="off"
+                spellCheck="false"
+                disabled={
+                  Boolean(cuentaProcesandoCorreo)
+                }
+                onChange={(evento) =>
+                  setCorreoEnEdicion(
+                    (actual) =>
+                      actual && {
+                        ...actual,
+                        correo:
+                          evento.target.value,
+                        error: '',
+                      },
+                  )
+                }
+                onKeyDown={(evento) => {
+                  if (evento.key === 'Enter') {
+                    evento.preventDefault()
+                    confirmarAsignacionCorreo()
+                  }
+                }}
+              />
+            </label>
+
+            {correoEnEdicion?.error && (
+              <p
+                className="admin-students-missing-email__field-error"
+                role="alert"
+              >
+                {correoEnEdicion.error}
+              </p>
+            )}
+
+            <div className="admin-student-confirm-dialog__actions">
+              <AlertDialog.Cancel asChild>
+                <button
+                  className="admin-student-confirm-dialog__cancel"
+                  type="button"
+                  disabled={
+                    Boolean(cuentaProcesandoCorreo)
+                  }
+                  onClick={cerrarDialogoCorreo}
+                >
+                  Cancelar
+                </button>
+              </AlertDialog.Cancel>
+
+              <button
+                className="admin-student-confirm-dialog__confirm admin-student-confirm-dialog__confirm--activate"
+                type="button"
+                disabled={
+                  Boolean(cuentaProcesandoCorreo)
+                }
+                onClick={confirmarAsignacionCorreo}
+              >
+                {cuentaProcesandoCorreo ? (
+                  <LoaderCircle
+                    className="admin-student-confirm-dialog__loader"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <MailWarning aria-hidden="true" />
+                )}
+
+                {cuentaProcesandoCorreo
+                  ? 'Guardando...'
+                  : 'Asignar correo'}
+              </button>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
 
       {/* Confirmación para activar o desactivar al estudiante. */}
       <AlertDialog.Root

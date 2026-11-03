@@ -93,14 +93,14 @@ function Home() {
                                             <h2 id="student-home-logo-title">
                                                 ASEBEP
                                             </h2>
-                                            <p>Portal de Gestión de Becas</p>
+                                            <p>Plataforma de Servicio Becario</p>
                                         </div>
                                     </div>
-                                    
+
                                     <p className="student-home__logo-message">
                                         Información clara para avanzar con tu beca.
                                     </p>
-                                </div>  
+                                </div>
                             </div>
                     </section>
 

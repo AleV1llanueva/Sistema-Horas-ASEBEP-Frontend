@@ -355,7 +355,7 @@ function Login() {
               ASEBEP
             </h1>
 
-            <p>Portal de Gestión de Becas</p>
+            <p>Plataforma de Servicio Becario</p>
           </div>
         </header>
 

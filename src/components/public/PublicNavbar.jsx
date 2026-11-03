@@ -62,7 +62,7 @@ function PublicNavbar() {
 
           <span className="public-navbar__brand-copy">
             <strong>ASEBEP</strong>
-            <small>Portal de Gestión de Becas</small>
+            <small>Plataforma de Servicio Becario</small>
           </span>
         </Link>
 

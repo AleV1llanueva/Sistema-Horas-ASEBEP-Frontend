@@ -1215,6 +1215,230 @@ function convertirCambiosParaBackend(
 
 /* Consultas principales. */
 
+/*
+ * Convierte el texto de búsqueda a una forma consistente
+ * para comparar sin tildes ni mayúsculas.
+ */
+function normalizarTextoFiltro(valor) {
+  return prepararTexto(valor)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+/*
+ * Replica en el cliente el filtro del backend para que el modo
+ * simulado se comporte igual que la paginación real.
+ */
+function coincideBusqueda(
+  estudiante,
+  textoBuscado,
+) {
+  if (!textoBuscado) {
+    return true
+  }
+
+  const datosPersonales =
+    estudiante.datosPersonales ?? {}
+
+  const credenciales =
+    estudiante.credenciales ?? {}
+
+  return [
+    datosPersonales.nombreCompleto,
+    datosPersonales.numeroCuenta,
+    datosPersonales.carrera,
+    datosPersonales.correoPersonal,
+    datosPersonales.correoInstitucional,
+    credenciales.rol,
+  ].some((campo) =>
+    normalizarTextoFiltro(campo).includes(
+      textoBuscado,
+    ),
+  )
+}
+
+function prepararPagina(valor) {
+  const numero = Math.trunc(Number(valor))
+
+  return Number.isFinite(numero) && numero > 0
+    ? numero
+    : 1
+}
+
+function prepararLimite(valor) {
+  const numero = Math.trunc(Number(valor))
+
+  return Number.isFinite(numero) && numero > 0
+    ? Math.min(numero, 100)
+    : 10
+}
+
+/*
+ * Devuelve una página de becarios con correo institucional.
+ * La búsqueda, el orden y el conteo los resuelve el backend,
+ * por lo que el cliente no descarga los registros totales.
+ */
+export async function listarEstudiantesPaginados({
+  pagina = 1,
+  limite = 10,
+  busqueda = '',
+  activo = null,
+} = {}) {
+  const paginaPreparada =
+    prepararPagina(pagina)
+  const limitePreparado =
+    prepararLimite(limite)
+  const textoBuscado =
+    normalizarTextoFiltro(busqueda)
+
+  if (usarDatosAdminSimulados) {
+    const filtrados = ordenarEstudiantes(
+      leerEstudiantes().filter(
+        (estudiante) =>
+          estudiante.eliminado !== true &&
+          Boolean(
+            estudiante.datosPersonales
+              ?.correoInstitucional,
+          ) &&
+          coincideBusqueda(
+            estudiante,
+            textoBuscado,
+          ) &&
+          (activo === null ||
+            (estudiante.credenciales
+              ?.activo !== false) === activo),
+      ),
+    )
+
+    const indiceInicial =
+      (paginaPreparada - 1) *
+      limitePreparado
+
+    return clonarDatos({
+      elementos: filtrados.slice(
+        indiceInicial,
+        indiceInicial + limitePreparado,
+      ),
+      total: filtrados.length,
+      pagina: paginaPreparada,
+      limite: limitePreparado,
+      totalPaginas: Math.max(
+        1,
+        Math.ceil(
+          filtrados.length / limitePreparado,
+        ),
+      ),
+    })
+  }
+
+  const parametros = new URLSearchParams({
+    pagina: String(paginaPreparada),
+    limite: String(limitePreparado),
+  })
+
+  const texto = prepararTexto(busqueda)
+
+  if (texto) {
+    parametros.set('busqueda', texto)
+  }
+
+  if (typeof activo === 'boolean') {
+    parametros.set(
+      'active',
+      String(activo),
+    )
+  }
+
+  const respuesta = await peticionApi(
+    `/usuarios?${parametros.toString()}`,
+  )
+
+  if (!Array.isArray(respuesta?.elementos)) {
+    throw new EstudianteAdminError(
+      'El servidor no devolvió una página válida de estudiantes.',
+    )
+  }
+
+  return {
+    elementos: respuesta.elementos.map(
+      normalizarEstudiante,
+    ),
+    total: prepararCantidadTotal(
+      respuesta.total,
+    ),
+    pagina: prepararPagina(respuesta.pagina),
+    limite: prepararLimite(respuesta.limite),
+    totalPaginas: Math.max(
+      1,
+      prepararCantidadTotal(
+        respuesta.total_paginas,
+      ),
+    ),
+  }
+}
+
+function prepararCantidadTotal(valor) {
+  const numero = Number(valor)
+
+  return Number.isFinite(numero) && numero >= 0
+    ? Math.trunc(numero)
+    : 0
+}
+
+/*
+ * Cantidad de becarios con correo para cada estado.
+ * El listado se pagina en el servidor, así que los contadores
+ * de las pestañas se obtienen del 'total' de cada consulta.
+ */
+export async function contarEstudiantesPorEstado() {
+  if (usarDatosAdminSimulados) {
+    const disponibles = leerEstudiantes().filter(
+      (estudiante) =>
+        estudiante.eliminado !== true &&
+        Boolean(
+          estudiante.datosPersonales
+            ?.correoInstitucional,
+        ),
+    )
+
+    return {
+      activos: disponibles.filter(
+        (estudiante) =>
+          estudiante.credenciales
+            ?.activo !== false,
+      ).length,
+      inactivos: disponibles.filter(
+        (estudiante) =>
+          estudiante.credenciales
+            ?.activo === false,
+      ).length,
+    }
+  }
+
+  /*
+   * Se piden páginas de un solo registro: solo interesa el
+   * 'total' que acompaña a cada página.
+   */
+  const [activos, inactivos] = await Promise.all([
+    peticionApi(
+      '/usuarios?pagina=1&limite=1&active=true',
+    ),
+    peticionApi(
+      '/usuarios?pagina=1&limite=1&active=false',
+    ),
+  ])
+
+  return {
+    activos: prepararCantidadTotal(
+      activos?.total,
+    ),
+    inactivos: prepararCantidadTotal(
+      inactivos?.total,
+    ),
+  }
+}
+
 export async function listarEstudiantes() {
   if (usarDatosAdminSimulados) {
     const estudiantes =
@@ -1233,17 +1457,167 @@ export async function listarEstudiantes() {
   const respuesta =
     await peticionApi('/usuarios')
 
-  if (!Array.isArray(respuesta)) {
+  /*
+   * El backend puede devolver la lista directa o una página
+   * con el formato { elementos, total, pagina, ... }.
+   */
+  const registros = Array.isArray(respuesta)
+    ? respuesta
+    : respuesta?.elementos
+
+  if (!Array.isArray(registros)) {
     throw new EstudianteAdminError(
       'El servidor no devolvió una lista válida de estudiantes.',
     )
   }
 
   return ordenarEstudiantes(
-    respuesta.map(
+    registros.map(
       normalizarEstudiante,
     ),
   )
+}
+
+/*
+ * Becarios cuyo correo institucional todavía no ha sido asignado.
+ * El backend devuelve el mismo contrato general sin el correo,
+ * por lo que se reutiliza la normalización y se toleran
+ * los registros sin horas o sin nombre para no romper el listado.
+ */
+export async function listarEstudiantesSinCorreo() {
+  if (usarDatosAdminSimulados) {
+    return clonarDatos(
+      ordenarEstudiantes(
+        leerEstudiantes().filter(
+          (estudiante) =>
+            estudiante.eliminado !== true &&
+            !estudiante.datosPersonales
+              ?.correoInstitucional,
+        ),
+      ),
+    )
+  }
+
+  const respuesta = await peticionApi(
+    '/usuarios/sin-correo',
+  )
+
+  if (!Array.isArray(respuesta)) {
+    throw new EstudianteAdminError(
+      'El servidor no devolvió una lista válida de estudiantes sin correo.',
+    )
+  }
+
+  const estudiantesSinCorreo = []
+
+  for (const registro of respuesta) {
+    try {
+      estudiantesSinCorreo.push(
+        normalizarEstudiante(registro),
+      )
+    } catch {
+      /* Un registro incompleto no debe ocultar el resto. */
+    }
+  }
+
+  return ordenarEstudiantes(
+    estudiantesSinCorreo,
+  )
+}
+
+/*
+ * Asigna el correo institucional a un becario que no lo tenía.
+ * El dominio y el formato se validan en el backend.
+ */
+export async function asignarCorreoInstitucional(
+  numCuenta,
+  correoInstitucional,
+) {
+  const numeroCuenta = prepararTexto(numCuenta)
+  const correo = prepararTexto(
+    correoInstitucional,
+  ).toLowerCase()
+
+  if (!numeroCuenta) {
+    throw new EstudianteAdminError(
+      'El número de cuenta es obligatorio.',
+    )
+  }
+
+  if (!correo) {
+    throw new EstudianteAdminError(
+      'El correo institucional es obligatorio.',
+    )
+  }
+
+  if (usarDatosAdminSimulados) {
+    const estudiantes = leerEstudiantes()
+    const indice = buscarIndiceEstudiante(
+      estudiantes,
+      numeroCuenta,
+    )
+
+    if (indice === -1) {
+      throw new EstudianteAdminError(
+        'El estudiante no existe.',
+      )
+    }
+
+    const estudiante = estudiantes[indice]
+
+    const correoDuplicado =
+      estudiantes.some(
+        (otro) =>
+          otro.id !== estudiante.id &&
+          otro.datosPersonales
+            ?.correoInstitucional === correo,
+      )
+
+    if (correoDuplicado) {
+      throw new EstudianteAdminError(
+        'El correo institucional ya está registrado por otro usuario.',
+      )
+    }
+
+    const estudianteActualizado = {
+      ...estudiante,
+      datosPersonales: {
+        ...estudiante.datosPersonales,
+        correoInstitucional: correo,
+      },
+      actualizadoEn:
+        new Date().toISOString(),
+    }
+
+    estudiantes[indice] =
+      estudianteActualizado
+
+    guardarEstudiantes(estudiantes)
+
+    return clonarDatos(
+      estudianteActualizado,
+    )
+  }
+
+  await peticionApi(
+    `/usuarios/${encodeURIComponent(
+      numeroCuenta,
+    )}/correo`,
+    {
+      method: 'PATCH',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+
+      body: JSON.stringify({
+        correo_institucional: correo,
+      }),
+    },
+  )
+
+  return obtenerEstudiante(numeroCuenta)
 }
 
 export async function obtenerEstudiante(num_cuenta) {

@@ -14,11 +14,6 @@ import {
   inscripcionesEstudianteMock,
 } from '../../../mocks/estudianteActividadesMock.js'
 
-/*
- * Servicio administrativo de Actividades:
- * true  -> usuario mock y localStorage.
- * false -> backend.
- */
 
 // Claves utilizadas por el escenario administrativo simulado.
 const CLAVE_ACTIVIDADES =
@@ -239,7 +234,7 @@ function normalizarBooleano(valor) {
   )
 }
 
-/* 
+/*
 * NORMALIZACIÓN DE ACTIVIDADES
 * Convierte los estados del backend y del mock al formato
 * interno utilizado por los componentes.
