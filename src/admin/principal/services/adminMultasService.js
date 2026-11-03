@@ -8,9 +8,11 @@ import {
  * Servicio administrativo de multas.
  *
  * El backend expone dos recursos distintos:
- *   - GET /multas                 -> multas registradas
- *   - GET /multas/comprobantes    -> comprobantes de pago subidos
- *   - PUT /multas/comprobantes/id -> aprobar o rechazar un pago
+ *   - GET  /multas                              -> multas registradas
+ *   - POST /multas                              -> registrar una multa
+ *   - GET  /multas/actividades/{id}/inscritos   -> inscritos de una actividad
+ *   - GET  /multas/comprobantes                 -> comprobantes de pago subidos
+ *   - PUT  /multas/comprobantes/id              -> aprobar o rechazar un pago
  */
 
 export const ESTADOS_MULTA =
@@ -151,6 +153,35 @@ function normalizarComprobante(comprobante) {
   }
 }
 
+function normalizarActividad(actividad) {
+  return {
+    id: prepararEnteroNoNegativo(actividad?.id),
+    titulo:
+      prepararTexto(actividad?.titulo) ||
+      'Actividad sin título',
+    fecha:
+      prepararTexto(
+        actividad?.fecha_actividad ??
+          actividad?.fecha,
+      ) || null,
+  }
+}
+
+function normalizarInscrito(inscrito) {
+  return {
+    numCuenta: prepararTexto(inscrito?.num_cuenta),
+    nombreEstudiante:
+      prepararTexto(inscrito?.nombre_estudiante) ||
+      null,
+    checkIn: inscrito?.check_in === true,
+    checkOut: inscrito?.check_out === true,
+    estado:
+      prepararTexto(inscrito?.estado) || 'Sin estado',
+    multaRegistrada:
+      inscrito?.multa_registrada === true,
+  }
+}
+
 async function peticionApi(
   endpoint,
   opciones = {},
@@ -282,6 +313,114 @@ export async function revisarComprobanteMulta(
       prepararTexto(respuesta?.mensaje) ||
       'Comprobante actualizado correctamente.',
   }
+}
+
+/*
+ * Lista todas las actividades para elegir a cuál pertenece
+ * la multa que se va a registrar.
+ */
+export async function listarActividades() {
+  const actividades = await peticionApi(
+    '/actividades',
+  )
+
+  if (!Array.isArray(actividades)) {
+    throw new MultaAdminError(
+      'El servidor no devolvió una lista válida de actividades.',
+    )
+  }
+
+  return actividades
+    .map(normalizarActividad)
+    .filter((actividad) => actividad.id > 0)
+}
+
+/*
+ * Devuelve los inscritos de una actividad. `multaRegistrada`
+ * indica que ya existe una multa y el backend rechazaría
+ * un segundo registro.
+ */
+export async function listarInscritosActividad(
+  actividadId,
+) {
+  const identificador =
+    prepararIdentificador(actividadId)
+
+  const respuesta = await peticionApi(
+    `/multas/actividades/${identificador}/inscritos`,
+  )
+
+  if (!Array.isArray(respuesta?.inscritos)) {
+    throw new MultaAdminError(
+      'El servidor no devolvió los inscritos de la actividad.',
+    )
+  }
+
+  return {
+    actividadId: identificador,
+    titulo:
+      prepararTexto(respuesta.titulo) || null,
+    fechaActividad:
+      prepararTexto(respuesta.fecha_actividad) ||
+      null,
+    inscritos: respuesta.inscritos
+      .map(normalizarInscrito)
+      .filter((inscrito) => inscrito.numCuenta),
+  }
+}
+
+/*
+ * Registra una multa. El backend solo acepta a estudiantes
+ * inscritos en la actividad y una única multa por actividad.
+ */
+export async function registrarMulta({
+  numCuenta,
+  actividadId,
+  motivo,
+  monto,
+}) {
+  const cuenta = prepararTexto(numCuenta)
+  const motivoLimpio = prepararTexto(motivo)
+  const montoNumero = Number(monto)
+
+  if (!cuenta) {
+    throw new MultaAdminError(
+      'Debes seleccionar al estudiante a multar.',
+    )
+  }
+
+  if (!motivoLimpio) {
+    throw new MultaAdminError(
+      'El motivo de la multa es obligatorio.',
+    )
+  }
+
+  if (
+    !Number.isFinite(montoNumero) ||
+    montoNumero <= 0
+  ) {
+    throw new MultaAdminError(
+      'El monto debe ser mayor a 0.',
+    )
+  }
+
+  const respuesta = await peticionApi('/multas', {
+    method: 'POST',
+
+    headers: {
+      'Content-Type': 'application/json',
+    },
+
+    body: JSON.stringify({
+      num_cuenta: cuenta,
+      actividad_id:
+        prepararIdentificador(actividadId),
+      motivo: motivoLimpio,
+      monto: Math.trunc(montoNumero),
+    }),
+  })
+
+  return normalizarMulta(respuesta)
 }
 
 /*

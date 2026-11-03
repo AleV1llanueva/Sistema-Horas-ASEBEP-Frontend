@@ -782,6 +782,214 @@
     850ms linear infinite;
 }
 
+/* Acciones del encabezado (alta de multa). */
+.admin-fines-heading__action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+  align-self: center;
+  padding: 0 16px;
+  color: var(--admin-white);
+  border: 1px solid var(--admin-navy);
+  border-radius: 9px;
+  background: var(--admin-navy);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-fines-heading__action:hover {
+  background: var(--admin-blue);
+  border-color: var(--admin-blue);
+  box-shadow:
+    0 8px 18px
+    rgb(9 27 42 / 18%);
+}
+
+.admin-fines-heading__action svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Diálogo de alta de multa. */
+.admin-fine-dialog__content--wide {
+  width: min(calc(100vw - 32px), 620px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  text-align: left;
+}
+
+.admin-fine-dialog__content--wide
+  .admin-fine-dialog__description {
+  margin-bottom: 16px;
+}
+
+.admin-fine-dialog__icon--neutral {
+  margin: 0 0 12px;
+  color: var(--admin-navy);
+  border: 1px solid #cce2ef;
+  background: #eef6fb;
+}
+
+.admin-fine-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-fine-form__field {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-fine-form__field--short {
+  max-width: 190px;
+}
+
+.admin-fine-form__field > span {
+  color: var(--admin-text-soft);
+  font-size: 0.69rem;
+  font-weight: 750;
+}
+
+.admin-fine-form__field select,
+.admin-fine-form__field textarea,
+.admin-fine-form__field input[type='number'] {
+  width: 100%;
+  padding: 10px 11px;
+  color: var(--admin-text);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--admin-white);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.admin-fine-form__field select:focus,
+.admin-fine-form__field textarea:focus,
+.admin-fine-form__field input[type='number']:focus {
+  border-color: var(--admin-focus);
+  box-shadow:
+    0 0 0 3px
+    rgb(46 134 193 / 16%);
+}
+
+.admin-fine-form__field textarea {
+  resize: vertical;
+  min-height: 74px;
+  line-height: 1.5;
+}
+
+.admin-fine-form__hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
+.admin-fine-form__hint--error {
+  color: var(--admin-danger);
+}
+
+.admin-fine-form__hint svg {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-fine-form__list {
+  max-height: 210px;
+  display: grid;
+  gap: 7px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.admin-fine-form__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-white);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.admin-fine-form__option:hover {
+  border-color: #c5dbe8;
+  background: #fafcfd;
+}
+
+.admin-fine-form__option--selected {
+  border-color: var(--admin-focus);
+  background: #eef6fb;
+}
+
+.admin-fine-form__option--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-fine-form__option input {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: var(--admin-focus);
+}
+
+.admin-fine-form__option-body {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-fine-form__option-body strong {
+  color: var(--admin-text);
+  font-size: 0.76rem;
+}
+
+.admin-fine-form__option-body small {
+  color: var(--admin-muted);
+  font-size: 0.66rem;
+}
+
+.admin-fine-form__badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  color: var(--admin-danger);
+  border: 1px solid #efc9ce;
+  border-radius: 999px;
+  background: #fff4f5;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.admin-fine-form__summary {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--admin-text-soft);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #fafcfd;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
 @keyframes admin-fines-spin {
   to {
     transform: rotate(360deg);
@@ -842,6 +1050,16 @@
     width:
       min(calc(100vw - 22px), 460px);
     padding: 24px 18px 18px;
+  }
+
+  .admin-fines-heading__action {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  .admin-fine-dialog__content--wide {
+    width: calc(100vw - 22px);
   }
 
   .admin-fine-dialog__actions {

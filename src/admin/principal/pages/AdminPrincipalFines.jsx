@@ -7,6 +7,7 @@ import {
   Download,
   Gavel,
   LoaderCircle,
+  Plus,
   Search,
   TriangleAlert,
   X,
@@ -27,7 +28,10 @@ import {
   ESTADOS_MULTA,
   MultaAdminError,
   descargarComprobanteMulta,
+  listarActividades,
+  listarInscritosActividad,
   listarMultas,
+  registrarMulta,
   revisarComprobanteMulta,
 } from '../services/adminMultasService.js'
 
@@ -58,6 +62,14 @@ const ACCIONES = Object.freeze({
   APROBAR: 'aprobar',
   RECHAZAR: 'rechazar',
 })
+
+const MONTO_PREDETERMINADO = 100
+
+function obtenerMensajeError(error, respaldo) {
+  return error instanceof Error
+    ? error.message
+    : respaldo
+}
 
 function normalizarBusqueda(valor) {
   return String(valor ?? '')
@@ -156,6 +168,44 @@ function AdminPrincipalFines() {
     comprobanteDescargando,
     setComprobanteDescargando,
   ] = useState(null)
+
+  /*
+   * Estado del diálogo para registrar una multa nueva.
+   * El administrador elige la actividad, luego al estudiante
+   * y por último el motivo y el monto.
+   */
+  const [registroAbierto, setRegistroAbierto] =
+    useState(false)
+
+  const [actividades, setActividades] = useState([])
+
+  const [actividadesCargando, setActividadesCargando] =
+    useState(false)
+
+  const [actividadesError, setActividadesError] =
+    useState('')
+
+  const [actividadSeleccionada, setActividadSeleccionada] =
+    useState('')
+
+  const [inscritos, setInscritos] = useState([])
+
+  const [inscritosCargando, setInscritosCargando] =
+    useState(false)
+
+  const [inscritosError, setInscritosError] =
+    useState('')
+
+  const [cuentaSeleccionada, setCuentaSeleccionada] =
+    useState('')
+
+  const [motivoMulta, setMotivoMulta] = useState('')
+
+  const [montoMulta, setMontoMulta] = useState(
+    String(MONTO_PREDETERMINADO),
+  )
+
+  const [registrando, setRegistrando] = useState(false)
 
   useEffect(() => {
     let componenteActivo = true
@@ -371,6 +421,177 @@ function AdminPrincipalFines() {
   const accionEsAprobacion =
     accionPendiente?.accion === ACCIONES.APROBAR
 
+  async function cargarActividades() {
+    setActividadesCargando(true)
+    setActividadesError('')
+
+    try {
+      setActividades(await listarActividades())
+    } catch (error) {
+      setActividades([])
+
+      setActividadesError(
+        obtenerMensajeError(
+          error,
+          'No fue posible cargar las actividades.',
+        ),
+      )
+    } finally {
+      setActividadesCargando(false)
+    }
+  }
+
+  async function cargarInscritos(actividadId) {
+    if (!actividadId) {
+      setInscritos([])
+      setInscritosError('')
+      return
+    }
+
+    setInscritosCargando(true)
+    setInscritosError('')
+
+    try {
+      const resultado =
+        await listarInscritosActividad(actividadId)
+
+      setInscritos(resultado.inscritos)
+    } catch (error) {
+      setInscritos([])
+
+      setInscritosError(
+        obtenerMensajeError(
+          error,
+          'No fue posible cargar los inscritos.',
+        ),
+      )
+    } finally {
+      setInscritosCargando(false)
+    }
+  }
+
+  function limpiarFormularioMulta() {
+    setActividadSeleccionada('')
+    setInscritos([])
+    setInscritosError('')
+    setCuentaSeleccionada('')
+    setMotivoMulta('')
+    setMontoMulta(String(MONTO_PREDETERMINADO))
+  }
+
+  function abrirRegistro() {
+    limpiarFormularioMulta()
+    setRegistroAbierto(true)
+    cargarActividades()
+  }
+
+  function cerrarRegistro() {
+    if (registrando) {
+      return
+    }
+
+    setRegistroAbierto(false)
+    limpiarFormularioMulta()
+  }
+
+  function seleccionarActividad(evento) {
+    const valor = evento.target.value
+
+    setActividadSeleccionada(valor)
+    setCuentaSeleccionada('')
+    setInscritos([])
+    setInscritosError('')
+
+    if (valor) {
+      cargarInscritos(valor)
+    }
+  }
+
+  async function guardarMulta(evento) {
+    evento.preventDefault()
+
+    if (registrando) {
+      return
+    }
+
+    if (!actividadSeleccionada) {
+      notificarError({
+        id: 'multa-sin-actividad',
+        titulo: 'Selecciona una actividad',
+        descripcion:
+          'La multa debe estar asociada a la actividad en la que ocurrió la falta.',
+      })
+
+      return
+    }
+
+    if (!cuentaSeleccionada) {
+      notificarError({
+        id: 'multa-sin-estudiante',
+        titulo: 'Selecciona un estudiante',
+        descripcion:
+          'Elige al estudiante inscrito que recibirá la multa.',
+      })
+
+      return
+    }
+
+    setRegistrando(true)
+
+    try {
+      await registrarMulta({
+        numCuenta: cuentaSeleccionada,
+        actividadId: Number(actividadSeleccionada),
+        motivo: motivoMulta,
+        monto: montoMulta,
+      })
+
+      setRegistroAbierto(false)
+      limpiarFormularioMulta()
+
+      notificarExito({
+        id: 'multa-registrada',
+        titulo: 'Multa registrada',
+        descripcion:
+          'El estudiante ya puede ver la multa y subir su comprobante de pago.',
+      })
+
+      setPestanaActiva(ESTADOS_MULTA.PENDIENTE)
+      reintentarCarga()
+    } catch (error) {
+      notificarError({
+        id: 'error-registrar-multa',
+        titulo: 'No fue posible registrar la multa',
+        descripcion: obtenerMensajeError(
+          error,
+          'Ocurrió un error inesperado.',
+        ),
+      })
+
+      /*
+       * Si el backend rechaza por multa duplicada, se refresca
+       * la lista de inscritos para reflejar el estado real.
+       */
+      if (error instanceof MultaAdminError) {
+        cargarInscritos(actividadSeleccionada)
+      }
+    } finally {
+      setRegistrando(false)
+    }
+  }
+
+  const inscritoSeleccionado = inscritos.find(
+    (inscrito) =>
+      inscrito.numCuenta === cuentaSeleccionada,
+  )
+
+  const puedeGuardarMulta =
+    Boolean(actividadSeleccionada) &&
+    Boolean(cuentaSeleccionada) &&
+    Boolean(motivoMulta.trim()) &&
+    Number(montoMulta) > 0 &&
+    !registrando
+
   return (
     <section className="admin-fines-page">
       <header className="admin-fines-heading">
@@ -400,6 +621,15 @@ function AdminPrincipalFines() {
             </span>
           </div>
         </div>
+
+        <button
+          className="admin-fines-heading__action"
+          type="button"
+          onClick={abrirRegistro}
+        >
+          <Plus aria-hidden="true" />
+          Registrar multa
+        </button>
       </header>
 
       {!cargando && !mensajeError && (
@@ -848,6 +1078,248 @@ function AdminPrincipalFines() {
                     : 'Rechazar pago'}
               </button>
             </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+
+      {/* Alta de una multa: la genera el administrador, nunca el sistema. */}
+      <AlertDialog.Root
+        open={registroAbierto}
+        onOpenChange={(abierto) => {
+          if (!abierto) {
+            cerrarRegistro()
+          }
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="admin-fine-dialog__overlay" />
+
+          <AlertDialog.Content className="admin-fine-dialog__content admin-fine-dialog__content--wide">
+            <div className="admin-fine-dialog__icon admin-fine-dialog__icon--neutral">
+              <Gavel aria-hidden="true" />
+            </div>
+
+            <AlertDialog.Title className="admin-fine-dialog__title">
+              Registrar multa
+            </AlertDialog.Title>
+
+            <AlertDialog.Description className="admin-fine-dialog__description">
+              La multa se asocia a una actividad y solo puede
+              aplicarse a estudiantes inscritos en ella. El
+              estudiante deberá subir el comprobante de pago.
+            </AlertDialog.Description>
+
+            <form
+              className="admin-fine-form"
+              onSubmit={guardarMulta}
+            >
+              <label className="admin-fine-form__field">
+                <span>Actividad</span>
+
+                <select
+                  value={actividadSeleccionada}
+                  disabled={
+                    actividadesCargando || registrando
+                  }
+                  onChange={seleccionarActividad}
+                >
+                  <option value="">
+                    {actividadesCargando
+                      ? 'Cargando actividades...'
+                      : 'Selecciona una actividad'}
+                  </option>
+
+                  {actividades.map((actividad) => (
+                    <option
+                      key={actividad.id}
+                      value={String(actividad.id)}
+                    >
+                      {actividad.titulo}
+                      {actividad.fecha
+                        ? ` · ${formatearFecha(actividad.fecha)}`
+                        : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {actividadesError && (
+                  <small className="admin-fine-form__hint admin-fine-form__hint--error">
+                    {actividadesError}
+                  </small>
+                )}
+              </label>
+
+              {actividadSeleccionada && (
+                <div className="admin-fine-form__field">
+                  <span>Estudiante inscrito</span>
+
+                  {inscritosCargando && (
+                    <p
+                      className="admin-fine-form__hint"
+                      role="status"
+                    >
+                      <LoaderCircle
+                        className="admin-fine-dialog__loader"
+                        aria-hidden="true"
+                      />
+                      Cargando inscritos...
+                    </p>
+                  )}
+
+                  {!inscritosCargando && inscritosError && (
+                    <p className="admin-fine-form__hint admin-fine-form__hint--error">
+                      {inscritosError}
+                    </p>
+                  )}
+
+                  {!inscritosCargando &&
+                    !inscritosError &&
+                    inscritos.length === 0 && (
+                      <p className="admin-fine-form__hint">
+                        Esta actividad no tiene estudiantes
+                        inscritos, por lo que no se puede
+                        registrar una multa.
+                      </p>
+                    )}
+
+                  {!inscritosCargando &&
+                    inscritos.length > 0 && (
+                      <div
+                        className="admin-fine-form__list"
+                        role="radiogroup"
+                        aria-label="Estudiantes inscritos"
+                      >
+                        {inscritos.map((inscrito) => {
+                          const nombre =
+                            inscrito.nombreEstudiante ||
+                            `N.º ${inscrito.numCuenta}`
+
+                          return (
+                            <label
+                              key={inscrito.numCuenta}
+                              className={
+                                inscrito.multaRegistrada
+                                  ? 'admin-fine-form__option admin-fine-form__option--disabled'
+                                  : cuentaSeleccionada ===
+                                      inscrito.numCuenta
+                                    ? 'admin-fine-form__option admin-fine-form__option--selected'
+                                    : 'admin-fine-form__option'
+                              }
+                            >
+                              <input
+                                type="radio"
+                                name="inscrito-multa"
+                                value={inscrito.numCuenta}
+                                checked={
+                                  cuentaSeleccionada ===
+                                  inscrito.numCuenta
+                                }
+                                disabled={
+                                  inscrito.multaRegistrada ||
+                                  registrando
+                                }
+                                onChange={() =>
+                                  setCuentaSeleccionada(
+                                    inscrito.numCuenta,
+                                  )
+                                }
+                              />
+
+                              <span className="admin-fine-form__option-body">
+                                <strong>{nombre}</strong>
+
+                                <small>
+                                  N.º {inscrito.numCuenta} ·{' '}
+                                  {inscrito.estado}
+                                </small>
+                              </span>
+
+                              {inscrito.multaRegistrada && (
+                                <span className="admin-fine-form__badge">
+                                  Ya multado
+                                </span>
+                              )}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                </div>
+              )}
+
+              <label className="admin-fine-form__field">
+                <span>Motivo</span>
+
+                <textarea
+                  rows={3}
+                  maxLength={255}
+                  value={motivoMulta}
+                  disabled={registrando}
+                  placeholder="Describe la falta cometida"
+                  onChange={(evento) =>
+                    setMotivoMulta(evento.target.value)
+                  }
+                />
+              </label>
+
+              <label className="admin-fine-form__field admin-fine-form__field--short">
+                <span>Monto (L)</span>
+
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={montoMulta}
+                  disabled={registrando}
+                  onChange={(evento) =>
+                    setMontoMulta(evento.target.value)
+                  }
+                />
+              </label>
+
+              <p className="admin-fine-form__summary">
+                {inscritoSeleccionado
+                  ? `Se aplicará una multa de ${formatearLempiras(
+                      Number(montoMulta) || 0,
+                    )} a ${
+                      inscritoSeleccionado.nombreEstudiante ||
+                      inscritoSeleccionado.numCuenta
+                    }.`
+                  : 'Selecciona la actividad y el estudiante para continuar.'}
+              </p>
+
+              <div className="admin-fine-dialog__actions">
+                <AlertDialog.Cancel asChild>
+                  <button
+                    className="admin-fine-dialog__cancel"
+                    type="button"
+                    disabled={registrando}
+                    onClick={cerrarRegistro}
+                  >
+                    Cancelar
+                  </button>
+                </AlertDialog.Cancel>
+
+                <button
+                  className="admin-fine-dialog__confirm admin-fine-dialog__confirm--approve"
+                  type="submit"
+                  disabled={!puedeGuardarMulta}
+                >
+                  {registrando ? (
+                    <LoaderCircle
+                      className="admin-fine-dialog__loader"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Plus aria-hidden="true" />
+                  )}
+
+                  {registrando
+                    ? 'Registrando...'
+                    : 'Registrar multa'}
+                </button>
+              </div>
+            </form>
           </AlertDialog.Content>
         </AlertDialog.Portal>
       </AlertDialog.Root>
