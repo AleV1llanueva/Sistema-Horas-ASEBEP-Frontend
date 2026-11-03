@@ -581,6 +581,86 @@
   color: var(--admin-blue);
 }
 
+/* Historial previo al sistema (horas y meses) */
+.admin-edit-student-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.admin-edit-student-notice--info {
+  color: #7a4c10;
+  border:
+    1px solid #f0dcc0;
+  background:
+    linear-gradient(
+      90deg,
+      #fdf4e7,
+      #fffaf2
+    );
+}
+
+.admin-edit-student-notice svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #9a5a18;
+}
+
+.admin-edit-student-field__hint {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.63rem;
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+.admin-edit-student-coverage {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top:
+    1px dashed var(--admin-border);
+}
+
+.admin-edit-student-coverage > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #fafcfd;
+}
+
+.admin-edit-student-coverage strong {
+  color: var(--admin-text-soft);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.admin-edit-student-coverage span {
+  color: var(--admin-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 /* Acciones finales */
 .admin-edit-student-form__actions {
   display: flex;

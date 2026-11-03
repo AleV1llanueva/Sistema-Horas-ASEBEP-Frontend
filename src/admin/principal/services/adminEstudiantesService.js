@@ -22,6 +22,12 @@ import {
 const CLAVE_ESTUDIANTES =
   'asebep_admin_estudiantes_simulados'
 
+/*
+ * El backend exige 20 horas por mes activo cuando calcula
+ * las horas esperadas del becario.
+ */
+const HORAS_POR_MES = 20
+
 const usarDatosAdminSimulados =
   import.meta.env
     .VITE_USAR_DATOS_ADMIN_SIMULADOS ===
@@ -356,6 +362,124 @@ function calcularMesesActivos(
   return cantidadMeses
 }
 
+const NOMBRES_MESES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
+
+function avanzarMes(mes, anio, cantidad) {
+  /*
+   * El backend calcula los meses con `calcular_meses_activos`,
+   * que no cuenta enero ni diciembre (salvo enero de 2024 y 2025).
+   * Para mostrar una fecha estimada se avanza mes a mes igual que
+   * allí para que ambas vistas coincidan en cantidad de meses.
+   */
+  let mesActual = mes
+  let anioActual = anio
+  let restantes = cantidad
+
+  while (restantes > 0) {
+    const eneroEspecial =
+      mesActual === 1 &&
+      [2024, 2025].includes(anioActual)
+
+    if (
+      ![1, 12].includes(mesActual) ||
+      eneroEspecial
+    ) {
+      restantes -= 1
+
+      if (restantes === 0) {
+        break
+      }
+    }
+
+    if (mesActual === 12) {
+      mesActual = 1
+      anioActual += 1
+    } else {
+      mesActual += 1
+    }
+  }
+
+  return { mes: mesActual, anio: anioActual }
+}
+
+/*
+ * Describe hasta qué mes cubren los datos previos al sistema.
+ * Las horas se manejan por horas y las aportaciones por meses.
+ */
+export function obtenerCoberturaBecario(
+  datosBecario,
+) {
+  const mesInicio = Number(
+    datosBecario?.mesInicio,
+  )
+
+  const anioInicio = Number(
+    datosBecario?.anioInicio,
+  )
+
+  const tienePeriodo =
+    Number.isInteger(mesInicio) &&
+    mesInicio >= 1 &&
+    mesInicio <= 12 &&
+    Number.isInteger(anioInicio) &&
+    anioInicio > 2000
+
+  const mesesDeHoras = Math.floor(
+    Number(
+      datosBecario?.horasAcumuladas,
+    ) / HORAS_POR_MES || 0,
+  )
+
+  const mesesDeAportaciones = Math.floor(
+    Number(
+      datosBecario?.montoAcumulado,
+    ) || 0,
+  )
+
+  const describir = (meses) => {
+    if (!tienePeriodo) {
+      return 'Periodo de ingreso no definido'
+    }
+
+    if (meses <= 0) {
+      return 'Sin cobertura registrada'
+    }
+
+    const {
+      mes,
+      anio,
+    } = avanzarMes(
+      mesInicio,
+      anioInicio,
+      meses,
+    )
+
+    return `Cubre hasta ${NOMBRES_MESES[mes - 1]} de ${anio}`
+  }
+
+  return {
+    mesesDeHoras,
+    mesesDeAportaciones,
+    horas: describir(mesesDeHoras),
+    aportaciones: describir(
+      mesesDeAportaciones,
+    ),
+  }
+}
+
 /*
  * Esta función actúa como frontera entre los datos
  * del backend, los mocks y las vistas administrativas.
@@ -617,6 +741,12 @@ function normalizarEstudiante(
             .horasAcumuladas ??
           datosBecario
             .horas_acumuladas ??
+          /*
+           * El backend solo expone el total de horas cubiertas,
+           * que ya incluye las horas previas al sistema.
+           */
+          datosBecario.horasTotales ??
+          datosBecario.horas_totales ??
           0,
           'Las horas acumuladas',
         ),
@@ -632,6 +762,20 @@ function normalizarEstudiante(
         ),
 
       mesesSinPagar,
+
+      /*
+       * En este sistema el campo `monto_acumulado` representa los meses
+       * de aportación cubiertos antes de la migración, no colones.
+       */
+      montoAcumulado:
+        prepararEnteroNoNegativo(
+          datosBecario
+            .montoAcumulado ??
+          datosBecario
+            .monto_acumulado ??
+          0,
+          'Los meses de aportación acumulados',
+        ),
 
       estadoBeca:
         eliminado
@@ -1136,6 +1280,15 @@ function convertirCambiosParaBackend(
       ? cambios.credenciales
       : {}
 
+  const datosBecario =
+    esObjeto(cambios.datosBecario)
+      ? cambios.datosBecario
+      : esObjeto(
+        cambios.datos_becario,
+      )
+        ? cambios.datos_becario
+        : {}
+
   const equivalencias = {
     primer_nombre:
       obtenerPrimerValorDefinido(
@@ -1200,6 +1353,38 @@ function convertirCambiosParaBackend(
         credenciales.rolId,
         credenciales.rol_id,
         cambios.rol_id,
+      ),
+
+    /*
+     * Ajustes del perfil previos al sistema. Solo los envía la
+     * pantalla de edición de administradores.
+     */
+    horas_acumuladas:
+      obtenerPrimerValorDefinido(
+        datosBecario.horasAcumuladas,
+        datosBecario.horas_acumuladas,
+        cambios.horas_acumuladas,
+      ),
+
+    monto_acumulado:
+      obtenerPrimerValorDefinido(
+        datosBecario.montoAcumulado,
+        datosBecario.monto_acumulado,
+        cambios.monto_acumulado,
+      ),
+
+    anio_inicio:
+      obtenerPrimerValorDefinido(
+        datosBecario.anioInicio,
+        datosBecario.anio_inicio,
+        cambios.anio_inicio,
+      ),
+
+    mes_inicio:
+      obtenerPrimerValorDefinido(
+        datosBecario.mesInicio,
+        datosBecario.mes_inicio,
+        cambios.mes_inicio,
       ),
   }
 
@@ -2039,10 +2224,33 @@ export async function actualizarEstudiante(
         cambios,
       )
 
+    /*
+     * Los ajustes de horas, aportaciones y periodo de ingreso viven
+     * en el perfil del becario, no en el usuario. Se envían por su
+     * propia ruta administrativa.
+     */
+    const {
+      horas_acumuladas: horasAcumuladas,
+      monto_acumulado: mesesAportados,
+      anio_inicio: anioInicio,
+      mes_inicio: mesInicio,
+      ...datosDeUsuario
+    } = datosParaBackend
+
+    const datosDeBecario = Object.fromEntries(
+      Object.entries({
+        horas_acumuladas: horasAcumuladas,
+        monto_acumulado: mesesAportados,
+        anio_inicio: anioInicio,
+        mes_inicio: mesInicio,
+      }).filter(
+        ([, valor]) => valor !== undefined,
+      ),
+    )
+
     if (
-      Object.keys(
-        datosParaBackend,
-      ).length === 0
+      Object.keys(datosDeUsuario).length === 0 &&
+      Object.keys(datosDeBecario).length === 0
     ) {
       throw new EstudianteAdminError(
         'Los cambios indicados no pertenecen a campos editables de la API.',
@@ -2054,23 +2262,45 @@ export async function actualizarEstudiante(
         .datosPersonales
         .numeroCuenta
 
-    await peticionApi(
-      `/usuarios/${encodeURIComponent(
-        numeroCuenta,
-      )}`,
-      {
-        method: 'PUT',
+    if (Object.keys(datosDeUsuario).length > 0) {
+      await peticionApi(
+        `/usuarios/${encodeURIComponent(
+          numeroCuenta,
+        )}`,
+        {
+          method: 'PUT',
 
-        headers: {
-          'Content-Type':
-            'application/json',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            datosDeUsuario,
+          ),
         },
+      )
+    }
 
-        body: JSON.stringify(
-          datosParaBackend,
-        ),
-      },
-    )
+    if (Object.keys(datosDeBecario).length > 0) {
+      await peticionApi(
+        `/becarios/${encodeURIComponent(
+          numeroCuenta,
+        )}/datos-academicos`,
+        {
+          method: 'PATCH',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            datosDeBecario,
+          ),
+        },
+      )
+    }
 
     const estudianteActualizado =
       await obtenerEstudiante(
@@ -2116,8 +2346,29 @@ export async function actualizarEstudiante(
         ...estudianteActualizado
           .datosBecario,
 
+        horasAcumuladas:
+          datosDeBecario
+            .horas_acumuladas ??
+          estudianteActualizado
+            .datosBecario
+            .horasAcumuladas,
+
+        montoAcumulado:
+          datosDeBecario
+            .monto_acumulado ??
+          estudianteActualizado
+            .datosBecario
+            .montoAcumulado,
+
+        anioInicio:
+          datosDeBecario.anio_inicio ??
+          estudianteActualizado
+            .datosBecario
+            .anioInicio,
+
         mesInicio:
-          estudianteActual
+          datosDeBecario.mes_inicio ??
+          estudianteActualizado
             .datosBecario
             .mesInicio,
       },

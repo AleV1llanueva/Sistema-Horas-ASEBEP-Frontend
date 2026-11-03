@@ -1,7 +1,9 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import {
   ArrowLeft,
+  CalendarDays,
   CircleCheck,
+  Clock3,
   GraduationCap,
   IdCard,
   Info,
@@ -27,6 +29,7 @@ import {
 
 import {
   actualizarEstudiante,
+  obtenerCoberturaBecario,
   obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
 
@@ -44,6 +47,21 @@ import '../styles/AdminPrincipalEditStudent.css'
 const ROLES_DISPONIBLES = []
 const CARRERAS_DISPONIBLES = []
 
+const NOMBRES_MESES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
+
 const FORMULARIO_VACIO = {
   primerNombre: '',
   segundoNombre: '',
@@ -54,6 +72,10 @@ const FORMULARIO_VACIO = {
   telefono: '',
   carreraId: '',
   rolId: '',
+  horasAcumuladas: '',
+  mesesAportados: '',
+  mesInicio: '',
+  anioInicio: '',
 }
 
 const ID_ESTUDIANTE_ACTUALIZADO =
@@ -140,6 +162,9 @@ function crearFormularioDesdeEstudiante(
   const credenciales =
     estudiante?.credenciales ?? {}
 
+  const datosBecario =
+    estudiante?.datosBecario ?? {}
+
   return {
     primerNombre:
       prepararTexto(
@@ -189,6 +214,29 @@ function crearFormularioDesdeEstudiante(
         credenciales.rolId,
         credenciales.rol,
         ROLES_DISPONIBLES,
+      ),
+
+    /*
+     * Datos previos al sistema: horas y meses, no dinero.
+     */
+    horasAcumuladas:
+      prepararTexto(
+        datosBecario.horasAcumuladas,
+      ),
+
+    mesesAportados:
+      prepararTexto(
+        datosBecario.montoAcumulado,
+      ),
+
+    mesInicio:
+      prepararTexto(
+        datosBecario.mesInicio,
+      ),
+
+    anioInicio:
+      prepararTexto(
+        datosBecario.anioInicio,
       ),
   }
 }
@@ -268,6 +316,57 @@ function validarFormulario(
       'Selecciona un rol.'
   }
 
+  /*
+   * Los datos previos al sistema se manejan en unidades completas:
+   * horas para la beca y meses para las aportaciones.
+   */
+  if (
+    !/^\d+$/.test(
+      formulario.horasAcumuladas,
+    )
+  ) {
+    errores.horasAcumuladas =
+      'Ingresa un número entero de horas.'
+  }
+
+  if (
+    !/^\d+$/.test(
+      formulario.mesesAportados,
+    )
+  ) {
+    errores.mesesAportados =
+      'Ingresa un número entero de meses.'
+  }
+
+  const mesInicio = Number(
+    formulario.mesInicio,
+  )
+
+  if (
+    !Number.isInteger(mesInicio) ||
+    mesInicio < 1 ||
+    mesInicio > 12
+  ) {
+    errores.mesInicio =
+      'Selecciona un mes de ingreso válido.'
+  }
+
+  const anioInicio = Number(
+    formulario.anioInicio,
+  )
+
+  const anioActual =
+    new Date().getFullYear()
+
+  if (
+    !Number.isInteger(anioInicio) ||
+    anioInicio < 2000 ||
+    anioInicio > anioActual
+  ) {
+    errores.anioInicio =
+      `El año debe estar entre 2000 y ${anioActual}.`
+  }
+
   return errores
 }
 
@@ -305,6 +404,22 @@ function normalizarFormulario(
 
     rolId:
       formulario.rolId,
+
+    horasAcumuladas:
+      prepararTexto(
+        formulario.horasAcumuladas,
+      ),
+
+    mesesAportados:
+      prepararTexto(
+        formulario.mesesAportados,
+      ),
+
+    mesInicio:
+      prepararTexto(formulario.mesInicio),
+
+    anioInicio:
+      prepararTexto(formulario.anioInicio),
   }
 }
 
@@ -328,6 +443,7 @@ function construirCambios(
 
   const datosPersonales = {}
   const credenciales = {}
+  const datosBecario = {}
 
   const camposPersonales = [
     'primerNombre',
@@ -367,6 +483,26 @@ function construirCambios(
       Number(valoresActuales.rolId)
   }
 
+  const camposBecario = {
+    horasAcumuladas: 'horasAcumuladas',
+    mesesAportados: 'montoAcumulado',
+    mesInicio: 'mesInicio',
+    anioInicio: 'anioInicio',
+  }
+
+  Object.entries(camposBecario).forEach(
+    ([campo, destino]) => {
+      if (
+        valoresActuales[campo] !==
+        valoresIniciales[campo]
+      ) {
+        datosBecario[destino] = Number(
+          valoresActuales[campo],
+        )
+      }
+    },
+  )
+
   const cambios = {}
 
   if (
@@ -383,6 +519,13 @@ function construirCambios(
   ) {
     cambios.credenciales =
       credenciales
+  }
+
+  if (
+    Object.keys(datosBecario)
+      .length > 0
+  ) {
+    cambios.datosBecario = datosBecario
   }
 
   return cambios
@@ -608,6 +751,22 @@ function AdminPrincipalEditStudent() {
     ) ||
     'Rol no disponible'
 
+  /*
+   * La vista previa reacciona mientras se editan las horas
+   * y los meses, para explicar hasta qué mes quedan cubiertos.
+   */
+  const coberturaBecario =
+    obtenerCoberturaBecario({
+      horasAcumuladas:
+        Number(formulario.horasAcumuladas) || 0,
+      montoAcumulado:
+        Number(formulario.mesesAportados) || 0,
+      mesInicio: Number(formulario.mesInicio),
+      anioInicio: Number(
+        formulario.anioInicio,
+      ),
+    })
+
   function actualizarCampo(evento) {
     const {
       name,
@@ -617,7 +776,13 @@ function AdminPrincipalEditStudent() {
     const valorPreparado =
       name === 'telefono'
         ? value.replace(/\D/g, '')
-        : value
+        : [
+          'horasAcumuladas',
+          'mesesAportados',
+          'anioInicio',
+        ].includes(name)
+          ? value.replace(/\D/g, '')
+          : value
 
     setFormulario(
       (formularioActual) => ({
@@ -1188,6 +1353,195 @@ function AdminPrincipalEditStudent() {
             </div>
           </fieldset>
 
+          {/*
+            * Datos previos al sistema. Se editan en unidades distintas:
+            * la beca se mide en horas y las aportaciones en meses.
+            */}
+          <fieldset className="admin-edit-student-section">
+            <legend>
+              <span>
+                <Clock3 aria-hidden="true" />
+              </span>
+
+              <span>
+                <strong>
+                  Historial previo al sistema
+                </strong>
+
+                <small>
+                  Horas cubiertas, meses aportados y periodo de ingreso
+                </small>
+              </span>
+            </legend>
+
+            <div className="admin-edit-student-notice admin-edit-student-notice--info">
+              <Info aria-hidden="true" />
+
+              <span>
+                Las horas se registran como
+                <strong> horas cumplidas </strong>
+                y las aportaciones como
+                <strong> meses pagados </strong>
+                (no como dinero). Ambos valores
+                corresponden al historial anterior
+                a este sistema.
+              </span>
+            </div>
+
+            <div className="admin-edit-student-fields">
+              <div className="admin-edit-student-field">
+                <label htmlFor="editar-horas-acumuladas">
+                  Horas cumplidas
+                </label>
+
+                <div className="admin-edit-student-input-icon">
+                  <Clock3 aria-hidden="true" />
+
+                  <input
+                    id="editar-horas-acumuladas"
+                    name="horasAcumuladas"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={formulario.horasAcumuladas}
+                    aria-invalid={Boolean(
+                      errores.horasAcumuladas,
+                    )}
+                    onChange={actualizarCampo}
+                  />
+                </div>
+
+                {errores.horasAcumuladas ? (
+                  <p className="admin-edit-student-field__error">
+                    {errores.horasAcumuladas}
+                  </p>
+                ) : (
+                  <p className="admin-edit-student-field__hint">
+                    {coberturaBecario.horas}
+                    {coberturaBecario.mesesDeHoras > 0 &&
+                      ` (≈ ${coberturaBecario.mesesDeHoras} ${coberturaBecario.mesesDeHoras === 1 ? 'mes' : 'meses'} a 20 horas por mes)`}
+                  </p>
+                )}
+              </div>
+
+              <div className="admin-edit-student-field">
+                <label htmlFor="editar-meses-aportados">
+                  Meses de aportación
+                  pagados
+                </label>
+
+                <div className="admin-edit-student-input-icon">
+                  <CalendarDays aria-hidden="true" />
+
+                  <input
+                    id="editar-meses-aportados"
+                    name="mesesAportados"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={formulario.mesesAportados}
+                    aria-invalid={Boolean(
+                      errores.mesesAportados,
+                    )}
+                    onChange={actualizarCampo}
+                  />
+                </div>
+
+                {errores.mesesAportados ? (
+                  <p className="admin-edit-student-field__error">
+                    {errores.mesesAportados}
+                  </p>
+                ) : (
+                  <p className="admin-edit-student-field__hint">
+                    {coberturaBecario.aportaciones}
+                  </p>
+                )}
+              </div>
+
+              <div className="admin-edit-student-field">
+                <label htmlFor="editar-mes-inicio">
+                  Mes de ingreso
+                </label>
+
+                <select
+                  id="editar-mes-inicio"
+                  name="mesInicio"
+                  value={formulario.mesInicio}
+                  aria-invalid={Boolean(
+                    errores.mesInicio,
+                  )}
+                  onChange={actualizarCampo}
+                >
+                  <option value="">
+                    Selecciona un mes
+                  </option>
+
+                  {NOMBRES_MESES.map(
+                    (nombre, indice) => (
+                      <option
+                        key={nombre}
+                        value={indice + 1}
+                      >
+                        {capitalizarPrimeraLetra(
+                          nombre,
+                        )}
+                      </option>
+                    ),
+                  )}
+                </select>
+
+                {errores.mesInicio && (
+                  <p className="admin-edit-student-field__error">
+                    {errores.mesInicio}
+                  </p>
+                )}
+              </div>
+
+              <div className="admin-edit-student-field">
+                <label htmlFor="editar-anio-inicio">
+                  Año de ingreso
+                </label>
+
+                <input
+                  id="editar-anio-inicio"
+                  name="anioInicio"
+                  type="number"
+                  min="2000"
+                  max={new Date().getFullYear()}
+                  step="1"
+                  inputMode="numeric"
+                  value={formulario.anioInicio}
+                  aria-invalid={Boolean(
+                    errores.anioInicio,
+                  )}
+                  onChange={actualizarCampo}
+                />
+
+                {errores.anioInicio && (
+                  <p className="admin-edit-student-field__error">
+                    {errores.anioInicio}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="admin-edit-student-coverage">
+              <div>
+                <strong>Horas</strong>
+                <span>{coberturaBecario.horas}</span>
+              </div>
+
+              <div>
+                <strong>Aportaciones</strong>
+                <span>
+                  {coberturaBecario.aportaciones}
+                </span>
+              </div>
+            </div>
+          </fieldset>
+
           {/* Carrera y rol se activarán al conocer sus IDS. */}
           <fieldset className="admin-edit-student-section">
             <legend>
@@ -1329,9 +1683,11 @@ function AdminPrincipalEditStudent() {
             <ShieldCheck aria-hidden="true" />
 
             <span>
-              El número de cuenta, las horas,
-              las aportaciones y el periodo de
-              ingreso no se pueden modificar.
+              El número de cuenta no se puede
+              modificar. Los ajustes de horas,
+              aportaciones y periodo de ingreso
+              quedan registrados como parte del
+              historial previo al sistema.
             </span>
           </div>
 

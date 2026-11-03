@@ -233,8 +233,15 @@ export const estudiantesAdminMock = [
     datosBecario: {
       periodoInicio: 'III PAC',
       anioInicio: 2024,
+      mesInicio: 9,
       horasAcumuladas: 250,
       horasFaltantes: 130,
+
+      /*
+       * Meses de aportación cubiertos antes del sistema
+       * (no representan dinero).
+       */
+      montoAcumulado: 7,
 
       /*
        * El saldo pendiente se calcula en el servicio:
@@ -324,8 +331,10 @@ export const estudiantesAdminMock = [
     datosBecario: {
       periodoInicio: 'I PAC',
       anioInicio: 2023,
+      mesInicio: 2,
       horasAcumuladas: 380,
       horasFaltantes: 0,
+      montoAcumulado: 15,
       mesesSinPagar: 0,
       estadoBeca: 'activo',
     },
@@ -421,8 +430,10 @@ export const estudiantesAdminMock = [
     datosBecario: {
       periodoInicio: 'II PAC',
       anioInicio: 2022,
+      mesInicio: 6,
       horasAcumuladas: 190,
       horasFaltantes: 190,
+      montoAcumulado: 4,
       mesesSinPagar: 4,
       estadoBeca: 'inactivo',
     },
