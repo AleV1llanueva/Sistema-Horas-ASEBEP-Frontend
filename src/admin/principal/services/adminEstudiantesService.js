@@ -168,12 +168,12 @@ function prepararEnteroPositivo(
   valor,
   nombreCampo,
 ) {
-  const numero = Number(valor)
+  const numero = prepararEnteroNoNegativo(
+    valor,
+    nombreCampo,
+  )
 
-  if (
-    !Number.isInteger(numero) ||
-    numero <= 0
-  ) {
+  if (numero <= 0) {
     throw new EstudianteAdminError(
       `${nombreCampo} no es válido.`,
     )
@@ -1120,8 +1120,12 @@ function prepararDatosCreacion(
     )
   }
 
+  /*
+   * Algunas bases antiguas registraron carreras con id 0,
+   * por eso aquí se acepta desde cero.
+   */
   const carreraId =
-    prepararEnteroPositivo(
+    prepararEnteroNoNegativo(
       datosPersonales.carreraId ??
       datosPersonales.carrera_id ??
       estudiante.carreraId ??
@@ -1129,13 +1133,17 @@ function prepararDatosCreacion(
       'La carrera seleccionada',
     )
 
+  /*
+   * El rol de becario lo resuelve el backend por nombre.
+   * Solo se valida si el cliente decide enviarlo.
+   */
   const rolId =
-    prepararEnteroPositivo(
+    prepararEnteroOpcional(
       credenciales.rolId ??
       credenciales.rol_id ??
       estudiante.rolId ??
       estudiante.rol_id,
-      'El rol seleccionado',
+      'El identificador del rol',
     )
 
   const mesInicio =
@@ -1217,7 +1225,7 @@ function prepararDatosCreacion(
 function convertirNuevoEstudianteParaBackend(
   estudiante,
 ) {
-  return {
+  const datos = {
     num_cuenta:
       estudiante.numeroCuenta,
 
@@ -1247,15 +1255,24 @@ function convertirNuevoEstudianteParaBackend(
     carrera_id:
       estudiante.carreraId,
 
-    rol_id:
-      estudiante.rolId,
-
     mes_inicio:
       estudiante.mesInicio,
 
     anio_inicio:
       estudiante.anioInicio,
   }
+
+  /*
+   * El rol se omite si no viene: el backend asigna el de becario.
+   */
+  if (
+    estudiante.rolId !== undefined &&
+    estudiante.rolId !== null
+  ) {
+    datos.rol_id = estudiante.rolId
+  }
+
+  return datos
 }
 
 /*
@@ -1708,6 +1725,47 @@ export async function listarEstudiantesSinCorreo() {
   return ordenarEstudiantes(
     estudiantesSinCorreo,
   )
+}
+
+/*
+ * Catálogo de carreras activas para el alta de estudiantes.
+ * Si el backend no responde, el formulario sigue usable pero
+ * sin opciones, y el usuario ve el mensaje de error.
+ */
+export async function listarCarrerasDisponibles() {
+  if (usarDatosAdminSimulados) {
+    return [
+      { id: 1, nombre: 'Ingeniería en Sistemas' },
+      { id: 2, nombre: 'Ingeniería Industrial' },
+      { id: 3, nombre: 'Administración de Empresas' },
+      { id: 4, nombre: 'Contaduría Pública' },
+    ]
+  }
+
+  const respuesta = await peticionApi(
+    '/carreras/catalogo',
+  )
+
+  if (!Array.isArray(respuesta)) {
+    throw new EstudianteAdminError(
+      'El servidor no devolvió un catálogo válido de carreras.',
+    )
+  }
+
+  return respuesta
+    .filter((carrera) => esObjeto(carrera))
+    .map((carrera) => ({
+      id: carrera.id,
+      nombre: prepararTexto(
+        carrera.nombre_carrera ??
+        carrera.nombre,
+      ),
+    }))
+    .filter(
+      (carrera) =>
+        carrera.id !== undefined &&
+        Boolean(carrera.nombre),
+    )
 }
 
 /*

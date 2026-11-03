@@ -622,6 +622,13 @@
   line-height: 1.45;
 }
 
+/* El rol se asigna solo: se muestra como dato de lectura. */
+.admin-edit-student-field input:disabled {
+  color: var(--admin-text-soft);
+  background: #f2f5f7;
+  cursor: not-allowed;
+}
+
 .admin-edit-student-coverage {
   display: grid;
   grid-template-columns:

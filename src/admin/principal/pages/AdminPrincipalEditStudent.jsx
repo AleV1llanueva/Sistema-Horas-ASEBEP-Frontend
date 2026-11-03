@@ -29,6 +29,7 @@ import {
 
 import {
   actualizarEstudiante,
+  listarCarrerasDisponibles,
   obtenerCoberturaBecario,
   obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
@@ -44,8 +45,7 @@ import '../styles/AdminPrincipalEditStudent.css'
  * Estos catálogos se completarán cuando tengamos
  * los identificadores reales de roles y carreras.
  */
-const ROLES_DISPONIBLES = []
-const CARRERAS_DISPONIBLES = []
+const ROL_BECARIO = 'Becario'
 
 const NOMBRES_MESES = [
   'enero',
@@ -116,51 +116,56 @@ function normalizarNombre(valor) {
 }
 
 /*
- * El listado del backend todavía no devuelve los IDS.
- * Cuando exista el catálogo, también podremos localizar
- * el identificador utilizando el nombre actual.
+ * Localiza la carrera del estudiante dentro del catálogo.
+ * Si el backend ya devuelve el id, se usa directamente;
+ * si no, se compara por nombre.
  */
-function resolverIdCatalogo(
-  identificador,
-  nombreActual,
-  catalogo,
+function resolverIdCarrera(
+  carreraId,
+  nombreCarrera,
+  carreras,
 ) {
-  const numero = Number(identificador)
+  const numero = Number(carreraId)
 
+  /*
+   * Se acepta desde 0 porque hay carreras registradas con id 0.
+   * El valor vacío llega como null/undefined y no entra aquí.
+   */
   if (
+    carreraId !== null &&
+    carreraId !== undefined &&
+    String(carreraId).trim() !== '' &&
     Number.isInteger(numero) &&
-    numero > 0
+    numero >= 0
   ) {
     return String(numero)
   }
 
   const nombreNormalizado =
-    normalizarNombre(nombreActual)
+    normalizarNombre(nombreCarrera)
 
   if (!nombreNormalizado) {
     return ''
   }
 
-  const opcionEncontrada =
-    catalogo.find(
-      (opcion) =>
-        normalizarNombre(opcion.nombre) ===
+  const carreraEncontrada =
+    carreras.find(
+      (carrera) =>
+        normalizarNombre(carrera.nombre) ===
         nombreNormalizado,
     )
 
-  return opcionEncontrada
-    ? String(opcionEncontrada.id)
+  return carreraEncontrada
+    ? String(carreraEncontrada.id)
     : ''
 }
 
 function crearFormularioDesdeEstudiante(
   estudiante,
+  carreras = [],
 ) {
   const datosPersonales =
     estudiante?.datosPersonales ?? {}
-
-  const credenciales =
-    estudiante?.credenciales ?? {}
 
   const datosBecario =
     estudiante?.datosBecario ?? {}
@@ -203,17 +208,10 @@ function crearFormularioDesdeEstudiante(
       ),
 
     carreraId:
-      resolverIdCatalogo(
+      resolverIdCarrera(
         datosPersonales.carreraId,
         datosPersonales.carrera,
-        CARRERAS_DISPONIBLES,
-      ),
-
-    rolId:
-      resolverIdCatalogo(
-        credenciales.rolId,
-        credenciales.rol,
-        ROLES_DISPONIBLES,
+        carreras,
       ),
 
     /*
@@ -249,7 +247,6 @@ function validarCorreo(correo) {
 
 function validarFormulario(
   formulario,
-  catalogoRolesDisponible,
   catalogoCarrerasDisponible,
 ) {
   const errores = {}
@@ -306,14 +303,6 @@ function validarFormulario(
   ) {
     errores.carreraId =
       'Selecciona una carrera.'
-  }
-
-  if (
-    catalogoRolesDisponible &&
-    !formulario.rolId
-  ) {
-    errores.rolId =
-      'Selecciona un rol.'
   }
 
   /*
@@ -402,9 +391,6 @@ function normalizarFormulario(
     carreraId:
       formulario.carreraId,
 
-    rolId:
-      formulario.rolId,
-
     horasAcumuladas:
       prepararTexto(
         formulario.horasAcumuladas,
@@ -430,7 +416,6 @@ function normalizarFormulario(
 function construirCambios(
   formulario,
   formularioInicial,
-  catalogoRolesDisponible,
   catalogoCarrerasDisponible,
 ) {
   const valoresActuales =
@@ -472,15 +457,6 @@ function construirCambios(
   ) {
     datosPersonales.carreraId =
       Number(valoresActuales.carreraId)
-  }
-
-  if (
-    catalogoRolesDisponible &&
-    valoresActuales.rolId !==
-      valoresIniciales.rolId
-  ) {
-    credenciales.rolId =
-      Number(valoresActuales.rolId)
   }
 
   const camposBecario = {
@@ -600,11 +576,75 @@ function AdminPrincipalEditStudent() {
     setDialogoCancelarAbierto,
   ] = useState(false)
 
-  const catalogoRolesDisponible =
-    ROLES_DISPONIBLES.length > 0
+  /*
+   * Catálogo de carreras activas para reasignar al estudiante.
+   */
+  const [
+    carreras,
+    setCarreras,
+  ] = useState([])
+
+  const [
+    cargandoCarreras,
+    setCargandoCarreras,
+  ] = useState(true)
+
+  const [
+    errorCarreras,
+    setErrorCarreras,
+  ] = useState('')
 
   const catalogoCarrerasDisponible =
-    CARRERAS_DISPONIBLES.length > 0
+    carreras.length > 0
+
+  /*
+   * Las carreras se cargan en paralelo con el estudiante para
+   * que el selector esté listo cuando termine la carga inicial.
+   */
+  useEffect(() => {
+    let componenteMontado = true
+
+    async function cargarCarreras() {
+      setCargandoCarreras(true)
+      setErrorCarreras('')
+
+      try {
+        const obtenidas =
+          await listarCarrerasDisponibles()
+
+        if (componenteMontado) {
+          setCarreras(obtenidas)
+        }
+      } catch (errorCarga) {
+        if (!componenteMontado) {
+          return
+        }
+
+        console.log(
+          'Error al cargar carreras: ',
+          errorCarga,
+        )
+
+        setCarreras([])
+
+        setErrorCarreras(
+          errorCarga instanceof Error
+            ? errorCarga.message
+            : 'No fue posible cargar el catálogo de carreras.',
+        )
+      } finally {
+        if (componenteMontado) {
+          setCargandoCarreras(false)
+        }
+      }
+    }
+
+    cargarCarreras()
+
+    return () => {
+      componenteMontado = false
+    }
+  }, [])
 
   /*
    * Recupera el estudiante utilizando el mismo servicio
@@ -678,19 +718,65 @@ function AdminPrincipalEditStudent() {
     recarga,
   ])
 
+  const datosPersonales =
+    estudiante?.datosPersonales ?? {}
+
+  const credenciales =
+    estudiante?.credenciales ?? {}
+
+  /*
+   * Si el catálogo de carreras llega después que el estudiante,
+   * el id puede haber quedado vacío. Se completa aquí sin tocar
+   * el resto del formulario ni marcar cambios pendientes.
+   */
+  useEffect(() => {
+    if (carreras.length === 0) {
+      return
+    }
+
+    const carreraResuelta =
+      resolverIdCarrera(
+        estudiante?.datosPersonales
+          ?.carreraId,
+        estudiante?.datosPersonales
+          ?.carrera,
+        carreras,
+      )
+
+    if (!carreraResuelta) {
+      return
+    }
+
+    setFormulario((actual) =>
+      actual.carreraId
+        ? actual
+        : {
+          ...actual,
+          carreraId: carreraResuelta,
+        },
+    )
+
+    setFormularioInicial((actual) =>
+      actual.carreraId
+        ? actual
+        : {
+          ...actual,
+          carreraId: carreraResuelta,
+        },
+    )
+  }, [carreras, estudiante])
+
   const cambiosPendientes =
     useMemo(
       () =>
         construirCambios(
           formulario,
           formularioInicial,
-          catalogoRolesDisponible,
           catalogoCarrerasDisponible,
         ),
       [
         formulario,
         formularioInicial,
-        catalogoRolesDisponible,
         catalogoCarrerasDisponible,
       ],
     )
@@ -699,12 +785,6 @@ function AdminPrincipalEditStudent() {
     Object.keys(
       cambiosPendientes,
     ).length > 0
-
-  const datosPersonales =
-    estudiante?.datosPersonales ?? {}
-
-  const credenciales =
-    estudiante?.credenciales ?? {}
 
   const activo =
     credenciales.activo !== false
@@ -727,17 +807,10 @@ function AdminPrincipalEditStudent() {
     )
 
   const carreraSeleccionada =
-    CARRERAS_DISPONIBLES.find(
+    carreras.find(
       (carrera) =>
         String(carrera.id) ===
         formulario.carreraId,
-    )
-
-  const rolSeleccionado =
-    ROLES_DISPONIBLES.find(
-      (rol) =>
-        String(rol.id) ===
-        formulario.rolId,
     )
 
   const carreraMostrada =
@@ -747,9 +820,9 @@ function AdminPrincipalEditStudent() {
 
   const rolMostrado =
     capitalizarPrimeraLetra(
-        rolSeleccionado?.nombre || credenciales.rol,
+        credenciales.rol,
     ) ||
-    'Rol no disponible'
+    ROL_BECARIO
 
   /*
    * La vista previa reacciona mientras se editan las horas
@@ -837,7 +910,6 @@ function AdminPrincipalEditStudent() {
     const erroresEncontrados =
       validarFormulario(
         formulario,
-        catalogoRolesDisponible,
         catalogoCarrerasDisponible,
       )
 
@@ -1045,10 +1117,8 @@ function AdminPrincipalEditStudent() {
         </span>
       </header>
 
-      {(
-        !catalogoRolesDisponible ||
-        !catalogoCarrerasDisponible
-      ) && (
+      {!cargandoCarreras &&
+        !catalogoCarrerasDisponible && (
         <section
           className="admin-edit-student-catalog-notice"
           role="status"
@@ -1057,14 +1127,12 @@ function AdminPrincipalEditStudent() {
 
           <div>
             <strong>
-              Catálogos pendientes
+              Catálogo de carreras no disponible
             </strong>
 
             <p>
-              Los datos personales pueden
-              editarse normalmente. La carrera
-              y el rol permanecerán bloqueados
-              hasta agregar sus IDS reales.
+              {errorCarreras ||
+                'No hay carreras activas para asignar. Los datos personales pueden editarse igualmente.'}
             </p>
           </div>
         </section>
@@ -1555,7 +1623,7 @@ function AdminPrincipalEditStudent() {
                 </strong>
 
                 <small>
-                  Carrera y rol asignado en el sistema
+                  Carrera asignada en el sistema
                 </small>
               </span>
             </legend>
@@ -1587,7 +1655,9 @@ function AdminPrincipalEditStudent() {
                     <option
                       value={formulario.carreraId}
                     >
-                      {carreraMostrada}
+                      {cargandoCarreras
+                        ? 'Cargando carreras…'
+                        : carreraMostrada}
                     </option>
                   )}
 
@@ -1597,7 +1667,7 @@ function AdminPrincipalEditStudent() {
                         Selecciona una carrera
                       </option>
 
-                      {CARRERAS_DISPONIBLES.map(
+                      {carreras.map(
                         (carrera) => (
                           <option
                             key={carrera.id}
@@ -1621,60 +1691,24 @@ function AdminPrincipalEditStudent() {
               <div className="admin-edit-student-field">
                 <label htmlFor="editar-rol">
                   Rol del sistema
-                  <span aria-hidden="true">
-                    *
-                  </span>
                 </label>
 
-                <select
+                {/*
+                  * El rol de los estudiantes es siempre el de becario;
+                  * se muestra como dato de solo lectura.
+                  */}
+                <input
                   id="editar-rol"
-                  name="rolId"
-                  value={formulario.rolId}
-                  disabled={
-                    !catalogoRolesDisponible
-                  }
-                  aria-invalid={
-                    Boolean(
-                      errores.rolId,
-                    )
-                  }
-                  onChange={actualizarCampo}
-                >
-                  {!catalogoRolesDisponible && (
-                    <option
-                      value={formulario.rolId}
-                    >
-                      {rolMostrado}
-                    </option>
-                  )}
+                  type="text"
+                  value={rolMostrado}
+                  readOnly
+                  disabled
+                />
 
-                  {catalogoRolesDisponible && (
-                    <>
-                      <option value="">
-                        Selecciona un rol
-                      </option>
-
-                      {ROLES_DISPONIBLES.map(
-                        (rol) => (
-                          <option
-                            key={rol.id}
-                            value={rol.id}
-                          >
-                            {capitalizarPrimeraLetra(
-                                rol.nombre,
-                            )}
-                          </option>
-                        ),
-                      )}
-                    </>
-                  )}
-                </select>
-
-                {errores.rolId && (
-                  <p className="admin-edit-student-field__error">
-                    {errores.rolId}
-                  </p>
-                )}
+                <p className="admin-edit-student-field__hint">
+                  El rol no se puede modificar desde esta
+                  pantalla.
+                </p>
               </div>
             </div>
           </fieldset>

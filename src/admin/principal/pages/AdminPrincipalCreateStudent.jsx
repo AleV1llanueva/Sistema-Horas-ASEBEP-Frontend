@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -32,13 +33,16 @@ import {
 
 import {
   crearEstudiante,
+  listarCarrerasDisponibles,
 } from '../services/adminEstudiantesService.js'
 
 import '../styles/AdminPrincipalCreateStudent.css'
 
-// Estos catálogos se completarán cuando tengamos los IDS
-const ROLES_DISPONIBLES = []
-const CARRERAS_DISPONIBLES = []
+/*
+ * El rol de los estudiantes se asigna automáticamente en el backend;
+ * aquí solo se muestra como información de solo lectura.
+ */
+const ROL_BECARIO = 'Becario'
 
 const MESES = [
   {
@@ -101,7 +105,6 @@ const FORMULARIO_INICIAL = {
   correoPersonal: '',
   telefono: '',
   carreraId: '',
-  rolId: '',
   mesInicio: '',
   anioInicio: '',
 }
@@ -166,6 +169,7 @@ function obtenerPeriodoDesdeMes(
 function validarFormulario(
   formulario,
   catalogosDisponibles,
+  errorCatalogoCarreras = '',
 ) {
   const errores = {}
 
@@ -222,37 +226,29 @@ function validarFormulario(
 
   if (!catalogosDisponibles) {
     errores.catalogos =
-      'Los catálogos de roles y carreras todavía están pendientes.'
+      errorCatalogoCarreras ||
+      'El catálogo de carreras todavía no está disponible.'
   }
 
   const carreraId = Number(
     formulario.carreraId,
   )
 
+  /*
+   * La carrera es obligatoria únicamente si el catálogo cargó.
+   * Se acepta cualquier id que exista en el catálogo, incluido 0:
+   * algunas bases antiguas registraron carreras con ese id.
+   */
   if (
     catalogosDisponibles &&
     (
+      !String(formulario.carreraId).trim() ||
       !Number.isInteger(carreraId) ||
-      carreraId <= 0
+      carreraId < 0
     )
   ) {
     errores.carreraId =
       'Selecciona una carrera.'
-  }
-
-  const rolId = Number(
-    formulario.rolId,
-  )
-
-  if (
-    catalogosDisponibles &&
-    (
-      !Number.isInteger(rolId) ||
-      rolId <= 0
-    )
-  ) {
-    errores.rolId =
-      'Selecciona un rol.'
   }
 
   const mesInicio = Number(
@@ -310,14 +306,73 @@ function AdminPrincipalCreateStudent() {
     setDialogoCancelarAbierto,
   ] = useState(false)
 
-  const catalogoRolesDisponible =
-    ROLES_DISPONIBLES.length > 0
+  /*
+   * Carreras activas para asignar al estudiante nuevo.
+   */
+  const [
+    carreras,
+    setCarreras,
+  ] = useState([])
+
+  const [
+    cargandoCarreras,
+    setCargandoCarreras,
+  ] = useState(true)
+
+  const [
+    errorCarreras,
+    setErrorCarreras,
+  ] = useState('')
+
+  useEffect(() => {
+    let componenteMontado = true
+
+    async function cargarCarreras() {
+      setCargandoCarreras(true)
+      setErrorCarreras('')
+
+      try {
+        const obtenidas =
+          await listarCarrerasDisponibles()
+
+        if (componenteMontado) {
+          setCarreras(obtenidas)
+        }
+      } catch (errorCarga) {
+        if (!componenteMontado) {
+          return
+        }
+
+        console.log(
+          'Error al cargar carreras: ',
+          errorCarga,
+        )
+
+        setCarreras([])
+
+        setErrorCarreras(
+          errorCarga instanceof Error
+            ? errorCarga.message
+            : 'No fue posible cargar el catálogo de carreras.',
+        )
+      } finally {
+        if (componenteMontado) {
+          setCargandoCarreras(false)
+        }
+      }
+    }
+
+    cargarCarreras()
+
+    return () => {
+      componenteMontado = false
+    }
+  }, [])
 
   const catalogoCarrerasDisponible =
-    CARRERAS_DISPONIBLES.length > 0
+    carreras.length > 0
 
   const catalogosDisponibles =
-    catalogoRolesDisponible &&
     catalogoCarrerasDisponible
 
   const formularioModificado =
@@ -326,26 +381,17 @@ function AdminPrincipalCreateStudent() {
         String(valor).trim() !== '',
     )
 
-  const rolSeleccionado =
-    useMemo(
-      () =>
-        ROLES_DISPONIBLES.find(
-          (rol) =>
-            String(rol.id) ===
-            formulario.rolId,
-        ) ?? null,
-      [formulario.rolId],
-    )
-
   const carreraSeleccionada =
     useMemo(
       () =>
-        CARRERAS_DISPONIBLES.find(
+        carreras.find(
           (carrera) =>
-            String(carrera.id) ===
-            formulario.carreraId,
+            String(carrera.id).trim() ===
+            String(
+              formulario.carreraId,
+            ).trim(),
         ) ?? null,
-      [formulario.carreraId],
+      [carreras, formulario.carreraId],
     )
 
   const nombreCompleto =
@@ -358,6 +404,31 @@ function AdminPrincipalCreateStudent() {
       .map((parte) => parte.trim())
       .filter(Boolean)
       .join(' ')
+
+  /*
+   * Si la carrera ya es válida, el mensaje de error anterior
+   * deja de aplicar. Sin esto el texto permanece visible aunque
+   * el usuario ya haya corregido la selección.
+   */
+  const carreraValida =
+    Boolean(carreraSeleccionada)
+
+  useEffect(() => {
+    if (!carreraValida) {
+      return
+    }
+
+    setErrores((actuales) => {
+      if (!actuales.carreraId) {
+        return actuales
+      }
+
+      return {
+        ...actuales,
+        carreraId: '',
+      }
+    })
+  }, [carreraValida])
 
   const iniciales =
     obtenerIniciales(
@@ -422,15 +493,15 @@ function AdminPrincipalCreateStudent() {
     evento,
   ) {
     evento.preventDefault()
-
     if (!catalogosDisponibles) {
       notificarInformacion({
         id:
           ID_CATALOGOS_PENDIENTES,
         titulo:
-          'Catálogos pendientes',
+          'Catálogo de carreras no disponible',
         descripcion:
-          'Debemos agregar los identificadores de roles y carreras antes de registrar estudiantes.',
+          errorCarreras ||
+          'No hay carreras activas para asignar. Registra una carrera e intenta de nuevo.',
       })
 
       return
@@ -440,6 +511,7 @@ function AdminPrincipalCreateStudent() {
       validarFormulario(
         formulario,
         catalogosDisponibles,
+        errorCarreras,
       )
 
     setErrores(
@@ -462,14 +534,13 @@ function AdminPrincipalCreateStudent() {
     }
 
     if (
-      !rolSeleccionado ||
       !carreraSeleccionada
     ) {
       notificarError({
         titulo:
           'Selección no válida',
         descripcion:
-          'No fue posible identificar el rol o la carrera seleccionada.',
+          'No fue posible identificar la carrera seleccionada.',
       })
 
       return
@@ -480,13 +551,12 @@ function AdminPrincipalCreateStudent() {
     try {
       await crearEstudiante({
         credenciales: {
-          rolId:
-            Number(
-              formulario.rolId,
-            ),
-
+          /*
+           * El rol de becario lo resuelve el backend por nombre,
+           * así que no se envía su identificador desde aquí.
+           */
           rol:
-            rolSeleccionado.nombre,
+            ROL_BECARIO,
         },
 
         datosPersonales: {
@@ -1042,12 +1112,14 @@ function AdminPrincipalCreateStudent() {
                   }
                 >
                   <option value="">
-                    {catalogoCarrerasDisponible
-                      ? 'Selecciona una carrera'
-                      : 'Catálogo de carreras pendiente'}
+                    {cargandoCarreras
+                      ? 'Cargando carreras…'
+                      : catalogoCarrerasDisponible
+                        ? 'Selecciona una carrera'
+                        : 'No hay carreras disponibles'}
                   </option>
 
-                  {CARRERAS_DISPONIBLES.map(
+                  {carreras.map(
                     (carrera) => (
                       <option
                         key={carrera.id}
@@ -1064,57 +1136,40 @@ function AdminPrincipalCreateStudent() {
                     {errores.carreraId}
                   </p>
                 )}
+
+                {!cargandoCarreras &&
+                  errorCarreras && (
+                  <p className="admin-create-student-field__error">
+                    {errorCarreras}
+                  </p>
+                )}
               </div>
 
               <div className="admin-create-student-field">
                 <label htmlFor="estudiante-rol">
                   Rol del sistema
-                  <span aria-hidden="true">
-                    *
-                  </span>
                 </label>
 
-                <select
+                {/*
+                  * Todos los estudiantes creados aquí son becarios;
+                  * el backend asigna ese rol automáticamente.
+                  */}
+                <input
                   id="estudiante-rol"
-                  name="rolId"
-                  value={
-                    formulario.rolId
-                  }
-                  disabled={
-                    !catalogoRolesDisponible
-                  }
-                  aria-invalid={
-                    Boolean(
-                      errores.rolId,
-                    )
-                  }
-                  onChange={
-                    actualizarCampo
-                  }
+                  type="text"
+                  value={ROL_BECARIO}
+                  readOnly
+                  disabled
+                  aria-describedby="estudiante-rol-ayuda"
+                />
+
+                <p
+                  id="estudiante-rol-ayuda"
+                  className="admin-create-student-field__hint"
                 >
-                  <option value="">
-                    {catalogoRolesDisponible
-                      ? 'Selecciona un rol'
-                      : 'Catálogo de roles pendiente'}
-                  </option>
-
-                  {ROLES_DISPONIBLES.map(
-                    (rol) => (
-                      <option
-                        key={rol.id}
-                        value={rol.id}
-                      >
-                        {rol.nombre}
-                      </option>
-                    ),
-                  )}
-                </select>
-
-                {errores.rolId && (
-                  <p className="admin-create-student-field__error">
-                    {errores.rolId}
-                  </p>
-                )}
+                  Se asigna automáticamente al registrar al
+                  estudiante.
+                </p>
               </div>
 
               <div className="admin-create-student-field">
@@ -1315,9 +1370,7 @@ function AdminPrincipalCreateStudent() {
               </dt>
 
               <dd>
-                {rolSeleccionado
-                  ?.nombre ||
-                  'Pendiente'}
+                {ROL_BECARIO}
               </dd>
             </div>
 

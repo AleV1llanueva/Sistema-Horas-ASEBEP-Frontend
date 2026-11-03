@@ -467,6 +467,21 @@
   line-height: 1.45;
 }
 
+.admin-create-student-field__hint {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.63rem;
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+/* El rol se asigna solo: se muestra como dato de lectura. */
+.admin-create-student-field input:disabled {
+  color: var(--admin-text-soft);
+  background: #f2f5f7;
+  cursor: not-allowed;
+}
+
 .admin-create-student-form__catalog-error {
   margin-top: 3px;
   padding: 10px 12px;
