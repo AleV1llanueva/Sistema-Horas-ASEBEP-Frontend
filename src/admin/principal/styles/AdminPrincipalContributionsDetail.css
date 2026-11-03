@@ -659,6 +659,47 @@
   transform: translateY(-1px);
 }
 
+.admin-contribution-detail-file__unavailable
+  .admin-contribution-detail-button {
+  margin-top: 8px;
+  min-width: 170px;
+}
+
+.admin-contribution-detail-button--download {
+  color: var(--admin-white);
+  border: 1px solid var(--admin-navy);
+  background: var(--admin-navy);
+  box-shadow:
+    0 7px 16px
+    rgb(0 43 79 / 16%);
+}
+
+.admin-contribution-detail-button--download:hover:not(
+    :disabled
+  ) {
+  background: var(--admin-navy-hover);
+  transform: translateY(-1px);
+}
+
+.admin-contribution-detail-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
+.admin-contribution-detail-file__loader,
+.admin-contribution-actions__loader {
+  animation:
+    admin-contribution-download-spin
+    850ms linear infinite;
+}
+
+@keyframes admin-contribution-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .admin-contribution-detail-button--reject {
   color: var(--admin-danger);
   border: 1px solid #e6b9bf;

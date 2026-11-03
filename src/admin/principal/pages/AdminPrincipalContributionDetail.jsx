@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleX,
   Clock3,
+  Download,
   FileText,
   Hash,
   Layers3,
@@ -31,6 +32,7 @@ import {
 import {
   AportacionAdminError,
   ESTADOS_APORTACION,
+  descargarComprobanteAportacion,
   obtenerAportacion,
   revisarAportacion,
 } from '../services/adminAportacionesService.js'
@@ -227,6 +229,11 @@ function AdminPrincipalContributionDetail() {
     setProcesandoRevision,
   ] = useState(false)
 
+  const [
+    descargandoComprobante,
+    setDescargandoComprobante,
+  ] = useState(false)
+
   /*
    * Carga la aportación seleccionada.
    *
@@ -359,6 +366,58 @@ function AdminPrincipalContributionDetail() {
       esAprobacion &&
       !mesesValidos
     )
+
+  /*
+   * Descarga el PDF del comprobante y lo guarda con el
+   * nombre que sugiere el servidor.
+   */
+  async function descargarComprobante() {
+    if (
+      descargandoComprobante ||
+      !aportacion?.id
+    ) {
+      return
+    }
+
+    setDescargandoComprobante(true)
+
+    try {
+      const { archivo, nombre } =
+        await descargarComprobanteAportacion(
+          aportacion.id,
+        )
+
+      const url = URL.createObjectURL(archivo)
+      const enlace =
+        document.createElement('a')
+
+      enlace.href = url
+      enlace.download = nombre
+      document.body.appendChild(enlace)
+      enlace.click()
+      enlace.remove()
+
+      /*
+       * Se libera después del clic para que el navegador
+       * ya tenga el contenido del archivo.
+       */
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 0)
+    } catch (errorDescarga) {
+      notificarError({
+        id: 'error-descargar-comprobante',
+        titulo:
+          'No fue posible descargar el comprobante',
+        descripcion:
+          errorDescarga instanceof Error
+            ? errorDescarga.message
+            : 'Ocurrió un error inesperado.',
+      })
+    } finally {
+      setDescargandoComprobante(false)
+    }
+  }
 
   /*
    * Envía el cuerpo exacto aceptado
@@ -751,15 +810,33 @@ function AdminPrincipalContributionDetail() {
             <FileText aria-hidden="true" />
 
             <h3>
-              Comprobante no disponible
-              temporalmente
+              Descarga el comprobante
             </h3>
 
             <p>
-              El backend todavía no ofrece
-              una ruta para visualizar o
-              descargar este archivo.
+              El archivo PDF está disponible
+              para revisión y descarga.
             </p>
+
+            <button
+              className="admin-contribution-detail-button admin-contribution-detail-button--download"
+              type="button"
+              disabled={descargandoComprobante}
+              onClick={descargarComprobante}
+            >
+              {descargandoComprobante ? (
+                <LoaderCircle
+                  className="admin-contribution-detail-file__loader"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Download aria-hidden="true" />
+              )}
+
+              {descargandoComprobante
+                ? 'Descargando...'
+                : 'Descargar PDF'}
+            </button>
           </div>
 
           <div className="admin-contribution-detail-file__name">

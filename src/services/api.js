@@ -149,6 +149,133 @@ export async function apiFetch(
  * Se utiliza de forma separada a apiFetch porque los códigos QR
  * del backend no se entregan como JSON, sino como archivos binarios.
  */
+/**
+ * Descarga un archivo binario del backend (por ejemplo un PDF).
+ *
+ * Devuelve el Blob y el nombre sugerido por el servidor en
+ * `Content-Disposition`, para que la interfaz pueda guardarlo
+ * con un nombre legible.
+ */
+export async function apiDescargarArchivo(
+    endpoint,
+    options = {},
+) {
+    if (!API_BASE_URL) {
+        throw new ApiError(
+            'La URL del backend no está configurada.',
+            0,
+        )
+    }
+
+    const headers = construirHeaders(
+        options.headers,
+    )
+
+    headers.set('Accept', 'application/pdf, */*')
+
+    let response
+
+    try {
+        response = await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                ...options,
+                headers,
+            },
+        )
+    } catch (error) {
+        throw new ApiError(
+            'No fue posible conectarse con el servidor.',
+            0,
+            error,
+        )
+    }
+
+    if (response.status === 401) {
+        invalidarSesion()
+    }
+
+    if (!response.ok) {
+        let detalles = null
+        let mensaje =
+            'No fue posible descargar el archivo.'
+
+        const contentType =
+            response.headers.get(
+                'content-type',
+            ) || ''
+
+        if (
+            contentType.includes(
+                'application/json',
+            )
+        ) {
+            try {
+                detalles =
+                    await response.json()
+
+                mensaje =
+                    obtenerMensajeError(
+                        detalles,
+                    )
+            } catch {
+                // Conservamos el mensaje general.
+            }
+        }
+
+        throw new ApiError(
+            mensaje,
+            response.status,
+            detalles,
+        )
+    }
+
+    const archivo = await response.blob()
+
+    if (archivo.size === 0) {
+        throw new ApiError(
+            'El servidor devolvió un archivo vacío.',
+            response.status,
+        )
+    }
+
+    return {
+        archivo,
+        nombre:
+            obtenerNombreDesdeDisposicion(
+                response.headers.get(
+                    'content-disposition',
+                ),
+            ),
+    }
+}
+
+/**
+ * Extrae el nombre de archivo de la cabecera Content-Disposition.
+ */
+function obtenerNombreDesdeDisposicion(cabecera) {
+    if (!cabecera) {
+        return ''
+    }
+
+    const coincidencia =
+        /filename\*?=(?:"[^"]*''|")?([^";]+)/.exec(
+            cabecera,
+        )
+
+    if (!coincidencia) {
+        return ''
+    }
+
+    try {
+        return decodeURIComponent(
+            coincidencia[1].trim(),
+        )
+    } catch {
+        return coincidencia[1].trim()
+    }
+}
+
 export async function apiFetchBlob(
     endpoint,
     options = {},

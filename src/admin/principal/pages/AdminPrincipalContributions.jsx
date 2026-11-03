@@ -4,7 +4,9 @@ import {
   ChevronRight,
   CircleX,
   Clock3,
+  Download,
   Eye,
+  LoaderCircle,
   Search,
   X,
 } from 'lucide-react'
@@ -26,6 +28,7 @@ import {
 import {
   AportacionAdminError,
   ESTADOS_APORTACION,
+  descargarComprobanteAportacion,
   listarAportaciones,
 } from '../services/adminAportacionesService.js'
 
@@ -292,6 +295,15 @@ function AdminPrincipalContributions() {
     paginaActual,
     setPaginaActual,
   ] = useState(1)
+
+  /*
+   * Identificador de la aportación cuyo PDF se está
+   * descargando, para deshabilitar solo esa fila.
+   */
+  const [
+    descargandoAportacion,
+    setDescargandoAportacion,
+  ] = useState(null)
 
   /*
    * Consulta el servicio al cargar la pantalla.
@@ -594,6 +606,61 @@ function AdminPrincipalContributions() {
       (intentoAnterior) =>
         intentoAnterior + 1,
     )
+  }
+
+  /*
+   * Descarga el comprobante de la fila sin salir del listado.
+   */
+  async function descargarComprobante(
+    registro,
+  ) {
+    const aportacionId =
+      Number(
+        registro?.aportacion?.id,
+      )
+
+    if (
+      !Number.isInteger(aportacionId) ||
+      descargandoAportacion
+    ) {
+      return
+    }
+
+    setDescargandoAportacion(aportacionId)
+
+    try {
+      const { archivo, nombre } =
+        await descargarComprobanteAportacion(
+          aportacionId,
+        )
+
+      const url = URL.createObjectURL(archivo)
+      const enlace =
+        document.createElement('a')
+
+      enlace.href = url
+      enlace.download = nombre
+      document.body.appendChild(enlace)
+      enlace.click()
+      enlace.remove()
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 0)
+    } catch (errorDescarga) {
+      notificarError({
+        id:
+          `error-descargar-comprobante-${aportacionId}`,
+        titulo:
+          'No fue posible descargar el comprobante',
+        descripcion:
+          errorDescarga instanceof Error
+            ? errorDescarga.message
+            : 'Ocurrió un error inesperado.',
+      })
+    } finally {
+      setDescargandoAportacion(null)
+    }
   }
 
   // Abre el detalle utilizando el identificador numerico entregado por el backend.
@@ -1010,6 +1077,39 @@ function AdminPrincipalContributions() {
                                 <Eye
                                   aria-hidden="true"
                                 />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Descargar comprobante"
+                                aria-label={
+                                  `Descargar comprobante de ${nombreEstudiante}`
+                                }
+                                disabled={
+                                  descargandoAportacion ===
+                                  Number(
+                                    aportacion.id,
+                                  )
+                                }
+                                onClick={() =>
+                                  descargarComprobante(
+                                    registro,
+                                  )
+                                }
+                              >
+                                {descargandoAportacion ===
+                                  Number(
+                                    aportacion.id,
+                                  ) ? (
+                                  <LoaderCircle
+                                    className="admin-contribution-actions__loader"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Download
+                                    aria-hidden="true"
+                                  />
+                                )}
                               </button>
                             </div>
                           </td>

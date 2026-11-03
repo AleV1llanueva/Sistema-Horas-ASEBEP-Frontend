@@ -1,5 +1,6 @@
 import {
   ApiError,
+  apiDescargarArchivo,
   apiFetch,
 } from '../../../services/api.js'
 
@@ -811,6 +812,51 @@ export async function obtenerAportacion(
   return registro
     ? clonarDatos(registro)
     : null
+}
+
+/*
+ * Descarga el comprobante PDF de una aportación.
+ *
+ * Devuelve el Blob junto con un nombre de archivo sugerido,
+ * que la interfaz utiliza para iniciar la descarga.
+ */
+export async function descargarComprobanteAportacion(
+  identificador,
+) {
+  const aportacionId =
+    prepararIdentificador(
+      identificador,
+    )
+
+  if (usarDatosAdminSimulados) {
+    throw new AportacionAdminError(
+      'La descarga de comprobantes no está disponible con datos simulados.',
+    )
+  }
+
+  try {
+    const descarga =
+      await apiDescargarArchivo(
+        `/aportaciones/${aportacionId}/comprobante`,
+      )
+
+    return {
+      archivo: descarga.archivo,
+      nombre:
+        descarga.nombre ||
+        `comprobante-aportacion-${aportacionId}.pdf`,
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw new AportacionAdminError(
+        error.message,
+      )
+    }
+
+    throw new AportacionAdminError(
+      'No fue posible descargar el comprobante.',
+    )
+  }
 }
 
 /*
