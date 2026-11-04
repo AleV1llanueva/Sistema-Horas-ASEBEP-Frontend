@@ -249,6 +249,19 @@
   margin: 0;
 }
 
+/* Justificación escrita por el administrador. */
+.contribution-detail-notice
+  .contribution-detail-notice__justification {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgb(0 0 0 / 8%);
+}
+
+.contribution-detail-notice__justification
+  strong {
+  margin-bottom: 2px;
+}
+
 /* Aportación pendiente. */
 .contribution-detail-notice--pending {
   color: #315d7c;

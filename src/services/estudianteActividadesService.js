@@ -36,8 +36,8 @@ const TIPOS_MARCACION_ASISTENCIA =
     salida: 'salida',
   })
 
-// Entrada y salida permancen disponibles durante veinte minutos
-const DURACION_VENTANA_QR_MINUTOS = 20
+// Entrada y salida permanecen disponibles durante toda la ventana de marcación.
+const DURACION_VENTANA_QR_MINUTOS = 60
 
 /*
  * Los QR locales utilizan este prefijo para distinguirlos
@@ -306,8 +306,8 @@ function crearFechaHoraLocalActividad(
 /*
  * Construye la ventana oficial de una marcación.
  *
- * Entrada: comienza a la hora de inicio.
- * Salida: comienza a la hora de finalización.
+ * Entrada: desde una hora antes del inicio hasta el final de la actividad.
+ * Salida: desde el inicio de la actividad hasta una hora después.
  */
 function obtenerVentanaMarcacionActividad(
   actividad,
@@ -329,29 +329,36 @@ function obtenerVentanaMarcacionActividad(
     return null
   }
 
+  const margen =
+    DURACION_VENTANA_QR_MINUTOS *
+    60 *
+    1000
+
   const comienzaEn =
     tipo ===
       TIPOS_MARCACION_ASISTENCIA.entrada
-      ? inicio
+      ? new Date(
+        inicio.getTime() - margen,
+      )
       : tipo ===
         TIPOS_MARCACION_ASISTENCIA.salida
-        ? finalizacion
+        ? inicio
         : null
 
   if (!comienzaEn) {
     return null
   }
 
-  const expiraEn = new Date(
-    comienzaEn.getTime() +
-    DURACION_VENTANA_QR_MINUTOS *
-    60 *
-    1000,
-  )
-
   return {
     comienzaEn,
-    expiraEn,
+
+    expiraEn: new Date(
+      tipo ===
+        TIPOS_MARCACION_ASISTENCIA.entrada
+        ? finalizacion.getTime()
+        : finalizacion.getTime() +
+          margen,
+    ),
   }
 }
 
@@ -401,8 +408,8 @@ function evaluarVentanaMarcacionActividad({
       mensaje:
         tipo ===
           TIPOS_MARCACION_ASISTENCIA.entrada
-          ? 'La entrada estará disponible cuando comience la actividad.'
-          : 'La salida estará disponible cuando finalice la actividad.',
+          ? 'La entrada estará disponible una hora antes del inicio de la actividad.'
+          : 'La salida estará disponible cuando comience la actividad.',
 
       expiraEn:
         ventana.expiraEn.toISOString(),
@@ -410,7 +417,7 @@ function evaluarVentanaMarcacionActividad({
   }
 
   if (
-    ahora.getTime() >=
+    ahora.getTime() >
     ventana.expiraEn.getTime()
   ) {
     return {
@@ -419,8 +426,8 @@ function evaluarVentanaMarcacionActividad({
       mensaje:
         tipo ===
           TIPOS_MARCACION_ASISTENCIA.entrada
-          ? 'La ventana de veinte minutos para registrar la entrada ya finalizó.'
-          : 'La ventana de veinte minutos para registrar la salida ya finalizó.',
+          ? 'La ventana de entrada finalizó con la actividad.'
+          : 'La ventana de salida finalizó una hora después de la actividad.',
 
       expiraEn:
         ventana.expiraEn.toISOString(),

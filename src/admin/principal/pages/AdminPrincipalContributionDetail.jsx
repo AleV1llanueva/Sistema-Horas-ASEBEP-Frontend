@@ -225,6 +225,11 @@ function AdminPrincipalContributionDetail() {
   ] = useState('')
 
   const [
+    justificacion,
+    setJustificacion,
+  ] = useState('')
+
+  const [
     procesandoRevision,
     setProcesandoRevision,
   ] = useState(false)
@@ -328,6 +333,7 @@ function AdminPrincipalContributionDetail() {
 
     setAccionPendiente(accion)
     setMesesAprobados('')
+    setJustificacion('')
     setDialogoAbierto(true)
   }
 
@@ -360,8 +366,16 @@ function AdminPrincipalContributionDetail() {
     Number.isInteger(cantidadMeses) &&
     cantidadMeses > 0
 
+  const justificacionPreparada =
+    justificacion.trim()
+
+  const justificacionValida =
+    justificacionPreparada.length > 0 &&
+    justificacionPreparada.length <= 500
+
   const confirmacionDeshabilitada =
     procesandoRevision ||
+    !justificacionValida ||
     (
       esAprobacion &&
       !mesesValidos
@@ -451,6 +465,9 @@ function AdminPrincipalContributionDetail() {
         esAprobacion
           ? cantidadMeses
           : 0,
+
+      comentario:
+        justificacionPreparada,
     }
 
     setProcesandoRevision(true)
@@ -790,6 +807,23 @@ function AdminPrincipalContributionDetail() {
                 </div>
               )}
           </dl>
+
+          {/*
+            Justificación registrada por el administrador
+            al aprobar o rechazar la aportación.
+          */}
+          {aportacion.comentario && (
+            <section className="admin-contribution-detail-description admin-contribution-detail-justification">
+              <h3>
+                Justificación de la
+                decisión
+              </h3>
+
+              <p>
+                {aportacion.comentario}
+              </p>
+            </section>
+          )}
         </article>
 
         {/* Área reservada para el PDF. */}
@@ -974,8 +1008,8 @@ function AdminPrincipalContributionDetail() {
 
             <AlertDialog.Description className="admin-contribution-review-dialog__description">
               {esAprobacion
-                ? 'Indica cuántos meses cubre el comprobante. Después de aprobarlo, la decisión será definitiva.'
-                : 'El comprobante será marcado como rechazado. Esta decisión será definitiva.'}
+                ? 'Indica cuántos meses cubre el comprobante y la justificación de la aprobación. Después de aprobarlo, la decisión será definitiva.'
+                : 'Indica la justificación del rechazo. El comprobante será marcado como rechazado y esta decisión será definitiva.'}
             </AlertDialog.Description>
 
             {esAprobacion && (
@@ -1011,6 +1045,43 @@ function AdminPrincipalContributionDetail() {
                 </small>
               </label>
             )}
+
+            <label className="admin-contribution-review-dialog__field">
+              <span>
+                Justificación de la decisión
+              </span>
+
+              <textarea
+                rows="4"
+                maxLength="500"
+                value={justificacion}
+                disabled={
+                  procesandoRevision
+                }
+                aria-invalid={
+                  justificacion.length >
+                    0 &&
+                  !justificacionValida
+                }
+                placeholder={
+                  esAprobacion
+                    ? 'Explica por qué se aprueba este comprobante.'
+                    : 'Explica por qué se rechaza este comprobante.'
+                }
+                onChange={(evento) =>
+                  setJustificacion(
+                    evento.target.value,
+                  )
+                }
+              />
+
+              <small>
+                {justificacionPreparada
+                  .length}
+                /500 caracteres. Este texto
+                es obligatorio.
+              </small>
+            </label>
 
             <div className="admin-contribution-review-dialog__actions">
               <AlertDialog.Cancel asChild>

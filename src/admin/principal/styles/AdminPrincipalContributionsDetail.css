@@ -883,7 +883,9 @@
 }
 
 .admin-contribution-review-dialog__field
-  input {
+  input,
+.admin-contribution-review-dialog__field
+  textarea {
   width: 100%;
   min-height: 43px;
   padding: 0 12px;
@@ -900,8 +902,19 @@
     background 160ms ease;
 }
 
+/* El textarea conserva un alto flexible y un texto de varias líneas. */
 .admin-contribution-review-dialog__field
-  input:focus {
+  textarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.admin-contribution-review-dialog__field
+  input:focus,
+.admin-contribution-review-dialog__field
+  textarea:focus {
   border-color: var(--admin-focus);
   background: var(--admin-white);
   box-shadow:
@@ -910,12 +923,16 @@
 }
 
 .admin-contribution-review-dialog__field
-  input[aria-invalid='true'] {
+  input[aria-invalid='true'],
+.admin-contribution-review-dialog__field
+  textarea[aria-invalid='true'] {
   border-color: #d88994;
 }
 
 .admin-contribution-review-dialog__field
-  input:disabled {
+  input:disabled,
+.admin-contribution-review-dialog__field
+  textarea:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
@@ -1208,6 +1225,8 @@
   .admin-contribution-detail-button,
   .admin-contribution-review-dialog__field
     input,
+  .admin-contribution-review-dialog__field
+    textarea,
   .admin-contribution-review-dialog__cancel,
   .admin-contribution-review-dialog__confirm {
     transition: none;

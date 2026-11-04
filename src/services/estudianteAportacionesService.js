@@ -468,6 +468,11 @@ function normalizarAportacion(
   const descripcion =
     descripcionPreparada || null
 
+  const comentario =
+    prepararTexto(
+      aportacion.comentario,
+    ) || null
+
   /*
    * El contrato no permite conocer anticipadamente
    * cuántos meses representa una aportación pendiente.
@@ -529,6 +534,12 @@ function normalizarAportacion(
     monto:
       mesesAprobados *
       CUOTA_MENSUAL_APORTACION,
+
+    /*
+     * Justificación escrita por el administrador
+     * al aprobar o rechazar la aportación.
+     */
+    comentario,
 
     observacionAsebep:
       obtenerMensajeEstado(
@@ -595,6 +606,10 @@ function convertirAContrato(
     fecha_subida:
       aportacionNormalizada
         .fecha_subida,
+
+    comentario:
+      aportacionNormalizada
+        .comentario,
   }
 }
 

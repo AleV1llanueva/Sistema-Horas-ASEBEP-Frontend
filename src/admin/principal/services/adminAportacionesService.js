@@ -255,6 +255,15 @@ function normalizarAportacion(
       normalizarFechaSubida(
         aportacion.fecha_subida,
       ),
+
+    /*
+     * El backend envía null mientras no se haya
+     * registrado una justificación.
+     */
+    comentario:
+      prepararTexto(
+        aportacion.comentario,
+      ) || null,
   }
 }
 
@@ -312,10 +321,36 @@ function normalizarRevision(
     )
   }
 
+  /*
+   * El backend exige justificar tanto la aprobación
+   * como el rechazo.
+   */
+  const comentario =
+    prepararTexto(
+      revision.comentario,
+    )
+
+  if (!comentario) {
+    throw new AportacionAdminError(
+      'Debes indicar la justificación de la decisión.',
+    )
+  }
+
+  /*
+   * RevisiónAportacionInput limita el campo
+   * a 500 caracteres.
+   */
+  if (comentario.length > 500) {
+    throw new AportacionAdminError(
+      'La justificación no puede superar los 500 caracteres.',
+    )
+  }
+
   return {
     estado,
     meses_aprobados:
       mesesAprobados,
+    comentario,
   }
 }
 
@@ -631,6 +666,9 @@ function revisarAportacionSimulada(
 
     meses_aprobados:
       revision.meses_aprobados,
+
+    comentario:
+      revision.comentario,
   }
 
   guardarAportacionesSimuladas(
@@ -939,6 +977,9 @@ export async function revisarAportacion(
 
           meses_aprobados:
             revision.meses_aprobados,
+
+          comentario:
+            revision.comentario,
         }),
       },
     )

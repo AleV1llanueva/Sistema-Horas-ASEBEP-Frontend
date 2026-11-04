@@ -204,6 +204,30 @@ function AdminPrincipalStudents() {
     setBusqueda,
   ] = useState('')
 
+  /*
+   * La búsqueda remota se retrasa 300 ms para no
+   * consultar al servidor por cada letra escrita.
+   */
+  const [
+    busquedaAplicada,
+    setBusquedaAplicada,
+  ] = useState('')
+
+  useEffect(() => {
+    const temporizador = window.setTimeout(
+      () => {
+        setBusquedaAplicada(
+          busqueda.trim(),
+        )
+      },
+      300,
+    )
+
+    return () => {
+      window.clearTimeout(temporizador)
+    }
+  }, [busqueda])
+
   const [
     pestanaActiva,
     setPestanaActiva,
@@ -319,7 +343,7 @@ function AdminPrincipalStudents() {
           await listarEstudiantesPaginados({
             pagina: paginaActual,
             limite: ESTUDIANTES_POR_PAGINA,
-            busqueda,
+            busqueda: busquedaAplicada,
             activo:
               configuracionPestana.activo,
           })
@@ -367,7 +391,7 @@ function AdminPrincipalStudents() {
   }, [
     recarga,
     paginaActual,
-    busqueda,
+    busquedaAplicada,
     configuracionPestana.activo,
   ])
 
@@ -478,7 +502,7 @@ function AdminPrincipalStudents() {
    */
   useEffect(() => {
     setPaginaActual(1)
-  }, [pestanaActiva, busqueda])
+  }, [pestanaActiva, busquedaAplicada])
 
   /*
    * Si la página solicitada quedó fuera de rango (por ejemplo

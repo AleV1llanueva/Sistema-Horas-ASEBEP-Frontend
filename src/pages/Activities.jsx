@@ -51,6 +51,13 @@ import '../styles/Activities.css'
  * Identificadores internos de las vistas.
  * Se añadió 'enCurso' para separar lo que está pasando ahorita.
  */
+import {
+  OPCIONES_PERIODO_HISTORIAL,
+  PERIODOS_HISTORIAL,
+  PERIODO_HISTORIAL_PREDETERMINADO,
+  actividadEnPeriodo,
+} from '../utils/periodoHistorial.js'
+
 const VISTAS = Object.freeze({
   disponibles: 'disponibles',
   enCurso: 'enCurso',
@@ -1438,6 +1445,17 @@ function Activities() {
     setBusqueda,
   ] = useState('')
 
+  /*
+   * Periodo del historial. Solo se aplica a esa pestaña
+   * y se conserva al cambiar entre vistas.
+   */
+  const [
+    periodoHistorial,
+    setPeriodoHistorial,
+  ] = useState(
+    PERIODO_HISTORIAL_PREDETERMINADO,
+  )
+
   const [
     actividades,
     setActividades,
@@ -1608,11 +1626,23 @@ function Activities() {
           busqueda,
         )
 
+      const actividadesEnPeriodo =
+        vistaActiva === VISTAS.historial
+          ? actividadesVista.filter(
+            (actividad) =>
+              actividadEnPeriodo(
+                actividad,
+                periodoHistorial,
+                instanteActual,
+              ),
+          )
+          : actividadesVista
+
       if (!termino) {
-        return actividadesVista
+        return actividadesEnPeriodo
       }
 
-      return actividadesVista.filter(
+      return actividadesEnPeriodo.filter(
         (actividad) => {
           const contenido = [
             actividad.titulo,
@@ -1632,6 +1662,8 @@ function Activities() {
     }, [
       actividades,
       busqueda,
+      instanteActual,
+      periodoHistorial,
       vistaActiva,
     ])
 
@@ -1664,6 +1696,9 @@ function Activities() {
 
   function limpiarFiltrosActividades() {
     setBusqueda('')
+    setPeriodoHistorial(
+      PERIODO_HISTORIAL_PREDETERMINADO,
+    )
   }
 
   function reintentarCarga() {
@@ -1853,6 +1888,40 @@ function Activities() {
                 />
               </div>
 
+              {vistaActiva ===
+                VISTAS.historial && (
+                <div className="student-activities-filter">
+                  <label htmlFor="periodo-historial">
+                    Periodo
+                  </label>
+
+                  <select
+                    id="periodo-historial"
+                    value={periodoHistorial}
+                    onChange={(evento) =>
+                      setPeriodoHistorial(
+                        evento.target.value,
+                      )
+                    }
+                  >
+                    {OPCIONES_PERIODO_HISTORIAL.map(
+                      (opcion) => (
+                        <option
+                          key={
+                            opcion.valor
+                          }
+                          value={
+                            opcion.valor
+                          }
+                        >
+                          {opcion.texto}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+              )}
+
               <button
                 className="student-activities-clear"
                 type="button"
@@ -1984,8 +2053,16 @@ function Activities() {
                     <p>
                       {busqueda.trim()
                         ? 'No existen resultados que coincidan con tu búsqueda.'
-                        : informacionVista
-                          .mensajeVacio}
+                        : vistaActiva ===
+                            VISTAS.historial &&
+                          periodoHistorial !==
+                            PERIODOS_HISTORIAL.todas &&
+                          (actividades[
+                            VISTAS.historial
+                          ] ?? []).length > 0
+                          ? 'No tienes actividades en este periodo. Cambia el filtro a "Este mes" o "Todas" para ver tu historial completo.'
+                          : informacionVista
+                            .mensajeVacio}
                     </p>
                   </div>
                 )}

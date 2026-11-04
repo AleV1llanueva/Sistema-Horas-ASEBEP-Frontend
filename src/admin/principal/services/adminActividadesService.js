@@ -42,10 +42,14 @@ const TIPOS_MARCACION = Object.freeze({
   salida: 'salida',
 })
 
-// El contrato actual del backend mantiene ambos QR por 20 minutos.
+/*
+ * Ventanas de marcación, en minutos respecto a la actividad.
+ * Entrada: una hora antes del inicio hasta el final.
+ * Salida: desde el inicio hasta una hora después del final.
+ */
 const DURACION_QR_MINUTOS = Object.freeze({
-  [TIPOS_MARCACION.entrada]: 20,
-  [TIPOS_MARCACION.salida]: 20,
+  [TIPOS_MARCACION.entrada]: 60,
+  [TIPOS_MARCACION.salida]: 60,
 })
 
 const PREFIJO_TOKEN_QR_SIMULADO =
@@ -2918,19 +2922,19 @@ function obtenerHorarioActividad(
 }
 
 /*
- * Construye la ventana automática de veinte minutos.
+ * Construye la ventana automática de marcación.
  *
- * Entrada: comienza a la hora de inicio.
- * Salida: comienza a la hora de finalización.
+ * Entrada: comienza una hora antes del inicio y termina al finalizar.
+ * Salida: comienza con la actividad y termina una hora después.
  */
 function obtenerVentanaQrActividad(
   actividad,
   tipo,
 ) {
-  const duracionMinutos =
+  const margenMinutos =
     DURACION_QR_MINUTOS[tipo]
 
-  if (!duracionMinutos) {
+  if (!margenMinutos) {
     throw new ActividadAdminError(
       'El tipo de marcación solicitado no es válido.',
     )
@@ -2949,20 +2953,28 @@ function obtenerVentanaQrActividad(
     )
   }
 
-  const comienzaEn =
+  const margen = margenMinutos * 60 * 1000
+
+  const comienzaEn = new Date(
     tipo === TIPOS_MARCACION.entrada
-      ? inicio
-      : finalizacion
+      ? inicio.getTime() - margen
+      : inicio.getTime(),
+  )
 
   const expiraEn = new Date(
-    comienzaEn.getTime() +
-      duracionMinutos * 60 * 1000,
+    tipo === TIPOS_MARCACION.entrada
+      ? finalizacion.getTime()
+      : finalizacion.getTime() + margen,
   )
 
   return {
     comienzaEn,
     expiraEn,
-    duracionMinutos,
+
+    duracionMinutos:
+      (expiraEn.getTime() -
+        comienzaEn.getTime()) /
+      60000,
   }
 }
 
@@ -3004,19 +3016,19 @@ function validarDisponibilidadQrActividad({
   ) {
     throw new ActividadAdminError(
       tipo === TIPOS_MARCACION.entrada
-        ? 'El QR de entrada estará disponible cuando comience la actividad.'
-        : 'El QR de salida estará disponible cuando finalice la actividad.',
+        ? 'El QR de entrada estará disponible una hora antes del inicio.'
+        : 'El QR de salida estará disponible cuando comience la actividad.',
     )
   }
 
   if (
-    ahora.getTime() >=
+    ahora.getTime() >
     ventana.expiraEn.getTime()
   ) {
     throw new ActividadAdminError(
       tipo === TIPOS_MARCACION.entrada
-        ? 'La ventana de veinte minutos para registrar entradas ya finalizó.'
-        : 'La ventana de veinte minutos para registrar salidas ya finalizó.',
+        ? 'La ventana de entrada finalizó con la actividad.'
+        : 'La ventana de salida finalizó una hora después de la actividad.',
     )
   }
 

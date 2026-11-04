@@ -554,6 +554,98 @@
   white-space: nowrap;
 }
 
+/* Buscador local sobre la lista de inscritos. */
+.admin-activity-detail-students__search {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.admin-activity-detail-students__search-control {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px 0 12px;
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #fbfcfd;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.admin-activity-detail-students__search-control:focus-within {
+  border-color: var(--admin-focus);
+  background: var(--admin-white);
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
+.admin-activity-detail-students__search-control
+  > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--admin-muted);
+}
+
+.admin-activity-detail-students__search-control
+  input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: var(--admin-text);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.admin-activity-detail-students__search-control
+  button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--admin-muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.admin-activity-detail-students__search-control
+  button:hover {
+  color: var(--admin-text);
+  background: #eef3f7;
+}
+
+.admin-activity-detail-students__search-control
+  button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-activity-detail-students__clear {
+  margin-top: 4px;
+  padding: 7px 14px;
+  color: var(--admin-blue);
+  border:
+    1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-white);
+  font: inherit;
+  font-size: var(--admin-text-xs);
+  font-weight: 750;
+  cursor: pointer;
+}
+
 .admin-activity-detail-table-wrapper {
   width: 100%;
   overflow-x: auto;

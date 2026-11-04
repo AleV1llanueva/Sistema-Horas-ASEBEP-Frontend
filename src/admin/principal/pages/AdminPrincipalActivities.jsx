@@ -44,12 +44,19 @@ import {
 
 import '../styles/AdminPrincipalActivities.css'
 
+import {
+    OPCIONES_PERIODO_HISTORIAL,
+    PERIODOS_HISTORIAL,
+    PERIODO_HISTORIAL_PREDETERMINADO,
+    actividadEnPeriodo,
+} from '../../../utils/periodoHistorial.js'
+
 const TIPOS_MARCACION = Object.freeze({
     entrada: 'entrada',
     salida: 'salida',
 })
 
-const DURACION_VENTANA_QR_MINUTOS = 20
+const DURACION_VENTANA_QR_MINUTOS = 60
 
 // Cada pagina muestra como maximo diez actividades
 const ACTIVIDADES_POR_PAGINA = 10
@@ -287,8 +294,8 @@ function calcularEstadoTemporalActividad(
 /*
  * Construye la ventana automática correspondiente.
  *
- * Entrada: desde el inicio hasta veinte minutos después.
- * Salida: desde la finalización hasta veinte minutos después.
+ * Entrada: desde una hora antes del inicio hasta el final de la actividad.
+ * Salida: desde el inicio de la actividad hasta una hora después.
  */
 function obtenerVentanaQrMarcacion(
     actividad,
@@ -309,12 +316,20 @@ function obtenerVentanaQrMarcacion(
         return null
     }
 
+    const margen =
+        DURACION_VENTANA_QR_MINUTOS *
+        60 *
+        1000
+
     const comienzaEn =
         tipo === TIPOS_MARCACION.entrada
-            ? inicio
+            ? new Date(
+                  inicio.getTime() -
+                      margen,
+              )
             : tipo ===
                 TIPOS_MARCACION.salida
-              ? finalizacion
+              ? inicio
               : null
 
     if (!comienzaEn) {
@@ -326,10 +341,10 @@ function obtenerVentanaQrMarcacion(
             comienzaEn.getTime(),
 
         expiraEn:
-            comienzaEn.getTime() +
-            DURACION_VENTANA_QR_MINUTOS *
-                60 *
-                1000,
+            tipo === TIPOS_MARCACION.entrada
+                ? finalizacion.getTime()
+                : finalizacion.getTime() +
+                  margen,
     }
 }
 
@@ -389,8 +404,8 @@ function obtenerDisponibilidadMarcacion(
             mensaje:
                 tipo ===
                 TIPOS_MARCACION.entrada
-                    ? 'El QR de entrada estará disponible cuando comience la actividad.'
-                    : 'El QR de salida estará disponible cuando finalice la actividad.',
+                    ? 'El QR de entrada estará disponible una hora antes del inicio.'
+                    : 'El QR de salida estará disponible cuando comience la actividad.',
         }
     }
 
@@ -494,6 +509,17 @@ function AdminPrincipalActivities() {
         visibilidadSeleccionada,
         setVisibilidadSeleccionada,
     ] = useState('todas')
+
+    /*
+     * Periodo del historial. Solo aplica a la pestaña
+     * Historial; el resto de pestañas ignora este valor.
+     */
+    const [
+        periodoHistorial,
+        setPeriodoHistorial,
+    ] = useState(
+        PERIODO_HISTORIAL_PREDETERMINADO,
+    )
 
     const [
         paginaActual,
@@ -795,6 +821,17 @@ function AdminPrincipalActivities() {
 
             return actividadesPestana.filter(
                 (actividad) => {
+                    if (
+                        pestanaActiva ===
+                            'historial' &&
+                        !actividadEnPeriodo(
+                            actividad,
+                            periodoHistorial,
+                        )
+                    ) {
+                        return false
+                    }
+
                     const coincideBusqueda =
                         !textoBuscado ||
                         normalizarBusqueda(
@@ -835,6 +872,7 @@ function AdminPrincipalActivities() {
             actividadesPestana,
             busqueda,
             pestanaActiva,
+            periodoHistorial,
             visibilidadSeleccionada,
         ])
 
@@ -887,6 +925,7 @@ function AdminPrincipalActivities() {
     }, [
         pestanaActiva,
         busqueda,
+        periodoHistorial,
         visibilidadSeleccionada,
     ])
 
@@ -928,6 +967,12 @@ function AdminPrincipalActivities() {
 
     const hayFiltrosAplicados =
         Boolean(busqueda.trim()) ||
+        (
+            pestanaActiva ===
+                'historial' &&
+            periodoHistorial !==
+                PERIODOS_HISTORIAL.todas
+        ) ||
         (
             pestanaActiva ===
                 'programadas' &&
@@ -1006,6 +1051,9 @@ function AdminPrincipalActivities() {
 
     function limpiarFiltros() {
         setBusqueda('')
+        setPeriodoHistorial(
+            PERIODO_HISTORIAL_PREDETERMINADO,
+        )
         setVisibilidadSeleccionada(
             'todas',
         )
@@ -1401,6 +1449,43 @@ function AdminPrincipalActivities() {
                                     <option value="desactivadas">
                                         Desactivadas
                                     </option>
+                                </select>
+                            </label>
+                        )}
+
+                        {pestanaActiva ===
+                            'historial' && (
+                            <label className="admin-activities-filter">
+                                <span>
+                                    Periodo
+                                </span>
+
+                                <select
+                                    value={
+                                        periodoHistorial
+                                    }
+                                    onChange={(evento) =>
+                                        setPeriodoHistorial(
+                                            evento.target.value,
+                                        )
+                                    }
+                                >
+                                    {OPCIONES_PERIODO_HISTORIAL.map(
+                                        (opcion) => (
+                                            <option
+                                                key={
+                                                    opcion.valor
+                                                }
+                                                value={
+                                                    opcion.valor
+                                                }
+                                            >
+                                                {
+                                                    opcion.texto
+                                                }
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                             </label>
                         )}
@@ -2322,7 +2407,7 @@ function AdminPrincipalActivities() {
 
                         <p className="admin-qr-dialog__notice">
                             {qrEstaVigente
-                                ? 'El código permanecerá disponible únicamente durante la ventana oficial de veinte minutos.'
+                                ? 'El código permanecerá disponible durante toda la ventana oficial de marcación.'
                                 : 'La ventana permitida para esta marcación ya finalizó.'}
                         </p>
 

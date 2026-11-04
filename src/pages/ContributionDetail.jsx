@@ -632,6 +632,21 @@ function ContributionDetail() {
                               .mensajeAviso
                           }
                         </p>
+
+                        {/* Justificación registrada por el administrador. */}
+                        {aportacion.comentario && (
+                          <p className="contribution-detail-notice__justification">
+                            <strong>
+                              Justificación
+                              del administrador:
+                            </strong>{' '}
+
+                            {
+                              aportacion
+                                .comentario
+                            }
+                          </p>
+                        )}
                       </div>
                     </aside>
                   </section>

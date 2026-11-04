@@ -11,9 +11,11 @@ import {
   LogOut,
   MapPin,
   Pencil,
+  Search,
   TriangleAlert,
   UserRound,
   UsersRound,
+  X,
 } from 'lucide-react'
 
 import {
@@ -50,6 +52,15 @@ const TIPOS_MARCACION = Object.freeze({
   entrada: 'entrada',
   salida: 'salida',
 })
+
+// Pasa el texto a minúsculas sin acentos para comparar búsquedas.
+function normalizarBusqueda(valor) {
+  return String(valor ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
 
 // Convierte un valor desconocido en una cadena limpia.
 function prepararTexto(valor) {
@@ -316,6 +327,11 @@ function AdminPrincipalActivityDetail() {
     asistencias,
     setAsistencias,
   ] = useState([])
+
+  const [
+    busquedaEstudiantes,
+    setBusquedaEstudiantes,
+  ] = useState('')
 
   const [
     estudiantes,
@@ -721,6 +737,37 @@ function AdminPrincipalActivityDetail() {
   const cantidadInscritos =
     estudiantesInscritos.length
 
+  /*
+   * El buscador filtra únicamente a los estudiantes
+   * inscritos ya cargados; no consulta al servidor.
+   */
+  const terminoBusqueda =
+    normalizarBusqueda(busquedaEstudiantes)
+
+  const estudiantesVisibles =
+    terminoBusqueda
+      ? estudiantesInscritos.filter(
+          ({ estudiante, asistencia }) => {
+            const datos =
+              estudiante?.datosPersonales ?? {}
+
+            return [
+              datos.nombreCompleto,
+              datos.primerNombre,
+              datos.segundoNombre,
+              datos.primerApellido,
+              datos.segundoApellido,
+              datos.numeroCuenta,
+              asistencia.numeroCuenta,
+            ].some((campo) =>
+              normalizarBusqueda(campo).includes(
+                terminoBusqueda,
+              ),
+            )
+          },
+        )
+      : estudiantesInscritos
+
   const porcentajeOcupacion =
     cuposTotales > 0
       ? Math.min(
@@ -1049,8 +1096,67 @@ function AdminPrincipalActivityDetail() {
           </span>
         </div>
 
-        {estudiantesInscritos.length ===
-          0 ? (
+        {cantidadInscritos > 0 && (
+          <label className="admin-activity-detail-students__search">
+            <span className="sr-only">
+              Buscar estudiante en esta
+              actividad
+            </span>
+
+            <div className="admin-activity-detail-students__search-control">
+              <Search aria-hidden="true" />
+
+              <input
+                type="search"
+                value={busquedaEstudiantes}
+                placeholder="Buscar por nombre o número de cuenta"
+                onChange={(evento) =>
+                  setBusquedaEstudiantes(
+                    evento.target.value,
+                  )
+                }
+              />
+
+              {busquedaEstudiantes && (
+                <button
+                  type="button"
+                  aria-label="Limpiar búsqueda"
+                  onClick={() =>
+                    setBusquedaEstudiantes('')
+                  }
+                >
+                  <X aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </label>
+        )}
+
+        {estudiantesVisibles.length === 0 &&
+        cantidadInscritos > 0 ? (
+          <div className="admin-activity-detail-empty">
+            <Search aria-hidden="true" />
+
+            <h3>
+              Ningún estudiante coincide
+            </h3>
+
+            <p>
+              No hay estudiantes inscritos que
+              coincidan con "{busquedaEstudiantes}".
+            </p>
+
+            <button
+              className="admin-activity-detail-students__clear"
+              type="button"
+              onClick={() =>
+                setBusquedaEstudiantes('')
+              }
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        ) : estudiantesInscritos.length === 0 ? (
           <div className="admin-activity-detail-empty">
             <UsersRound aria-hidden="true" />
 
@@ -1100,7 +1206,7 @@ function AdminPrincipalActivityDetail() {
               </thead>
 
               <tbody>
-                {estudiantesInscritos.map(
+                {estudiantesVisibles.map(
                   ({
                     asistencia,
                     estudiante,

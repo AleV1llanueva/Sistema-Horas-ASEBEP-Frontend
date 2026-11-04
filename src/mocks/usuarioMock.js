@@ -99,11 +99,10 @@ export const usuarioMock = {
 
       /*
        * Una aportación rechazada no acredita meses.
-       *
-       * El contrato actual todavía no dispone de un
-       * campo para guardar la razón del rechazo.
        */
       meses_aprobados: 0,
+      comentario:
+        'El comprobante no coincide con el monto ni con el período declarado. Registra una nueva aportación con el comprobante correcto.',
       fecha_subida: '2026-07-04T09:15:00-06:00',
     },
   ],

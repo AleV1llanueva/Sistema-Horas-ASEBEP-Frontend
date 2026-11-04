@@ -179,6 +179,44 @@
     rgb(75 145 196 / 16%);
 }
 
+/* Selector de periodo del historial. */
+.student-activities-filter {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.student-activities-filter label {
+  color: #4a5a68;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.student-activities-filter select {
+  min-height: 43px;
+  padding: 0 32px 0 12px;
+  color: #10283e;
+  border: 1px solid #cfd9e1;
+  border-radius: 8px;
+  outline: 0;
+  background-color: #ffffff;
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.student-activities-filter select:focus {
+  border-color: #4b91c4;
+  box-shadow:
+    0 0 0 3px
+    rgb(75 145 196 / 16%);
+}
+
 /* Botón secundario para restablecer la búsqueda. */
 .student-activities-clear {
   min-height: 43px;
@@ -1356,8 +1394,13 @@
   }
 
   .student-activities-search__field,
-  .student-activities-clear {
+  .student-activities-clear,
+  .student-activities-filter {
     width: 100%;
+  }
+
+  .student-activities-filter select {
+    flex: 1;
   }
 
   .student-activities-results {
