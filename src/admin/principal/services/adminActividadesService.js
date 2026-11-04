@@ -1624,7 +1624,7 @@ export async function listarActividades() {
 
   const respuesta =
     await peticionApi(
-      '/actividades',
+      '/actividades?incluir_pasadas=true',
     )
 
   if (!Array.isArray(respuesta)) {

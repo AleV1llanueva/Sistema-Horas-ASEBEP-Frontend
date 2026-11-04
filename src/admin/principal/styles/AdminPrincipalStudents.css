@@ -1750,6 +1750,15 @@
 }
 
 @media (max-width: 560px) {
+  /* Indica que hay más pestañas a la derecha */
+  .admin-students-tabs {
+    mask-image: linear-gradient(
+      90deg,
+      #000 88%,
+      transparent
+    );
+  }
+
   .admin-students-heading {
     gap: 18px;
     margin-bottom: 19px;
@@ -1781,6 +1790,14 @@
 
   .admin-students-list__header > span {
     margin-top: 2px;
+  }
+
+  /* WCAG 2.5.8: el área de toque debe medir al menos 44x44px */
+  .admin-students-pagination nav button,
+  .admin-students-actions button,
+  .admin-students-table tbody button {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .admin-students-pagination {

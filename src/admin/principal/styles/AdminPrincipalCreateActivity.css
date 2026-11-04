@@ -612,6 +612,14 @@
     min-height: 130px;
   }
 
+  /* iOS hace zoom al enfocar campos de menos de 16px: 1rem lo evita */
+  .admin-create-field > input,
+  .admin-create-field > textarea,
+  .admin-create-input-icon input,
+  .admin-create-field > select {
+    font-size: 1rem;
+  }
+
   .admin-create-field__support {
     align-items: flex-start;
     gap: 8px;

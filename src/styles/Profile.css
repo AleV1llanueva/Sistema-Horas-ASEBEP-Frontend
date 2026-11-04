@@ -1180,6 +1180,23 @@
 }
 
 /* Respeta la configuración de movimiento del usuario. */
+@media (max-width: 560px) {
+  /* Legibilidad: las etiquetas no deben bajar de 12px en teléfono */
+  .profile-details dt,
+  .profile-heading p,
+  .profile-password-field > label,
+  .profile-password-field-heading p,
+  .profile-password-modal__heading > div > span {
+    font-size: 0.75rem;
+  }
+
+  /* iOS hace zoom al enfocar campos de menos de 16px: 1rem lo evita */
+  .profile-password-field input,
+  .profile-password-input input {
+    font-size: 1rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-password-dialog::backdrop,
   .profile-password-modal,

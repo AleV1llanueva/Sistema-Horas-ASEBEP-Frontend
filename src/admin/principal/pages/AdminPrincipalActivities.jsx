@@ -761,10 +761,17 @@ function AdminPrincipalActivities() {
                                 'cancelada',
                             ].includes(
                                 actividad.estado,
+                            ) &&
+                            actividadEnPeriodo(
+                                actividad,
+                                periodoHistorial,
                             ),
                     ).length,
             }),
-            [actividadesDisponibles],
+            [
+                actividadesDisponibles,
+                periodoHistorial,
+            ],
         )
 
     const configuracionPestana =
@@ -948,6 +955,12 @@ function AdminPrincipalActivities() {
 
     const existenResultados =
         actividadesFiltradas.length > 0
+
+    const textoPeriodoHistorial =
+        OPCIONES_PERIODO_HISTORIAL.find(
+            (opcion) =>
+                opcion.valor === periodoHistorial,
+        )?.texto ?? ''
 
         const primeraActividadMostrada =
         existenResultados
@@ -1622,6 +1635,18 @@ function AdminPrincipalActivities() {
                                         ? 'Las actividades aparecerán aquí cuando alcancen este estado.'
                                         : 'Cambia la búsqueda o limpia los filtros seleccionados.'}
                                 </p>
+
+                                {pestanaActiva ===
+                                    'historial' &&
+                                    periodoHistorial !==
+                                        PERIODOS_HISTORIAL.todas && (
+                                    <p className="admin-activities-no-results__hint">
+                                        Periodo actual:{' '}
+                                        {textoPeriodoHistorial}.
+                                        Cambia el periodo para ver
+                                        actividades anteriores.
+                                    </p>
+                                )}
 
                                 {hayFiltrosAplicados && (
                                     <button

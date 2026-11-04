@@ -793,6 +793,13 @@
         border-radius: 11px;
     }
 
+/* iOS hace zoom al enfocar campos de menos de 16px: 1rem lo evita */
+    .admin-edit-control input,
+    .admin-edit-control textarea,
+    .admin-edit-control select {
+        font-size: 1rem;
+    }
+
     .admin-edit-activity-state__actions {
         width: 100%;
         align-items: stretch;

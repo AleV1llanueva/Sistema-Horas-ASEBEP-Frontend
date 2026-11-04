@@ -1030,6 +1030,15 @@
 }
 
 @media (max-width: 560px) {
+  /* Indica que hay más pestañas a la derecha */
+  .admin-fines-tabs {
+    mask-image: linear-gradient(
+      90deg,
+      #000 88%,
+      transparent
+    );
+  }
+
   .admin-fines-tab {
     min-width: 145px;
     padding: 0 10px;
@@ -1039,6 +1048,155 @@
     align-items: flex-start;
     flex-direction: column;
     padding: 14px 15px;
+  }
+
+  /*
+   * En celulares la tabla se convierte
+   * en una colección de tarjetas.
+   */
+  .admin-fines-table-wrapper {
+    overflow: visible;
+    padding: 10px;
+    background: #f7f9fb;
+  }
+
+  .admin-fines-table {
+    min-width: 0;
+    display: block;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /*
+   * Conserva el encabezado para lectores
+   * de pantalla sin mostrarlo visualmente.
+   */
+  .admin-fines-table thead {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-fines-table tbody {
+    display: grid;
+    gap: 11px;
+  }
+
+  .admin-fines-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border:
+      1px solid var(--admin-border);
+    border-radius: 10px;
+    background: var(--admin-white);
+    box-shadow:
+      0 5px 15px
+      rgb(10 39 64 / 5%);
+  }
+
+  .admin-fines-table
+    tbody
+    tr:hover {
+    background: var(--admin-white);
+  }
+
+  /* El estudiante funciona como encabezado de cada tarjeta */
+  .admin-fines-table
+    tbody
+    th[data-label='Estudiante'] {
+    width: 100%;
+    display: block;
+    padding: 12px;
+    border-bottom:
+      1px solid var(--admin-border);
+    background:
+      linear-gradient(
+        90deg,
+        #f1f8fc,
+        #fbfdfe
+      );
+  }
+
+  .admin-fine-identity {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-fine-identity > div {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-fine-identity strong {
+    max-width: none;
+    overflow: visible;
+    line-height: 1.4;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  /* Las demás celdas muestran primero su etiqueta */
+  .admin-fines-table
+    tbody
+    td {
+    width: 100%;
+    min-height: 43px;
+    display: grid;
+    grid-template-columns:
+      minmax(105px, 0.44fr)
+      minmax(0, 0.56fr);
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom:
+      1px solid #edf1f4;
+    text-align: right;
+  }
+
+  .admin-fines-table
+    tbody
+    td::before {
+    min-width: 0;
+    color: var(--admin-muted);
+    content: attr(data-label);
+    font-size: var(--admin-text-xs);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    line-height: 1.35;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .admin-fines-table
+    tbody
+    tr
+    > td:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-fine-motivo {
+    min-width: 0;
+    max-width: none;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .admin-fine-motivo span {
+    overflow: visible;
+  }
+
+  .admin-fine-actions {
+    justify-content: flex-end;
+    white-space: normal;
+  }
+
+  /* WCAG 2.5.8: el área de toque debe medir al menos 44x44px */
+  .admin-fine-actions button {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .admin-fines-state {

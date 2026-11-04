@@ -567,7 +567,7 @@
     border: 0;
     background: transparent;
     font: inherit;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     text-decoration: none;
   }
 
@@ -578,6 +578,15 @@
   .mobile-navigation__item--active {
     color: #002b4f;
     font-weight: 700;
+  }
+}
+
+/* Legibilidad: las etiquetas no deben bajar de 12px en teléfono */
+@media (max-width: 560px) {
+  .summary-card__label,
+  .scholarship-status,
+  .dashboard-welcome > p:last-child {
+    font-size: 0.75rem;
   }
 }
 

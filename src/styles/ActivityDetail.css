@@ -714,6 +714,18 @@
   }
 }
 
+/* Legibilidad: las etiquetas no deben bajar de 12px en teléfono */
+@media (max-width: 560px) {
+  .activity-detail-data__item span,
+  .activity-detail-data__item p,
+  .activity-detail-metrics span,
+  .activity-detail-capacity span,
+  .activity-detail-notice p,
+  .activity-detail-history__information {
+    font-size: 0.75rem;
+  }
+}
+
 /* MOVIMIENTO REDUCIDO */
 @media (prefers-reduced-motion: reduce) {
   .activity-detail-entry,

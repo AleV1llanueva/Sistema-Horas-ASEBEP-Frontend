@@ -1120,6 +1120,14 @@
   margin-top: 16px;
 }
 
+.student-qr-dialog__permission-help {
+  flex-basis: 100%;
+  margin: 0 0 4px;
+  color: #8a4b12;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 .student-qr-dialog__button {
   min-height: 42px;
   display: inline-flex;
@@ -1615,6 +1623,29 @@
 
   .student-qr-reader__camera {
     min-height: 260px;
+  }
+}
+
+/*
+ * LEGIBILIDAD EN CELULARES
+ *
+ * Varias etiquetas estaban entre 9 y 11px, que no se
+ * leen en un teléfono. Solo se ajustan textos sueltos:
+ * los selectores por atributo no tocan tamaños de iconos.
+ */
+@media (max-width: 560px) {
+  .app-layout [class*='__meta'],
+  .app-layout time,
+  .app-layout small,
+  .student-activity-card [class*='__label'],
+  .student-activity-card__capacity > span {
+    font-size: 0.75rem;
+  }
+
+  .app-layout [class*='__eyebrow'],
+  .app-layout [class*='__status'],
+  .student-activity-card__state {
+    font-size: 0.75rem;
   }
 }
 

@@ -1240,6 +1240,13 @@
     font-size: 0.78rem;
   }
 
+/* iOS hace zoom al enfocar campos de menos de 16px: 1rem lo evita */
+  .admin-create-student-field > input,
+  .admin-create-student-field > select,
+  .admin-create-student-input-icon input {
+    font-size: 1rem;
+  }
+
   .admin-create-student-field__support {
     align-items: flex-start;
     gap: 8px;

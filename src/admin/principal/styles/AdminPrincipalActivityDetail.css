@@ -1690,6 +1690,12 @@
     padding: 15px;
   }
 
+  /* WCAG 2.5.8: el área de toque debe medir al menos 44x44px */
+  .admin-activity-detail-students__search-control button {
+    width: 44px;
+    height: 44px;
+  }
+
   .admin-activity-detail-fact {
     grid-template-columns:
       38px minmax(0, 1fr);

@@ -539,7 +539,7 @@
   .contribution-detail-status {
     align-self: flex-start;
     padding: 7px 10px;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
   }
 
   /*
@@ -571,7 +571,7 @@
   }
 
   .contribution-detail-data__item dt {
-    font-size: 0.66rem;
+    font-size: 0.75rem;
   }
 
   .contribution-detail-data__item dd {
@@ -585,7 +585,7 @@
   .contribution-detail-notice {
     min-height: 0;
     padding: 15px;
-    font-size: 0.67rem;
+    font-size: 0.75rem;
   }
 
   .contribution-detail-actions {

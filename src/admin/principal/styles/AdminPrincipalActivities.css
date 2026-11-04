@@ -1071,6 +1071,16 @@
   line-height: 1.5;
 }
 
+.admin-activities-no-results__hint {
+  padding: 8px 12px;
+  color: #075580;
+  border:
+    1px solid #d5e6f0;
+  border-radius: 8px;
+  background: #e8f3f9;
+  font-weight: 650;
+}
+
 .admin-activities-no-results__clear {
   min-height: 38px;
   display: inline-flex;
@@ -1864,6 +1874,15 @@
 
 /* Teléfonos */
 @media (max-width: 680px) {
+  /* Indica que hay más pestañas a la derecha */
+  .admin-activities-tabs {
+    mask-image: linear-gradient(
+      90deg,
+      #000 88%,
+      transparent
+    );
+  }
+
   .admin-activities-heading {
     gap: 19px;
     margin-bottom: 19px;

@@ -1646,7 +1646,7 @@ function combinarInscripcionConActividad(
  */
 async function listarActividadesDesdeApi() {
   const respuesta =
-    await apiFetch('/actividades')
+    await apiFetch('/actividades?incluir_pasadas=true')
 
   const candidatas = [
     respuesta,

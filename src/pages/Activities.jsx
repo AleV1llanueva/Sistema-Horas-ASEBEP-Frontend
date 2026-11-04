@@ -483,6 +483,29 @@ function obtenerDetalleMarcacion({
   return disponibilidad.mensaje
 }
 
+function mensajeEsDePermiso(
+  error,
+) {
+  const mensajeTecnico =
+    String(
+      error?.message ??
+      error ??
+      '',
+    ).toLocaleLowerCase('es')
+
+  return (
+    mensajeTecnico.includes(
+      'notallowed',
+    ) ||
+    mensajeTecnico.includes(
+      'permission',
+    ) ||
+    mensajeTecnico.includes(
+      'denied',
+    )
+  )
+}
+
 function obtenerMensajeErrorCamara(
   error,
 ) {
@@ -876,6 +899,11 @@ function AttendanceQrReaderDialog({
     setIntentoInicio,
   ] = useState(0)
 
+  const [
+    faltaPermisoCamara,
+    setFaltaPermisoCamara,
+  ] = useState(false)
+
   const lectorRef = useRef(null)
 
   const lecturaProcesadaRef =
@@ -1128,6 +1156,10 @@ function AttendanceQrReaderDialog({
           ),
         )
 
+        setFaltaPermisoCamara(
+          mensajeEsDePermiso(error),
+        )
+
         setEstadoLector(
           ESTADOS_LECTOR.error,
         )
@@ -1197,6 +1229,8 @@ function AttendanceQrReaderDialog({
       false
 
     setResultadoMarcacion(null)
+
+    setFaltaPermisoCamara(false)
 
     setMensajeLector(
       'Solicitando acceso a la cámara.',
@@ -1390,6 +1424,19 @@ function AttendanceQrReaderDialog({
           </div>
 
           <footer className="student-qr-dialog__actions">
+            {estadoLector ===
+              ESTADOS_LECTOR.error &&
+              faltaPermisoCamara && (
+                <p
+                  className="student-qr-dialog__permission-help"
+                  role="note"
+                >
+                  Abre los ajustes del navegador,
+                  permite la cámara para este
+                  sitio y vuelve a intentarlo.
+                </p>
+              )}
+
             {estadoLector ===
               ESTADOS_LECTOR.error && (
                 <button

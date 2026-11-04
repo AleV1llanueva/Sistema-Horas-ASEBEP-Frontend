@@ -1354,6 +1354,30 @@
     width: 100%;
   }
 
+  /* iOS hace zoom al enfocar campos de menos de 16px: 1rem lo evita */
+  .student-contributions-field input,
+  .student-contributions-field select,
+  .student-contributions-textarea {
+    font-size: 1rem;
+  }
+
+  /* Legibilidad: las etiquetas no deben bajar de 12px en teléfono */
+  .app-layout [class*='__meta'],
+  .app-layout time,
+  .app-layout small,
+  .student-contribution-card [class*='__label'],
+  .app-layout [class*='__eyebrow'],
+  .app-layout [class*='__status'] {
+    font-size: 0.75rem;
+  }
+
+  /* WCAG 2.5.8: el área de toque debe medir al menos 44x44px */
+  .student-contributions-remove-file,
+  .student-contribution-view-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .student-contributions-history {
     padding: 16px 10px 10px;
   }
