@@ -79,7 +79,7 @@
   padding: 0 15px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -126,7 +126,7 @@
   gap: 6px;
   margin-bottom: 14px;
   color: var(--admin-blue);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   transition:
@@ -162,7 +162,7 @@
 .admin-contribution-detail-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -224,7 +224,7 @@
   padding: 5px 10px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 760;
   white-space: nowrap;
 }
@@ -279,7 +279,7 @@
   p {
   margin: 0 0 5px;
   color: var(--admin-focus);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -353,7 +353,7 @@
 .admin-contribution-detail-student
   small {
   color: var(--admin-muted);
-  font-size: 0.67rem;
+  font-size: var(--admin-text-xs);
   font-weight: 600;
   font-variant-numeric:
     tabular-nums;
@@ -429,7 +429,7 @@
   dt {
   margin-bottom: 4px;
   color: var(--admin-text);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -437,7 +437,7 @@
   dd {
   margin: 0;
   color: var(--admin-text-soft);
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
   font-variant-numeric:
@@ -475,7 +475,7 @@
   p {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -526,7 +526,7 @@
   p {
   max-width: 280px;
   margin: 0;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.55;
 }
 
@@ -544,7 +544,7 @@
 .admin-contribution-detail-file__name
   span {
   color: var(--admin-muted);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
 }
 
@@ -552,7 +552,7 @@
   strong {
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -589,7 +589,7 @@
   > p {
   margin: 0 0 5px;
   color: var(--admin-focus);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -607,7 +607,7 @@
   display: block;
   margin-top: 6px;
   color: var(--admin-text-soft);
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.5;
 }
 
@@ -628,7 +628,7 @@
   padding: 0 16px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:
@@ -878,7 +878,7 @@
 .admin-contribution-review-dialog__field
   > span {
   color: var(--admin-text);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -923,7 +923,7 @@
 .admin-contribution-review-dialog__field
   small {
   color: var(--admin-muted);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
 }
 
@@ -945,7 +945,7 @@
   padding: 0 15px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:

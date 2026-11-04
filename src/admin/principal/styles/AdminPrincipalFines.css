@@ -24,7 +24,7 @@
 .admin-fines-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -97,7 +97,7 @@
 
 .admin-fines-heading__summary span {
   color: var(--admin-text-soft);
-  font-size: 0.67rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -177,7 +177,7 @@
   color: var(--admin-text-soft);
   border-radius: 999px;
   background: #e7eef3;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -213,7 +213,7 @@
 
 .admin-fines-search > span {
   color: var(--admin-text-soft);
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -270,7 +270,7 @@
   border-radius: 8px;
   background: #f8fafb;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   cursor: pointer;
 }
@@ -345,7 +345,7 @@
   border-radius: 8px;
   background: var(--admin-navy);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   cursor: pointer;
 }
@@ -393,7 +393,7 @@
 .admin-fines-list__header p {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -413,7 +413,7 @@
     1px solid #d5e6f0;
   border-radius: 999px;
   background: #e8f3f9;
-  font-size: 0.65rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -449,7 +449,7 @@
 .admin-fines-table thead th {
   color: var(--admin-text-soft);
   background: #f6f8fa;
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -491,7 +491,7 @@
       #e2f0fa,
       #f2f8fc
     );
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 850;
 }
 
@@ -506,14 +506,14 @@
   max-width: 230px;
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-fine-identity small {
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
 }
 
 /* Motivo, monto y fecha */
@@ -527,14 +527,14 @@
 
 .admin-fine-motivo span {
   color: var(--admin-text-soft);
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
 .admin-fine-motivo small {
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-fine-monto {
@@ -545,7 +545,7 @@
 
 .admin-fine-fecha {
   color: var(--admin-text-soft);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   white-space: nowrap;
 }
 
@@ -558,13 +558,13 @@
 
 .admin-fine-comprobante span {
   color: var(--admin-text);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
 }
 
 .admin-fine-comprobante small {
   color: var(--admin-muted);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-fine-sin-comprobante {
@@ -572,7 +572,7 @@
   align-items: center;
   gap: 6px;
   color: #9a5a18;
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
 }
 
@@ -639,7 +639,7 @@
 
 .admin-fine-actions__hint {
   color: var(--admin-muted);
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
 }
 
 /* Diálogo */
@@ -721,7 +721,7 @@
 
 .admin-fine-dialog__detail span {
   color: var(--admin-muted);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-fine-dialog__actions {
@@ -739,7 +739,7 @@
   padding: 0 17px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
 }
@@ -796,7 +796,7 @@
   border-radius: 9px;
   background: var(--admin-navy);
   font: inherit;
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:
@@ -853,7 +853,7 @@
 
 .admin-fine-form__field > span {
   color: var(--admin-text-soft);
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -893,7 +893,7 @@
   gap: 7px;
   margin: 0;
   color: var(--admin-muted);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
 }
 
 .admin-fine-form__hint--error {
@@ -964,7 +964,7 @@
 
 .admin-fine-form__option-body small {
   color: var(--admin-muted);
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-fine-form__badge {
@@ -974,7 +974,7 @@
   border: 1px solid #efc9ce;
   border-radius: 999px;
   background: #fff4f5;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -986,7 +986,7 @@
     1px solid var(--admin-border);
   border-radius: 8px;
   background: #fafcfd;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.5;
 }
 

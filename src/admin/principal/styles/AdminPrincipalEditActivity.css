@@ -100,7 +100,7 @@
     padding: 6px 13px;
     border: 1px solid transparent;
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: var(--admin-text-xs);
     font-weight: 800;
     white-space: nowrap;
 }
@@ -209,7 +209,7 @@
 .admin-edit-field__support {
     margin: 0;
     color: var(--admin-text-soft);
-    font-size: 0.7rem;
+    font-size: var(--admin-text-sm);
     line-height: 1.45;
 }
 
@@ -219,7 +219,7 @@
     gap: 5px;
     margin: 0;
     color: #bd3737;
-    font-size: 0.7rem;
+    font-size: var(--admin-text-sm);
     font-weight: 650;
     line-height: 1.4;
 }
@@ -698,7 +698,7 @@
     .admin-edit-activity-status {
         min-height: 29px;
         padding: 5px 11px;
-        font-size: 0.68rem;
+        font-size: var(--admin-text-xs);
     }
 
     /* El formulario utiliza una sola columna */
@@ -750,11 +750,11 @@
 
     .admin-edit-field__support {
         overflow-wrap: break-word;
-        font-size: 0.67rem;
+        font-size: var(--admin-text-xs);
     }
 
     .admin-edit-field__error {
-        font-size: 0.67rem;
+        font-size: var(--admin-text-xs);
     }
 
     /* El aviso mantiene el icono alineado con la primera línea */
@@ -763,7 +763,7 @@
         gap: 9px;
         margin-top: 20px;
         padding: 12px;
-        font-size: 0.72rem;
+        font-size: var(--admin-text-xs);
     }
 
     .admin-edit-activity-note__icon {

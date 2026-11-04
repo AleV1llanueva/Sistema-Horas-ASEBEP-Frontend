@@ -27,6 +27,8 @@ import {
 
 import { Link } from 'react-router'
 
+import AdminPagination from '../../shared/components/AdminPagination.jsx'
+
 import {
   asignarCorreoInstitucional,
   cambiarEstadoEstudiante,
@@ -1685,67 +1687,12 @@ function AdminPrincipalStudents() {
                         : 'estudiantes'}
                     </p>
 
-                    <nav aria-label="Paginación de estudiantes">
-                      <button
-                        type="button"
-                        disabled={paginaActual === 1}
-                        aria-label="Ir a la página anterior"
-                        onClick={() =>
-                          setPaginaActual(
-                            (paginaSeleccionada) =>
-                              paginaSeleccionada - 1,
-                          )
-                        }
-                      >
-                        <ChevronLeft aria-hidden="true" />
-                      </button>
-
-                      {Array.from(
-                        {
-                          length: totalPaginas,
-                        },
-                        (_, indice) => indice + 1,
-                      ).map((pagina) => (
-                        <button
-                          key={pagina}
-                          className={
-                            pagina === paginaActual
-                              ? 'admin-students-pagination__page admin-students-pagination__page--active'
-                              : 'admin-students-pagination__page'
-                          }
-                          type="button"
-                          aria-current={
-                            pagina === paginaActual
-                              ? 'page'
-                              : undefined
-                          }
-                          aria-label={
-                            `Ir a la página ${pagina}`
-                          }
-                          onClick={() =>
-                            setPaginaActual(pagina)
-                          }
-                        >
-                          {pagina}
-                        </button>
-                      ))}
-
-                      <button
-                        type="button"
-                        disabled={
-                          paginaActual === totalPaginas
-                        }
-                        aria-label="Ir a la página siguiente"
-                        onClick={() =>
-                          setPaginaActual(
-                            (paginaSeleccionada) =>
-                              paginaSeleccionada + 1,
-                          )
-                        }
-                      >
-                        <ChevronRight aria-hidden="true" />
-                      </button>
-                    </nav>
+                    <AdminPagination
+                      paginaActual={paginaActual}
+                      totalPaginas={totalPaginas}
+                      cambiarPagina={setPaginaActual}
+                      etiqueta="Paginación de estudiantes"
+                    />
                   </div>
                 )}
               </>

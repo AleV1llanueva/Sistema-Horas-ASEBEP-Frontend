@@ -14,7 +14,7 @@
   gap: 9px;
   margin-bottom: 14px;
   color: var(--admin-muted);
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   animation:
     admin-create-student-entry
     460ms ease-out both;
@@ -61,7 +61,7 @@
 .admin-create-student-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -103,7 +103,7 @@
       #e2f2fa,
       #f3f9fc
     );
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 750;
   box-shadow:
     0 5px 14px
@@ -157,7 +157,7 @@
 .admin-create-student-catalog-notice p {
   margin: 0;
   color: #806b3e;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.5;
 }
 
@@ -279,7 +279,7 @@
   legend
   small {
   color: var(--admin-muted);
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
   font-weight: 500;
   line-height: 1.35;
 }
@@ -308,7 +308,7 @@
   align-items: center;
   gap: 4px;
   color: var(--admin-text);
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -326,7 +326,7 @@
   color: var(--admin-muted);
   border-radius: 999px;
   background: #f0f3f5;
-  font-size: 0.59rem;
+  font-size: var(--admin-text-xs);
   font-weight: 600;
 }
 
@@ -448,7 +448,7 @@
 
 .admin-create-student-field__support small {
   color: var(--admin-muted);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.4;
 }
 
@@ -462,7 +462,7 @@
 .admin-create-student-form__catalog-error {
   margin: 0;
   color: var(--admin-danger);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
   line-height: 1.45;
 }
@@ -470,7 +470,7 @@
 .admin-create-student-field__hint {
   margin: 0;
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 550;
   line-height: 1.45;
 }
@@ -511,7 +511,7 @@
   padding: 0 17px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:
@@ -621,7 +621,7 @@
 .admin-create-student-preview__header p {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -642,7 +642,7 @@
     1px solid #ead4d9;
   border-radius: 999px;
   background: #f3e8eb;
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -697,7 +697,7 @@
 .admin-create-student-preview__identity p {
   margin: 5px 0 0;
   color: var(--admin-muted);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 550;
   line-height: 1.4;
 }
@@ -728,7 +728,7 @@
   align-items: center;
   gap: 8px;
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
   line-height: 1.35;
 }
@@ -746,7 +746,7 @@
   margin: 5px 0 0 23px;
   overflow-wrap: anywhere;
   color: var(--admin-text);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   line-height: 1.45;
 }
@@ -783,13 +783,13 @@
   strong {
   display: block;
   margin-bottom: 3px;
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-create-student-preview__notice p {
   margin: 0;
   color: #557161;
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.5;
 }
 
@@ -940,7 +940,7 @@
   padding: 0 17px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:
@@ -1141,7 +1141,7 @@
   .admin-create-student-heading__badge {
     min-height: 34px;
     padding: 0 12px;
-    font-size: 0.67rem;
+    font-size: var(--admin-text-xs);
   }
 
   /* El aviso mantiene el icono alineado con el texto */
@@ -1160,7 +1160,7 @@
   }
 
   .admin-create-student-catalog-notice p {
-    font-size: 0.67rem;
+    font-size: var(--admin-text-xs);
   }
 
   .admin-create-student-form {
@@ -1209,7 +1209,7 @@
   .admin-create-student-section
     legend
     small {
-    font-size: 0.63rem;
+    font-size: var(--admin-text-xs);
   }
 
   .admin-create-student-fields {

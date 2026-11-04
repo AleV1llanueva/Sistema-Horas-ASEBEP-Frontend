@@ -79,7 +79,7 @@
   padding: 0 15px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -128,7 +128,7 @@
   gap: 8px;
   margin-bottom: 13px;
   color: var(--admin-muted);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   animation:
     admin-student-detail-entry
     440ms ease-out both;
@@ -200,7 +200,7 @@
   gap: 6px;
   padding: 4px 11px;
   border-radius: 999px;
-  font-size: 0.65rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -345,7 +345,7 @@
   gap: 7px;
   margin-bottom: 7px;
   color: var(--admin-muted);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -436,7 +436,7 @@
 .admin-student-progress-metrics p {
   margin: 0;
   color: var(--admin-text-soft);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.35;
 }
 
@@ -483,7 +483,7 @@
 
 .admin-student-detail-table thead th {
   color: var(--admin-text-soft);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -492,7 +492,7 @@
 
 .admin-student-detail-table tbody td {
   color: var(--admin-text-soft);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 500;
 }
 
@@ -536,7 +536,7 @@
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -585,7 +585,7 @@
   justify-content: center;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 0.6rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -652,7 +652,7 @@
 
 .admin-student-detail-empty p {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-student-detail-empty--error {
@@ -683,7 +683,7 @@
 .admin-student-detail-pagination p {
   margin: 0;
   color: var(--admin-text-soft);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.4;
 }
 
@@ -707,7 +707,7 @@
   border-radius: 7px;
   background: var(--admin-white);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 740;
   cursor: pointer;
   transition:
@@ -815,7 +815,7 @@
 
 .admin-student-summary__item small {
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
 }
 
@@ -828,7 +828,7 @@
 .admin-student-summary__item p {
   margin: 0;
   color: var(--admin-text-soft);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -1042,7 +1042,7 @@
     min-width: 0;
     color: var(--admin-muted);
     content: attr(data-label);
-    font-size: 0.6rem;
+    font-size: var(--admin-text-xs);
     font-weight: 800;
     letter-spacing: 0.03em;
     line-height: 1.35;
@@ -1086,7 +1086,7 @@
         #f1f8fc,
         #fbfdfe
       );
-    font-size: 0.72rem;
+    font-size: var(--admin-text-xs);
     font-weight: 750;
     line-height: 1.45;
     text-align: left;
@@ -1115,7 +1115,7 @@
         #f8f5ed,
         #fffdf8
       );
-    font-size: 0.72rem;
+    font-size: var(--admin-text-xs);
     font-weight: 750;
     line-height: 1.45;
     text-align: left;

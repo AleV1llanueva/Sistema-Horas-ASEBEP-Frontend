@@ -3,7 +3,6 @@ import {
     FileText,
     Gavel,
     LayoutDashboard,
-    LogOut,
     UsersRound,
 } from 'lucide-react'
 
@@ -11,16 +10,42 @@ import {
     NavLink,
 } from 'react-router'
 
-import {
-    useCerrarSesion,
-} from '../../../hooks/useCerrarSesion.js'
+/*
+ * El cierre de sesión vive en el menú de perfil de la barra
+ * superior: es una acción destructiva que no debe quedar a un
+ * toque de distancia del resto de la navegación.
+ */
+const SECCIONES = [
+    {
+        ruta: '/admin-principal/dashboard',
+        etiqueta: 'Inicio',
+        Icono: LayoutDashboard,
+        exacta: true,
+    },
+    {
+        ruta: '/admin-principal/estudiantes',
+        etiqueta: 'Estudiantes',
+        Icono: UsersRound,
+    },
+    {
+        ruta: '/admin-principal/actividades',
+        etiqueta: 'Actividades',
+        Icono: CalendarDays,
+    },
+    {
+        ruta: '/admin-principal/aportaciones',
+        etiqueta: 'Aportes',
+        Icono: FileText,
+    },
+    {
+        ruta: '/admin-principal/multas',
+        etiqueta: 'Multas',
+        Icono: Gavel,
+    },
+]
 
 function AdminMobileNavigation() {
-    const {
-        solicitarCierreSesion,
-    } = useCerrarSesion()
-
-    // Mantiene resaltada la seccion actual, incluyendo sus vistas de detalle y edicion.
+    // Mantiene resaltada la sección actual, incluyendo sus detalles y ediciones.
     function obtenerClase({
         isActive,
     }) {
@@ -34,76 +59,25 @@ function AdminMobileNavigation() {
       className="admin-mobile-menu"
       aria-label="Navegación administrativa móvil"
     >
-      {/* Acceso al resumen general. */}
-      <NavLink
-        className={obtenerClase}
-        to="/admin-principal/dashboard"
-        end
-      >
-        <LayoutDashboard
-          aria-hidden="true"
-        />
+      {SECCIONES.map(
+        ({
+          ruta,
+          etiqueta,
+          Icono,
+          exacta,
+        }) => (
+          <NavLink
+            key={ruta}
+            className={obtenerClase}
+            to={ruta}
+            end={exacta}
+          >
+            <Icono aria-hidden="true" />
 
-        <span>Dashboard</span>
-      </NavLink>
-
-      {/* Mantiene activa la opción en detalles y formularios. */}
-      <NavLink
-        className={obtenerClase}
-        to="/admin-principal/actividades"
-      >
-        <CalendarDays
-          aria-hidden="true"
-        />
-
-        <span>Actividades</span>
-      </NavLink>
-
-      {/* Acceso al listado y gestión de estudiantes. */}
-      <NavLink
-        className={obtenerClase}
-        to="/admin-principal/estudiantes"
-      >
-        <UsersRound
-          aria-hidden="true"
-        />
-
-        <span>Estudiantes</span>
-      </NavLink>
-
-      {/* Accesp a la revision de aportaciones estudiantiles. */}
-      <NavLink
-        className={obtenerClase}
-        to="/admin-principal/aportaciones"
-      >
-        <FileText aria-hidden="true" />
-        
-        <span>Aportes </span>
-      </NavLink>
-
-      {/* Revision de multas y comprobantes de pago. */}
-      <NavLink
-        className={obtenerClase}
-        to="/admin-principal/multas"
-      >
-        <Gavel aria-hidden="true" />
-
-        <span>Multas</span>
-      </NavLink>
-
-      {/* Utiliza la misma confirmación global de cierre de sesión. */}
-      <button
-        className="admin-mobile-menu__link admin-mobile-menu__logout"
-        type="button"
-        aria-label="Cerrar sesión"
-        onClick={
-          solicitarCierreSesion
-        }
-      >
-        <LogOut aria-hidden="true" />
-
-        <span>Cerrar sesión</span>
-      </button>
+            <span>{etiqueta}</span>
+          </NavLink>
+        ),
+      )}
     </nav>
     )
 }

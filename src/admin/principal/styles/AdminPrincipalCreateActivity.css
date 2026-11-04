@@ -14,7 +14,7 @@
   gap: 9px;
   margin-bottom: 14px;
   color: var(--admin-muted);
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   animation:
     admin-create-activity-entry
     460ms ease-out both;
@@ -125,7 +125,7 @@
 .admin-create-field > label > small {
   margin-left: 6px;
   color: var(--admin-muted);
-  font-size: 0.67rem;
+  font-size: var(--admin-text-xs);
   font-weight: 500;
 }
 
@@ -231,7 +231,7 @@
 
 .admin-create-field__support small {
   color: var(--admin-muted);
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.4;
 }
 
@@ -243,7 +243,7 @@
 .admin-create-field__error {
   margin: 0;
   color: var(--admin-danger);
-  font-size: 0.65rem;
+  font-size: var(--admin-text-xs);
   font-weight: 650;
   line-height: 1.4;
 }
@@ -371,7 +371,7 @@
     1px solid #d6dee5;
   border-radius: 999px;
   background: #eef2f5;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -390,7 +390,7 @@
 .admin-create-preview-description {
   margin: 8px 0 0;
   color: var(--admin-text-soft);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.55;
 }
 
@@ -407,7 +407,7 @@
   align-items: flex-start;
   gap: 10px;
   color: var(--admin-text-soft);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.4;
 }
 
@@ -440,7 +440,7 @@
   align-items: center;
   gap: 8px;
   color: var(--admin-text-soft);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-create-preview-content
@@ -661,7 +661,7 @@
   }
 
   .admin-create-preview-description {
-    font-size: 0.7rem;
+    font-size: var(--admin-text-sm);
   }
 
   .admin-create-preview-content

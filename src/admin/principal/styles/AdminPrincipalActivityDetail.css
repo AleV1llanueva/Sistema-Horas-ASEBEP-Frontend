@@ -78,7 +78,7 @@
   padding: 0 15px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -128,7 +128,7 @@
   gap: 6px;
   margin-bottom: 14px;
   color: var(--admin-blue);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   transition:
@@ -168,7 +168,7 @@
 .admin-activity-detail-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -291,7 +291,7 @@
   gap: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -395,7 +395,7 @@
 .admin-activity-detail-fact dt {
   margin-bottom: 4px;
   color: var(--admin-text);
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -445,7 +445,7 @@
 .admin-activity-detail-summary__availability {
   margin: 0 0 12px;
   color: var(--admin-text-soft);
-  font-size: 0.73rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
 }
 
@@ -509,7 +509,7 @@
 
 .admin-activity-detail-summary__metric dt {
   color: var(--admin-text-soft);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-activity-detail-summary__metric dd {
@@ -549,7 +549,7 @@
   color: var(--admin-blue);
   border-radius: 999px;
   background: #e2f0fa;
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -596,7 +596,7 @@
 
 .admin-activity-detail-table thead th {
   color: var(--admin-text-soft);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -605,7 +605,7 @@
 
 .admin-activity-detail-table tbody td {
   color: var(--admin-text-soft);
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-activity-detail-table tbody tr {
@@ -640,7 +640,7 @@
   color: var(--admin-blue);
   border-radius: 50%;
   background: #e2f0fa;
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -655,14 +655,14 @@
   max-width: 235px;
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-activity-detail-student__identity small {
   color: var(--admin-muted);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-activity-detail-table__account {
@@ -688,7 +688,7 @@
   gap: 5px;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 0.6rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -734,7 +734,7 @@
   border-radius: 7px;
   background: transparent;
   font: inherit;
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   white-space: nowrap;
   cursor: pointer;
@@ -860,7 +860,7 @@
 .admin-activity-detail-empty p {
   max-width: 480px;
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.5;
 }
 
@@ -986,7 +986,7 @@
   color: var(--admin-blue);
   border-radius: 50%;
   background: #e2f0fa;
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -1000,14 +1000,14 @@
 .admin-activity-detail-dialog__student strong {
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-activity-detail-dialog__student small {
   color: var(--admin-muted);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-activity-detail-dialog__actions {
@@ -1027,7 +1027,7 @@
   padding: 0 14px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
   cursor: pointer;
   transition:
@@ -1331,7 +1331,7 @@
   min-height: 36px;
   padding: 0 9px;
   border-radius: 8px;
-  font-size: 0.6rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-activity-detail-action--view {
@@ -1710,7 +1710,7 @@
     min-width: 0;
     color: var(--admin-muted);
     content: attr(data-label);
-    font-size: 0.61rem;
+    font-size: var(--admin-text-xs);
     font-weight: 800;
     letter-spacing: 0.03em;
     text-align: left;

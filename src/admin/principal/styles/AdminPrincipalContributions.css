@@ -24,7 +24,7 @@
 .admin-contributions-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -163,7 +163,7 @@
   color: var(--admin-text-soft);
   border-radius: 999px;
   background: #e7eef3;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   line-height: 1;
 }
@@ -204,7 +204,7 @@
 
 .admin-contributions-search > span {
   color: var(--admin-text-soft);
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -272,7 +272,7 @@
   border-radius: 8px;
   background: #f8fafb;
   font: inherit;
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 720;
   white-space: nowrap;
   cursor: pointer;
@@ -345,7 +345,7 @@
 .admin-contributions-list__header p {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -366,7 +366,7 @@
     1px solid #d5e6f0;
   border-radius: 999px;
   background: #e8f3f9;
-  font-size: 0.65rem;
+  font-size: var(--admin-text-xs);
   font-weight: 750;
 }
 
@@ -411,7 +411,7 @@
 
 .admin-contributions-table thead th {
   color: var(--admin-text-soft);
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -421,7 +421,7 @@
 .admin-contributions-table tbody th,
 .admin-contributions-table tbody td {
   color: var(--admin-text-soft);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 500;
 }
 
@@ -501,7 +501,7 @@
       #e2f0fa,
       #f2f8fc
     );
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 850;
   letter-spacing: 0.035em;
 }
@@ -518,21 +518,21 @@
   max-width: 260px;
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-contribution-identity small {
   color: var(--admin-muted);
-  font-size: 0.63rem;
+  font-size: var(--admin-text-xs);
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
 
 .admin-contribution-reference {
   color: var(--admin-text);
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 680;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -558,7 +558,7 @@
   padding: 5px 10px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 760;
   white-space: nowrap;
 }
@@ -673,7 +673,7 @@
   border-radius: 8px;
   background: #edf6fb;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 720;
   cursor: pointer;
   transition:
@@ -710,7 +710,7 @@
 .admin-contributions-pagination p {
   margin: 0;
   color: var(--admin-text-soft);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.4;
 }
 
@@ -734,7 +734,7 @@
   border-radius: 7px;
   background: var(--admin-white);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 740;
   cursor: pointer;
   transition:
@@ -980,7 +980,7 @@
     min-width: 0;
     color: var(--admin-muted);
     content: attr(data-label);
-    font-size: 0.6rem;
+    font-size: var(--admin-text-xs);
     font-weight: 800;
     letter-spacing: 0.03em;
     line-height: 1.35;

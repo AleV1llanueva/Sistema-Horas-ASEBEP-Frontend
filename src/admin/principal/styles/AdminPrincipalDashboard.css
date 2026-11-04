@@ -27,7 +27,7 @@
 .admin-dashboard-heading__eyebrow {
   margin: 0 0 7px;
   color: var(--admin-focus);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -263,7 +263,7 @@
   z-index: 1;
   color:
     var(--admin-progress-color);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -299,7 +299,7 @@
 .admin-activities-panel__eyebrow {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -319,7 +319,7 @@
   padding: 8px 9px;
   color: var(--admin-blue);
   border-radius: 7px;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   text-decoration: none;
   transition:
@@ -395,7 +395,7 @@
   border-radius: 8px;
   background: var(--admin-navy);
   font: inherit;
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
   font-weight: 700;
   cursor: pointer;
 }
@@ -429,7 +429,7 @@
   border-bottom:
     1px solid #e5eaee;
   color: var(--admin-text-soft);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.4;
   text-align: left;
   vertical-align: middle;
@@ -438,7 +438,7 @@
 .admin-activities-table thead th {
   color: #6c7a88;
   background: #f8fafc;
-  font-size: 0.64rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.035em;
   text-transform: uppercase;
@@ -504,7 +504,7 @@
   color: var(--admin-text-soft);
   border-radius: 999px;
   background: #edf1f4;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -623,7 +623,7 @@
   }
 
   .admin-metric-card__title {
-    font-size: 0.7rem;
+    font-size: var(--admin-text-sm);
   }
 
   .admin-metric-card__value {
@@ -646,7 +646,7 @@
 
   .admin-activities-panel__link {
     padding: 7px;
-    font-size: 0.68rem;
+    font-size: var(--admin-text-xs);
   }
 }
 
@@ -742,7 +742,7 @@
     td::before {
     flex-shrink: 0;
     color: var(--admin-muted);
-    font-size: 0.63rem;
+    font-size: var(--admin-text-xs);
     font-weight: 750;
     text-transform: uppercase;
   }
@@ -809,7 +809,7 @@
 /* Teléfonos pequeños */
 @media (max-width: 380px) {
   .admin-dashboard-heading__eyebrow {
-    font-size: 0.63rem;
+    font-size: var(--admin-text-xs);
   }
 
   .admin-dashboard-heading h1 {

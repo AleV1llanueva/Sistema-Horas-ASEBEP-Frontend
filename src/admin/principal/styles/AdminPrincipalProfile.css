@@ -20,7 +20,7 @@
 .admin-principal-profile__heading p {
   margin: 0 0 5px;
   color: var(--admin-focus);
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -101,7 +101,7 @@
   color: var(--admin-blue);
   border-radius: 999px;
   background: #e1eff9;
-  font-size: 0.58rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -118,7 +118,7 @@
   gap: 6px;
   margin: 7px 0 0;
   color: var(--admin-muted);
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-principal-profile__identity-information > p svg {
@@ -143,7 +143,7 @@
   padding: 0 13px;
   border-radius: 6px;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -256,7 +256,7 @@
 .admin-principal-profile__details dt {
   margin-bottom: 5px;
   color: #85919c;
-  font-size: 0.58rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.065em;
   text-transform: uppercase;
@@ -269,7 +269,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: #233c50;
-  font-size: 0.74rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
 }
 
@@ -329,7 +329,7 @@
   margin: 6px 0 0;
   color:
     rgb(255 255 255 / 72%);
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   line-height: 1.55;
 }
 
@@ -457,7 +457,7 @@
 .admin-principal-profile-password__heading p {
   margin: 0 0 4px;
   color: var(--admin-focus);
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -477,7 +477,7 @@
   max-width: 520px;
   margin-top: 5px;
   color: #647686;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.5;
 }
 
@@ -566,7 +566,7 @@
   p
   span {
   color: #7b8995;
-  font-size: 0.57rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -578,7 +578,7 @@
   margin-top: 3px;
   overflow: hidden;
   color: #233c50;
-  font-size: 0.72rem;
+  font-size: var(--admin-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -608,7 +608,7 @@
   color: var(--admin-white);
   border-radius: 50%;
   background: var(--admin-navy);
-  font-size: 0.67rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -628,7 +628,7 @@
   p {
   margin: 4px 0 0;
   color: #758491;
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.5;
 }
 
@@ -646,7 +646,7 @@
   border-radius: 8px;
   background: #eef7fc;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
   cursor: pointer;
   transition:
@@ -686,7 +686,7 @@
   border: 1px solid #b9dfcd;
   border-radius: 8px;
   background: #effaf5;
-  font-size: 0.66rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
 }
 
@@ -735,7 +735,7 @@
   label {
   display: block;
   color: #243e52;
-  font-size: 0.7rem;
+  font-size: var(--admin-text-sm);
   font-weight: 800;
 }
 
@@ -743,7 +743,7 @@
   p {
   margin: 2px 0 0;
   color: #84919c;
-  font-size: 0.61rem;
+  font-size: var(--admin-text-xs);
 }
 
 /* Entrada visual del PIN */
@@ -819,7 +819,7 @@
   display: block;
   margin-bottom: 6px;
   color: #344e62;
-  font-size: 0.65rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
 }
 
@@ -864,7 +864,7 @@
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: 0.71rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-principal-profile-password__input
@@ -912,7 +912,7 @@
   h4 {
   margin: 0 0 9px;
   color: #314c61;
-  font-size: 0.68rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-principal-profile-password__security
@@ -931,7 +931,7 @@
   align-items: center;
   gap: 6px;
   color: #7b8995;
-  font-size: 0.62rem;
+  font-size: var(--admin-text-xs);
 }
 
 .admin-principal-profile-password__requirement
@@ -956,7 +956,7 @@
   border: 1px solid #efc4c9;
   border-radius: 8px;
   background: #fff4f5;
-  font-size: 0.67rem;
+  font-size: var(--admin-text-xs);
   line-height: 1.45;
 }
 
@@ -995,7 +995,7 @@
   padding: 0 15px;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.69rem;
+  font-size: var(--admin-text-xs);
   font-weight: 800;
   cursor: pointer;
   transition:
@@ -1206,7 +1206,7 @@
   .admin-principal-profile-password__heading
     > div
     > span {
-    font-size: 0.67rem;
+    font-size: var(--admin-text-xs);
   }
 
   .admin-principal-profile-password__form {
@@ -1331,7 +1331,7 @@
   .admin-principal-profile-password__submit {
     width: 100%;
     padding: 0 9px;
-    font-size: 0.64rem;
+    font-size: var(--admin-text-xs);
   }
 }
 
