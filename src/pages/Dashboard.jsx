@@ -22,6 +22,9 @@ import {
   listarProximasActividadesInscritas,
 } from '../services/estudianteActividadesService.js'
 import {
+  listarMisMultas,
+} from '../services/estudianteMultasService.js'
+import {
   ESTADOS_APORTACION,
   listarAportacionesEstudiante,
 } from '../services/estudianteAportacionesService.js'
@@ -286,6 +289,7 @@ function Dashboard() {
   const [proximasInscritas, setProximasInscritas] = useState([])
   const [actividadesRecientes, setActividadesRecientes] = useState([])
   const [aportacionesEnRevision, setAportacionesEnRevision] = useState(0)
+  const [multas, setMultas] = useState([])
   const [cargandoActividades, setCargandoActividades] = useState(true)
 
   useEffect(() => {
@@ -295,11 +299,12 @@ function Dashboard() {
       try {
         setCargandoActividades(true)
 
-        const [proximas, historial, aportaciones] =
+        const [proximas, historial, aportaciones, multasObtenidas] =
           await Promise.allSettled([
             listarProximasActividadesInscritas(),
             listarHistorialActividades(),
             listarAportacionesEstudiante(),
+            listarMisMultas(),
           ])
 
         if (!componenteActivo) {
@@ -329,6 +334,17 @@ function Dashboard() {
                 ESTADOS_APORTACION.PENDIENTE,
             ).length
             : 0,
+        )
+
+        /*
+         * Si el servicio de multas falla, el resto del
+         * dashboard sigue funcionando y el bloque no
+         * aparece: no se inventan estados.
+         */
+        setMultas(
+          multasObtenidas.status === 'fulfilled'
+            ? multasObtenidas.value
+            : [],
         )
       } finally {
         if (componenteActivo) {
@@ -407,6 +423,10 @@ function Dashboard() {
 
   const aportacionesAlDia =
     mesesSinPagar === 0
+
+  const totalMultasPendientes = multas
+    .filter((multa) => !multa.pagada)
+    .reduce((total, multa) => total + multa.monto, 0)
 
   const descripcionAportaciones =
     mesesSinPagar === 1
@@ -734,30 +754,78 @@ function Dashboard() {
                       <ArrowRight aria-hidden="true" />
                     </Link>
                   </article>
-
-                  {/* Tarjeta de multas. */}
-                  <article className="summary-card">
-                    <div className="summary-card__icon summary-card__icon--red">
-                      <Scale aria-hidden="true" />
-                    </div>
-
-                    <div className="summary-card__content">
-                      <div>
-                        <span className="summary-card__label">
-                          Multas
-                        </span>
-
-                        <h2>Sin información</h2>
-                      </div>
-
-                      <p className="summary-card__description">
-                        La información de penalizaciones
-                        estará disponible cuando exista
-                        el endpoint correspondiente.
-                      </p>
-                    </div>
-                  </article>
                 </section>
+
+                {/*
+                 * Las multas solo ocupan espacio cuando
+                 * el becario tiene alguna registrada.
+                 */}
+                {multas.length > 0 && (
+                  <section
+                    className="dashboard-fines"
+                    aria-labelledby="multas-title"
+                  >
+                    <div className="dashboard-fines__heading">
+                      <h2 id="multas-title">
+                        Mis multas
+                      </h2>
+
+                      <span>
+                        {multas.length}{' '}
+                        {multas.length === 1
+                          ? 'multa'
+                          : 'multas'}
+                        {totalMultasPendientes > 0
+                          ? ` · L ${totalMultasPendientes}.00 pendientes`
+                          : ' · sin saldo pendiente'}
+                      </span>
+                    </div>
+
+                    <ul className="dashboard-fines__list">
+                      {multas.map((multa) => (
+                        <li key={multa.id}>
+                          <div className="summary-card__icon summary-card__icon--red">
+                            <Scale aria-hidden="true" />
+                          </div>
+
+                          <div className="summary-card__content">
+                            <strong>
+                              {multa.motivo ||
+                                'Multa registrada'}
+                            </strong>
+
+                            <span className="dashboard-fines__date">
+                              <CalendarDays
+                                aria-hidden="true"
+                              />
+
+                              {formatearFechaActividad(
+                                multa.fechaMulta,
+                              )}
+                            </span>
+                          </div>
+
+                          <span className="dashboard-fines__amount">
+                            L {multa.monto}.00
+                          </span>
+
+                          <span
+                            className={
+                              multa.pagada
+                                ? 'fines-status fines-status--pagada'
+                                : 'fines-status fines-status--pendiente'
+                            }
+                          >
+                            {multa.pagada
+                              ? 'Pagada'
+                              : 'Pendiente de pago'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
                   <TarjetaSiguientePaso
                     proximasInscritas={proximasInscritas}
                     aportacionesEnRevision={aportacionesEnRevision}

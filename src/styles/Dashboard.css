@@ -641,6 +641,96 @@
   font-size: 0.78rem;
 }
 
+/* MULTAS DEL BECARIO */
+
+.dashboard-fines {
+  margin-top: 26px;
+}
+
+.dashboard-fines__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.dashboard-fines__heading h2 {
+  margin: 0;
+  color: #10283e;
+  font-size: 1.05rem;
+}
+
+.dashboard-fines__heading span {
+  color: #7a8793;
+  font-size: 0.74rem;
+}
+
+.dashboard-fines__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-fines__list li {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 16px;
+  border: 1px solid #efd6d6;
+  border-radius: 10px;
+  background: #ffffff;
+  animation: dashboard-entry 520ms 180ms ease-out both;
+}
+
+.dashboard-fines__list .summary-card__content strong {
+  display: block;
+  color: #10283e;
+  font-size: 0.86rem;
+}
+
+.dashboard-fines__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: #7a8793;
+  font-size: 0.7rem;
+}
+
+.dashboard-fines__date svg {
+  width: 13px;
+}
+
+.dashboard-fines__amount {
+  margin-left: auto;
+  color: #10283e;
+  font-size: 0.88rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fines-status {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fines-status--pagada {
+  color: #1f6b47;
+  background: #e2f4ea;
+}
+
+.fines-status--pendiente {
+  color: #8f2f2f;
+  background: #fde8e8;
+}
+
 /* Oculta la navegación móvil en computadoras. */
 .mobile-navigation {
   display: none;
@@ -738,6 +828,22 @@
 
   .dashboard-recent__list li {
     padding: 12px 13px;
+  }
+
+  .dashboard-fines__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dashboard-fines__list li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 12px 13px;
+  }
+
+  .dashboard-fines__amount {
+    margin-left: 0;
   }
 
   /*
