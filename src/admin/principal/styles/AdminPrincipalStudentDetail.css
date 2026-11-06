@@ -641,6 +641,33 @@
   background: #fff0dd;
 }
 
+.admin-student-contribution-status--sin-horas {
+  color: #566774;
+  background: #edf1f4;
+}
+
+.admin-student-progress-summary__total {
+  color: var(--admin-muted);
+  font-weight: 500;
+}
+
+.admin-student-progress-summary__exceso {
+  color: #1c7a55;
+  font-weight: 800;
+}
+
+.admin-student-detail-note--aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #9a5418;
+  font-weight: 650;
+}
+
+.admin-student-detail-note--aviso svg {
+  width: 15px;
+}
+
 .admin-student-detail-table__row--pendiente td:first-child {
   box-shadow: inset 3px 0 0 #d98b2b;
 }

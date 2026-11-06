@@ -52,7 +52,9 @@ import {
 
 import {
   agruparHorasPorMes,
+  calcularMesesCompletados,
   construirPeriodoBeca,
+  describirExcesoHoras,
   HORAS_POR_MES,
   MESES_ABREVIADOS,
   obtenerResumenHoras,
@@ -913,17 +915,6 @@ function AdminPrincipalStudentDetail() {
     actividades[0] ?? null
 
   /*
-   * Progreso de horas. La vía administrativa no entrega
-   * el exceso real, así que solo se informa el porcentaje
-   * y si la meta está cubierta.
-   */
-  const resumenHoras = obtenerResumenHoras({
-    horasAcumuladas,
-    horasFaltantes,
-    enExceso: false,
-  })
-
-  /*
    * Periodo de beca: 20 horas por mes, máximo 10 meses.
    *
    * La vía administrativa conoce el mes y el año de
@@ -934,6 +925,22 @@ function AdminPrincipalStudentDetail() {
   const periodoBeca = construirPeriodoBeca({
     mesInicio: datosBecario.mesInicio,
     anioInicio: datosBecario.anioInicio,
+  })
+
+  /*
+   * La meta real es 20 horas por cada mes activo del periodo
+   * (becario_controller.py). Con ella el porcentaje y el
+   * exceso son exactos; sin periodo se cae a
+   * acumuladas + faltantes y no se informa exceso.
+   */
+  const resumenHoras = obtenerResumenHoras({
+    horasAcumuladas,
+    horasFaltantes,
+    horasEsperadas: periodoBeca
+      ? calcularMesesCompletados(periodoBeca) *
+        HORAS_POR_MES
+      : 0,
+    enExceso: true,
   })
 
   const horasPorMes = agruparHorasPorMes({
@@ -958,6 +965,19 @@ function AdminPrincipalStudentDetail() {
     inicialesSinMarcar,
   ).length
 
+  /*
+   * Entrada sin salida en una actividad ya terminada: no es
+   * falta ni asistencia acreditada, y el administrador es
+   * quien puede completarla desde el detalle de la actividad.
+   */
+  const marcacionesIncompletas =
+    inscripciones.filter(
+      (inscripcion) =>
+        inscripcion.estadoActividad === 'finalizada' &&
+        inscripcion.checkIn &&
+        !inscripcion.checkOut,
+    ).length
+
   const totalResueltas =
     asistenciasConfirmadas + faltas
 
@@ -978,6 +998,29 @@ function AdminPrincipalStudentDetail() {
         ),
       0,
     )
+
+  /*
+   * Una salida sin marcación deja las horas del mes por
+   * debajo de las 20: el aviso ayuda a ubicar en qué mes
+   * falta acreditar horas.
+   */
+  const mesesIncompletos =
+    horasPorMes.filter(
+      (mes) => mes.estado === 'incompleto',
+    ).length
+
+  const avisoHoras =
+    marcacionesIncompletas > 0
+      ? `${marcacionesIncompletas} ${marcacionesIncompletas === 1
+        ? 'asistencia tiene'
+        : 'asistencias tienen'
+      } la salida sin registrar.`
+      : mesesIncompletos > 0
+        ? `${mesesIncompletos} ${mesesIncompletos === 1
+          ? 'mes queda'
+          : 'meses quedan'
+        } por debajo de ${HORAS_POR_MES} horas.`
+        : ''
 
   /*
    * Multas del estudiante. La ruta administrativa no
@@ -1207,7 +1250,9 @@ function AdminPrincipalStudentDetail() {
                 <p
                   className={
                     resumenHoras.estado ===
-                    'cumplida'
+                    'cumplida' ||
+                    resumenHoras.estado ===
+                    'excedida'
                       ? 'admin-student-progress-metrics__note--ok'
                       : undefined
                   }
@@ -1235,10 +1280,31 @@ function AdminPrincipalStudentDetail() {
               </article>
             </div>
 
+            {avisoHoras && (
+              <p className="admin-student-detail-note admin-student-detail-note--aviso">
+                <TriangleAlert aria-hidden="true" />
+                {avisoHoras}
+              </p>
+            )}
+
             <p className="admin-student-progress-summary">
               <ChartColumn aria-hidden="true" />
               Progreso: {resumenHoras.porcentaje}% de{' '}
               {resumenHoras.meta} horas
+              {horasAcreditadas > 0 && (
+                <span className="admin-student-progress-summary__total">
+                  · {horasAcreditadas} h en el historial
+                </span>
+              )}
+
+              {resumenHoras.exceso > 0 && (
+                <strong className="admin-student-progress-summary__exceso">
+                  {describirExcesoHoras(
+                    resumenHoras.exceso,
+                  )}{' '}
+                  sobre la meta
+                </strong>
+              )}
             </p>
           </section>
 
@@ -1296,12 +1362,12 @@ function AdminPrincipalStudentDetail() {
 
               <article>
                 <span>
-                  <Clock3 aria-hidden="true" />
+                  <TriangleAlert aria-hidden="true" />
                 </span>
 
-                <strong>{horasAcreditadas}</strong>
+                <strong>{marcacionesIncompletas}</strong>
 
-                <p>Horas del historial</p>
+                <p>Salida pendiente</p>
               </article>
             </div>
 
@@ -1622,7 +1688,7 @@ function AdminPrincipalStudentDetail() {
               </h2>
             </header>
 
-            {estadoAportaciones && (
+            {estadoAportaciones ? (
               <p className="admin-student-contribution-summary">
                 {estadoAportaciones.cubiertos} de{' '}
                 {estadoAportaciones.mesesCompletados}{' '}
@@ -1636,6 +1702,11 @@ function AdminPrincipalStudentDetail() {
                       : 'meses pendientes'}
                   </span>
                 )}
+              </p>
+            ) : (
+              <p className="admin-student-detail-note">
+                Periodo de ingreso no definido: no se
+                puede calcular el avance de meses.
               </p>
             )}
 
@@ -1974,8 +2045,10 @@ function AdminPrincipalStudentDetail() {
             {/*
              * Solo aparece cuando hay saldo pendiente:
              * una cifra en cero no aporta información.
+             * Si falló la consulta, se dice en lugar de
+             * dejar creer que no debe nada.
              */}
-            {multasPendientes > 0 && (
+            {(multasPendientes > 0 || errorMultas) && (
               <div className="admin-student-summary__item">
                 <span
                   className="admin-student-summary__icon admin-student-summary__icon--fine"
@@ -1990,15 +2063,19 @@ function AdminPrincipalStudentDetail() {
                   </small>
 
                   <strong>
-                    {formatearLempiras(
-                      multasPendientes,
-                    )}
+                    {errorMultas && multasPendientes === 0
+                      ? 'No disponible'
+                      : formatearLempiras(
+                        multasPendientes,
+                      )}
                   </strong>
 
                   <p>
-                    {multasDelEstudiante.length === 1
-                      ? '1 multa registrada'
-                      : `${multasDelEstudiante.length} multas registradas`}
+                    {errorMultas && multasPendientes === 0
+                      ? 'No se pudieron consultar las multas'
+                      : multasDelEstudiante.length === 1
+                        ? '1 multa registrada'
+                        : `${multasDelEstudiante.length} multas registradas`}
                   </p>
                 </div>
               </div>

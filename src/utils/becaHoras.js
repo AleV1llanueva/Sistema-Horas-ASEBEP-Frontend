@@ -7,6 +7,9 @@
 
 export const HORAS_POR_MES = 20
 
+/*
+ * El alcance de la beca se mide en 10 meses activos.
+ */
 export const MESES_MAXIMOS_BECA = 10
 
 export const MESES_INACTIVOS = Object.freeze([1, 12])
@@ -36,7 +39,7 @@ export const MESES_ABREVIADOS = Object.freeze([
   'Dic',
 ])
 
-export function mesEsActivo(mes, anio) {
+function mesEsActivo(mes, anio) {
   const mesNumero = Number(mes)
   const anioNumero = Number(anio)
 
@@ -59,6 +62,8 @@ export function mesEsActivo(mes, anio) {
     !MESES_INACTIVOS.includes(mesNumero)
   )
 }
+
+export { mesEsActivo }
 
 /*
  * Acepta "YYYY-MM-DD" o un objeto { anio, mes }.
@@ -207,15 +212,20 @@ export function describirExcesoHoras(exceso) {
 /*
  * Resume el progreso de horas.
  *
- * Con enExceso activo, la meta se deriva de la misma forma
- * que el portal la ha calculado siempre (acumuladas +
- * faltantes), porque la fuente garantiza
- * faltantes = max(0, meta - acumuladas) y así el exceso
- * se obtiene sin inventar cifras.
+ * La meta puede llegar de dos formas:
+ *   - horasEsperadas: la meta real calculada por el backend
+ *     (20 horas por mes activo). Es la única fuente que
+ *     permite mostrar cuántas horas van de más.
+ *   - En su defecto, acumuladas + faltantes, que es la fórmula
+ *     con la que el portal la ha derivado siempre. Con esa
+ *     derivación el exceso es siempre 0, porque
+ *     faltantes = max(0, meta - acumuladas); por eso el exceso
+ *     solo se calcula cuando la meta es conocida.
  */
 export function obtenerResumenHoras({
   horasAcumuladas,
   horasFaltantes,
+  horasEsperadas = null,
   enExceso = false,
 } = {}) {
   const acumuladas = Math.max(
@@ -228,17 +238,25 @@ export function obtenerResumenHoras({
     Number(horasFaltantes) || 0,
   )
 
-  const meta = acumuladas + faltantes
+  const esperadas = Number(horasEsperadas)
 
-  const exceso = enExceso
-    ? Math.max(0, acumuladas - meta)
-    : 0
+  const metaConocida =
+    Number.isFinite(esperadas) && esperadas > 0
+
+  const meta = metaConocida
+    ? esperadas
+    : acumuladas + faltantes
+
+  const exceso =
+    enExceso && metaConocida
+      ? Math.max(0, acumuladas - meta)
+      : 0
 
   let estado = 'en_curso'
 
   if (exceso > 0) {
     estado = 'excedida'
-  } else if (meta > 0 && faltantes === 0) {
+  } else if (meta > 0 && acumuladas >= meta) {
     estado = 'cumplida'
   }
 

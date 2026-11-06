@@ -29,9 +29,13 @@ import {
   listarAportacionesEstudiante,
 } from '../services/estudianteAportacionesService.js'
 import {
+  calcularMesesCompletados,
+  construirPeriodoBeca,
   describirExcesoHoras,
+  HORAS_POR_MES,
   obtenerResumenHoras,
 } from '../utils/becaHoras.js'
+import { apiFetch } from '../services/api.js'
 
 /*
  * Convierte un estado como "activo" o "EN_CURSO"
@@ -290,6 +294,7 @@ function Dashboard() {
   const [actividadesRecientes, setActividadesRecientes] = useState([])
   const [aportacionesEnRevision, setAportacionesEnRevision] = useState(0)
   const [multas, setMultas] = useState([])
+  const [periodoBeca, setPeriodoBeca] = useState(null)
   const [cargandoActividades, setCargandoActividades] = useState(true)
 
   useEffect(() => {
@@ -299,12 +304,13 @@ function Dashboard() {
       try {
         setCargandoActividades(true)
 
-        const [proximas, historial, aportaciones, multasObtenidas] =
+        const [proximas, historial, aportaciones, multasObtenidas, misDatos] =
           await Promise.allSettled([
             listarProximasActividadesInscritas(),
             listarHistorialActividades(),
             listarAportacionesEstudiante(),
             listarMisMultas(),
+            apiFetch('/usuarios/me'),
           ])
 
         if (!componenteActivo) {
@@ -346,6 +352,23 @@ function Dashboard() {
             ? multasObtenidas.value
             : [],
         )
+
+        /*
+         * La meta real (20 h por mes activo) solo se puede
+         * conocer con el mes de inicio. Si no llega, el
+         * resumen la deriva como siempre y no informa exceso.
+         */
+        const becario =
+          misDatos.status === 'fulfilled'
+            ? misDatos.value?.perfil_becario
+            : null
+
+        setPeriodoBeca(
+          construirPeriodoBeca({
+            mesInicio: becario?.mes_inicio,
+            anioInicio: becario?.anio_inicio,
+          }),
+        )
       } finally {
         if (componenteActivo) {
           setCargandoActividades(false)
@@ -379,16 +402,19 @@ function Dashboard() {
     'Becario'
 
   /*
-   * La meta se mantiene como acumuladas + faltantes,
-   * que es la fórmula con la que el backend entrega
-   * sus datos. Así el exceso se detecta sin inventar
-   * cifras cuando el becario se adelanta.
+   * La meta real sale de los meses activos del periodo. Si no
+   * se conoce el mes de inicio, se deriva acumuladas +
+   * faltantes y no se informa exceso (nunca se inventa).
    */
   const resumenHoras = obtenerResumenHoras({
     horasAcumuladas:
       datosBecario?.horasAcumuladas ?? 0,
     horasFaltantes:
       datosBecario?.horasFaltantes ?? 0,
+    horasEsperadas: periodoBeca
+      ? calcularMesesCompletados(periodoBeca) *
+        HORAS_POR_MES
+      : 0,
     enExceso: true,
   })
 
@@ -891,11 +917,11 @@ function Dashboard() {
                               </div>
 
                               <span className="dashboard-recent__hours">
-                                {actividad.horasRegistradas ??
+                                {(actividad.horasRegistradas ??
                                   actividad.horasAcreditables ??
-                                  0}
-                                {' '}
-                                h
+                                  0) > 0
+                                  ? `${actividad.horasRegistradas ?? actividad.horasAcreditables} h`
+                                  : 'Sin horas'}
                               </span>
                             </li>
                           ),
@@ -907,7 +933,6 @@ function Dashboard() {
               )}
         </main>
 
-        {/**
         {/*
          * Navegación inferior para celulares.
          * AppLayout.css la oculta en computadoras.
