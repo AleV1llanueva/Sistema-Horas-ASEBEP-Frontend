@@ -794,12 +794,34 @@ function construirRegistroHistorialEstudiante(
     fecha,
     titulo,
 
+    horaInicio: prepararTexto(
+      actividad?.horaInicio ??
+      actividad?.hora_inicio,
+    ),
+
+    lugar: prepararTexto(
+      actividad?.lugar ??
+      actividad?.ubicacion,
+    ),
+
     horasAcreditadas: normalizarNumeroNoNegativo(
       asistencia.horasRegistradas,
     ),
 
+    /*
+     * El backend no expone un campo de acreditación:
+     * una asistencia con horas registradas se considera
+     * acreditada y el resto queda pendiente.
+     */
+    estadoAcreditacion:
+      normalizarNumeroNoNegativo(
+        asistencia.horasRegistradas,
+      ) > 0
+        ? 'acreditado'
+        : 'pendiente',
+
     estado: prepararTexto(
-        asistencia.estado,
+      asistencia.estado,
     ) || 'Sin estado',
 
     checkIn: asistencia.checkIn === true,
@@ -1754,8 +1776,89 @@ export async function listarAsistenciasActividad(
 }
 
 /*
+ * Adapta la respuesta de
+ * GET /asistencias/usuarios/{cuenta}/historial
+ * al registro que usan las vistas administrativas.
+ */
+function construirHistorialDesdeApi(
+  historial,
+  actividades,
+) {
+  const filas =
+    historial?.actividades
+
+  if (!Array.isArray(filas)) {
+    throw new ActividadAdminError(
+      'El servidor no devolvió un historial válido.',
+    )
+  }
+
+  const actividadesPorId =
+    new Map(
+      (Array.isArray(actividades)
+        ? actividades
+        : []
+      ).map((actividad) => [
+        prepararTexto(actividad.id),
+        actividad,
+      ]),
+    )
+
+  return filas
+    .map((fila) => {
+      if (
+        fila?.check_in !== true ||
+        fila?.check_out !== true
+      ) {
+        return null
+      }
+
+      const actividadId =
+        prepararTexto(fila.actividad_id)
+
+      const actividad =
+        actividadesPorId.get(actividadId) ?? {
+          id: actividadId,
+          titulo: fila.titulo,
+          fecha: fila.fecha_actividad,
+          horaInicio: normalizarHoraBackend(
+            fila.hora_inicio,
+          ),
+          lugar: fila.ubicacion,
+        }
+
+      return construirRegistroHistorialEstudiante(
+        normalizarAsistencia(
+          {
+            id: fila.id,
+            actividadId,
+            numeroCuenta:
+              historial.num_cuenta,
+            checkIn: fila.check_in,
+            checkOut: fila.check_out,
+            horasRegistradas:
+              fila.horas_registradas,
+            estado: fila.estado,
+          },
+          actividadId,
+        ),
+        actividad,
+      )
+    })
+    .filter(Boolean)
+    .sort((registroA, registroB) =>
+      registroB.fecha.localeCompare(
+        registroA.fecha,
+      ),
+    )
+}
+
+/*
  * Devuelve el historial de actividades correspondiente
  * a un estudiante específico.
+ *
+ * Solo incluye asistencia confirmada (entrada y salida),
+ * que es la que puede acreditar horas.
  */
 export async function listarHistorialActividadesPorEstudiante(
   numeroCuenta,
@@ -1770,8 +1873,21 @@ export async function listarHistorialActividadesPorEstudiante(
   }
 
   if (!usarDatosAdminSimulados) {
-    throw new ActividadAdminError(
-      'El backend todavía no permite consultar el historial de actividades por estudiante.',
+    const [historial, actividades] =
+      await Promise.all([
+        peticionApi(
+          `/asistencias/usuarios/${encodeURIComponent(
+            cuenta,
+          )}/historial?incluir_futuras=true`,
+        ),
+        listarActividades(),
+      ])
+
+    return clonarDatos(
+      construirHistorialDesdeApi(
+        historial,
+        actividades,
+      ),
     )
   }
 
@@ -1801,7 +1917,9 @@ export async function listarHistorialActividadesPorEstudiante(
       .filter(
         (asistencia) =>
           asistencia.numeroCuenta ===
-          cuenta,
+          cuenta &&
+          asistencia.checkIn === true &&
+          asistencia.checkOut === true,
       )
       .map((asistencia) =>
         construirRegistroHistorialEstudiante(
@@ -1900,7 +2018,12 @@ export async function listarHistorialActividadesPorEstudiante(
           actividad,
         )
       })
-      .filter(Boolean)
+      .filter(
+        (registro) =>
+          registro &&
+          registro.checkIn &&
+          registro.checkOut,
+      )
 
   /*
    * Una misma asistencia puede encontrarse en ambas
@@ -1945,6 +2068,99 @@ export async function listarHistorialActividadesPorEstudiante(
     })
 
   return clonarDatos(historial)
+}
+
+/*
+ * Devuelve las inscripciones del estudiante con el estado
+ * temporal de cada actividad, para separar faltas de
+ * actividades próximas.
+ */
+export async function listarInscripcionesPorEstudiante(
+  numeroCuenta,
+) {
+  const cuenta = prepararTexto(numeroCuenta)
+
+  if (!/^\d{11}$/.test(cuenta)) {
+    throw new ActividadAdminError(
+      'El número de cuenta del estudiante no es válido.',
+    )
+  }
+
+  let asistencias = []
+  let actividades = []
+
+  if (usarDatosAdminSimulados) {
+    actividades = leerActividades()
+
+    asistencias =
+      unificarAsistenciasSimuladas([
+        ...leerAsistencias(),
+        ...(leerInscripcionesEstudianteSimuladas() ??
+          []),
+      ]).filter(
+        (asistencia) =>
+          asistencia.numeroCuenta === cuenta,
+      )
+  } else {
+    const [respuestaAsistencias, actividadesObtenidas] =
+      await Promise.all([
+        peticionApi(
+          `/asistencias/usuarios/${encodeURIComponent(
+            cuenta,
+          )}`,
+        ),
+        listarActividades(),
+      ])
+
+    if (!Array.isArray(respuestaAsistencias)) {
+      throw new ActividadAdminError(
+        'El servidor no devolvió una lista válida de inscripciones.',
+      )
+    }
+
+    actividades = actividadesObtenidas
+
+    asistencias = respuestaAsistencias.map(
+      (asistencia) =>
+        normalizarAsistencia({
+          ...asistencia,
+          num_cuenta: cuenta,
+        }),
+    )
+  }
+
+  const actividadesPorId = new Map(
+    (Array.isArray(actividades) ? actividades : []).map(
+      (actividad) => [prepararTexto(actividad.id), actividad],
+    ),
+  )
+
+  const inscripciones = asistencias
+    .map((asistencia) => {
+      const actividad = actividadesPorId.get(
+        prepararTexto(asistencia.actividadId),
+      )
+
+      return {
+        id: asistencia.id,
+        actividadId: asistencia.actividadId,
+        titulo: prepararTexto(actividad?.titulo),
+        fecha: prepararTexto(actividad?.fecha),
+        horaInicio: prepararTexto(actividad?.horaInicio),
+        lugar: prepararTexto(actividad?.lugar),
+        checkIn: asistencia.checkIn,
+        checkOut: asistencia.checkOut,
+        horasAcreditadas: asistencia.horasRegistradas,
+        estadoActividad:
+          normalizarEstadoActividad(actividad?.estado) ||
+          'programada',
+      }
+    })
+    .sort((inscripcionA, inscripcionB) =>
+      inscripcionB.fecha.localeCompare(inscripcionA.fecha),
+    )
+
+  return clonarDatos(inscripciones)
 }
 
 /* CREACIÓN, ACTUALIZACIÓN Y ELIMINACIÓN */
