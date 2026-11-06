@@ -794,7 +794,8 @@ export async function listarAportaciones() {
 }
 
 // Devuelve unicamente las aportaciones pertenecientes al estudiante identificado por su numero de cuenta.
-export async function listarAportacionesPorEstudiante(numeroCuenta) {
+// El nombre es opcional: si el llamador ya lo conoce, se conserva en el registro.
+export async function listarAportacionesPorEstudiante(numeroCuenta, nombreCompleto = '') {
   const cuenta = prepararTexto(numeroCuenta);
 
   if (!/^\d{11}$/.test(cuenta)) {
@@ -819,7 +820,7 @@ export async function listarAportacionesPorEstudiante(numeroCuenta) {
     aportacion: normalizarAportacion(aportacion),
     estudiante: {
       num_cuenta: cuenta,
-      nombre_completo: null
+      nombre_completo: prepararTexto(nombreCompleto) || null
     }
   }));
 }
