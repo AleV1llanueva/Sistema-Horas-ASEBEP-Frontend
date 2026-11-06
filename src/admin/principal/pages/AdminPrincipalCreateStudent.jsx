@@ -2,6 +2,8 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import {
   ArrowLeft,
   CalendarDays,
+  CircleCheck,
+  ExternalLink,
   GraduationCap,
   IdCard,
   Info,
@@ -33,6 +35,7 @@ import {
 
 import {
   crearEstudiante,
+  buscarEstudiantePorDato,
   listarCarrerasDisponibles,
 } from '../services/adminEstudiantesService.js'
 
@@ -436,6 +439,168 @@ function AdminPrincipalCreateStudent() {
       formulario.primerApellido,
     )
 
+  /*
+   * Estado de la comprobación en vivo de cada dato único.
+   * `estado`: 'inactivo' | 'verificando' | 'libre' | 'ocupado'.
+   */
+  const [
+    verificacionCuenta,
+    setVerificacionCuenta,
+  ] = useState({
+    estado: 'inactivo',
+    estudiante: null,
+  })
+
+  const [
+    verificacionCorreo,
+    setVerificacionCorreo,
+  ] = useState({
+    estado: 'inactivo',
+    estudiante: null,
+  })
+
+  const [
+    duplicadoAlGuardar,
+    setDuplicadoAlGuardar,
+  ] = useState(null)
+
+  const cuentaCompleta =
+    /^\d{11}$/.test(
+      formulario.numeroCuenta,
+    )
+
+  const correoCompleto =
+    /^[^\s@]+@unah\.hn$/.test(
+      formulario.correoInstitucional
+        .trim()
+        .toLowerCase(),
+    )
+
+  /*
+   * Comprueba cada dato completo contra el backend mientras se escribe,
+   * para avisar de un duplicado antes de llenar el resto del formulario.
+   */
+  useEffect(() => {
+    if (!cuentaCompleta) {
+      setVerificacionCuenta({
+        estado: 'inactivo',
+        estudiante: null,
+      })
+
+      return undefined
+    }
+
+    let consultaActiva = true
+
+    setVerificacionCuenta({
+      estado: 'verificando',
+      estudiante: null,
+    })
+
+    const temporizador = window.setTimeout(
+      async () => {
+        try {
+          const encontrado =
+            await buscarEstudiantePorDato(
+              'numeroCuenta',
+              formulario.numeroCuenta,
+            )
+
+          if (consultaActiva) {
+            setVerificacionCuenta({
+              estado: encontrado
+                ? 'ocupado'
+                : 'libre',
+              estudiante: encontrado,
+            })
+          }
+        } catch {
+          /* Es una ayuda: un fallo no debe bloquear el formulario. */
+          if (consultaActiva) {
+            setVerificacionCuenta({
+              estado: 'inactivo',
+              estudiante: null,
+            })
+          }
+        }
+      },
+      450,
+    )
+
+    return () => {
+      consultaActiva = false
+      window.clearTimeout(temporizador)
+    }
+  }, [cuentaCompleta, formulario.numeroCuenta])
+
+  useEffect(() => {
+    if (!correoCompleto) {
+      setVerificacionCorreo({
+        estado: 'inactivo',
+        estudiante: null,
+      })
+
+      return undefined
+    }
+
+    let consultaActiva = true
+
+    setVerificacionCorreo({
+      estado: 'verificando',
+      estudiante: null,
+    })
+
+    const temporizador = window.setTimeout(
+      async () => {
+        try {
+          const encontrado =
+            await buscarEstudiantePorDato(
+              'correoInstitucional',
+              formulario.correoInstitucional,
+            )
+
+          if (consultaActiva) {
+            setVerificacionCorreo({
+              estado: encontrado
+                ? 'ocupado'
+                : 'libre',
+              estudiante: encontrado,
+            })
+          }
+        } catch {
+          if (consultaActiva) {
+            setVerificacionCorreo({
+              estado: 'inactivo',
+              estudiante: null,
+            })
+          }
+        }
+      },
+      450,
+    )
+
+    return () => {
+      consultaActiva = false
+      window.clearTimeout(temporizador)
+    }
+  }, [correoCompleto, formulario.correoInstitucional])
+
+  function abrirEstudianteExistente(estudiante) {
+    const numeroCuenta =
+      estudiante?.datosPersonales
+        ?.numeroCuenta
+
+    if (!numeroCuenta) {
+      return
+    }
+
+    navigate(
+      `/admin-principal/estudiantes/${encodeURIComponent(
+        numeroCuenta,
+      )}`,
+    )
+  }
+
   function actualizarCampo(evento) {
     const {
       name,
@@ -507,6 +672,36 @@ function AdminPrincipalCreateStudent() {
       return
     }
 
+    /*
+     * Si la comprobación en vivo ya encontró el dato, no se envía nada:
+     * el usuario debe ir al registro existente o corregir el campo.
+     */
+    if (
+      verificacionCuenta.estado === 'ocupado' ||
+      verificacionCorreo.estado === 'ocupado'
+    ) {
+      const datosDuplicados =
+        verificacionCuenta.estado === 'ocupado'
+          ? verificacionCuenta
+          : verificacionCorreo
+
+      setDuplicadoAlGuardar({
+        campo: datosDuplicados.estudiante?.campo,
+        datosPersonales:
+          datosDuplicados.estudiante
+            ?.datosPersonales,
+      })
+
+      notificarError({
+        id: ID_ERROR_CREACION,
+        titulo: 'Datos ya registrados',
+        descripcion:
+          'Corrige el número de cuenta o el correo institucional, o abre la ficha del estudiante existente.',
+      })
+
+      return
+    }
+
     const erroresEncontrados =
       validarFormulario(
         formulario,
@@ -547,6 +742,7 @@ function AdminPrincipalCreateStudent() {
     }
 
     setGuardando(true)
+    setDuplicadoAlGuardar(null)
 
     try {
       await crearEstudiante({
@@ -627,6 +823,28 @@ function AdminPrincipalCreateStudent() {
         errorCreacion,
       )
 
+      /*
+       * El backend responde 409 con el campo repetido y el número
+       * de cuenta del registro existente. Se ofrece ir a verlo.
+       */
+      const duplicado =
+        errorCreacion?.detalles?.detail
+
+      if (duplicado?.campo) {
+        setDuplicadoAlGuardar({
+          campo: duplicado.campo,
+          datosPersonales: {
+            numeroCuenta:
+              duplicado.num_cuenta,
+            nombreCompleto:
+              duplicado.nombre_completo,
+            correoInstitucional:
+              duplicado
+                .correo_institucional,
+          },
+        })
+      }
+
       notificarError({
         id: ID_ERROR_CREACION,
         titulo:
@@ -639,6 +857,112 @@ function AdminPrincipalCreateStudent() {
     } finally {
       setGuardando(false)
     }
+  }
+
+  /*
+   * Aviso reutilizable cuando el dato escrito ya pertenece a otro
+   * estudiante: explica cuál se repite y ofrece ir a su ficha.
+   */
+  function renderAvisoDuplicado(campo) {
+    const verificacion =
+      campo === 'numeroCuenta'
+        ? verificacionCuenta
+        : verificacionCorreo
+
+    const coincidencia =
+      duplicadoAlGuardar?.campo === campo
+        ? duplicadoAlGuardar
+        : verificacion.estado === 'ocupado'
+          ? verificacion.estudiante
+          : null
+
+    if (!coincidencia) {
+      if (
+        verificacion.estado === 'verificando' &&
+        duplicadoAlGuardar?.campo !== campo
+      ) {
+        return (
+          <p className="admin-create-student-field__check">
+            <LoaderCircle
+              className="admin-create-student-form__loader"
+              aria-hidden="true"
+            />
+            Comprobando disponibilidad…
+          </p>
+        )
+      }
+
+      if (
+        verificacion.estado === 'libre' &&
+        !duplicadoAlGuardar
+      ) {
+        return (
+          <p className="admin-create-student-field__check admin-create-student-field__check--free">
+            <CircleCheck aria-hidden="true" />
+            {campo === 'numeroCuenta'
+              ? 'Número de cuenta disponible.'
+              : 'Correo institucional disponible.'}
+          </p>
+        )
+      }
+
+      return null
+    }
+
+    const nombre =
+      coincidencia.datosPersonales
+        ?.nombreCompleto
+
+    /*
+     * Si vino del error del backend, el botón lleva a su ficha;
+     * si vino de la comprobación previa, lleva al listado filtrando
+     * por la cuenta, que es la vista pública de ese registro.
+     */
+    const esDuplicadoDelGuardado =
+      duplicadoAlGuardar?.campo === campo
+
+    return (
+      <div
+        className="admin-create-student-duplicate"
+        role="status"
+      >
+        <TriangleAlert aria-hidden="true" />
+
+        <div>
+          <strong>
+            {campo === 'numeroCuenta'
+              ? 'Ese número de cuenta ya existe'
+              : 'Ese correo institucional ya está en uso'}
+            {nombre ? `: ${nombre}` : '.'}
+          </strong>
+
+          <p>
+            Revisa su ficha antes de crear un
+            registro nuevo.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              esDuplicadoDelGuardado
+                ? abrirEstudianteExistente(
+                    coincidencia,
+                  )
+                : navigate(
+                    `/admin-principal/estudiantes?busqueda=${encodeURIComponent(
+                      coincidencia
+                        .datosPersonales
+                        ?.numeroCuenta ?? '',
+                    )}`,
+                  )
+            }
+          >
+            <ExternalLink aria-hidden="true" />
+            Ver estudiante existente
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -786,6 +1110,10 @@ function AdminPrincipalCreateStudent() {
                   <p className="admin-create-student-field__error">
                     {errores.numeroCuenta}
                   </p>
+                )}
+
+                {renderAvisoDuplicado(
+                  'numeroCuenta',
                 )}
               </div>
 
@@ -965,6 +1293,10 @@ function AdminPrincipalCreateStudent() {
                         .correoInstitucional
                     }
                   </p>
+                )}
+
+                {renderAvisoDuplicado(
+                  'correoInstitucional',
                 )}
               </div>
 
