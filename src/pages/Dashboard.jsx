@@ -3,7 +3,7 @@ import {
   CalendarDays,
   Clock3,
   GraduationCap,
-  MapPin,
+  Info,
   Scale,
   TrendingUp,
   WalletCards,
@@ -17,17 +17,18 @@ import '../styles/AppLayout.css'
 import '../styles/Dashboard.css'
 
 import { useEffect, useState } from 'react'
-import { listarProximasActividadesInscritas } from '../services/estudianteActividadesService.js'
-
-import { listarTodasLasProximasActividades } from '../services/estudianteActividadesService.js'
+import {
+  listarHistorialActividades,
+  listarProximasActividadesInscritas,
+} from '../services/estudianteActividadesService.js'
+import {
+  ESTADOS_APORTACION,
+  listarAportacionesEstudiante,
+} from '../services/estudianteAportacionesService.js'
 import {
   describirExcesoHoras,
   obtenerResumenHoras,
 } from '../utils/becaHoras.js'
-
-// Estado para almacenar las próximas actividades
-
-
 
 /*
  * Convierte un estado como "activo" o "EN_CURSO"
@@ -49,6 +50,227 @@ function prepararEstado(estado) {
   )
 }
 
+/*
+ * Interpreta "YYYY-MM-DD" como fecha local para no
+ * desplazar la actividad un día por la zona horaria.
+ */
+function convertirFechaLocal(texto) {
+  const coincidencia = String(texto ?? '')
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+  if (!coincidencia) {
+    return null
+  }
+
+  const [, anio, mes, dia] = coincidencia.map(Number)
+
+  return new Date(anio, mes - 1, dia)
+}
+
+function combinarFechaHora(fecha, hora) {
+  const dia = convertirFechaLocal(fecha)
+  const partes = String(hora ?? '')
+    .trim()
+    .match(/^(\d{2}):(\d{2})/)
+
+  if (!dia || !partes) {
+    return null
+  }
+
+  return new Date(
+    dia.getFullYear(),
+    dia.getMonth(),
+    dia.getDate(),
+    Number(partes[1]),
+    Number(partes[2]),
+  )
+}
+
+function obtenerMomentoActividad(actividad) {
+  const inicio = combinarFechaHora(
+    actividad?.fecha,
+    actividad?.horaInicio,
+  )
+
+  const fin = combinarFechaHora(
+    actividad?.fecha,
+    actividad?.horaFinalizacion,
+  )
+
+  return {
+    inicio,
+    fin: fin ?? inicio,
+  }
+}
+
+function formatearFechaActividad(fecha) {
+  const dia = convertirFechaLocal(fecha)
+
+  if (!dia) {
+    return 'Fecha pendiente'
+  }
+
+  return new Intl.DateTimeFormat('es-HN', {
+    day: 'numeric',
+    month: 'long',
+  }).format(dia)
+}
+
+function TarjetaSiguientePaso({
+  proximasInscritas,
+  aportacionesEnRevision,
+  mesesSinPagar,
+  cargando,
+}) {
+  const ahora = new Date()
+
+  const enCurso = proximasInscritas.find((actividad) => {
+    const { inicio, fin } = obtenerMomentoActividad(actividad)
+
+    return (
+      inicio && fin && inicio <= ahora && ahora <= fin
+    )
+  })
+
+  const proxima = proximasInscritas.find((actividad) => {
+    const { inicio } = obtenerMomentoActividad(actividad)
+
+    return inicio && inicio > ahora
+  })
+
+  let contenido
+
+  if (cargando) {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Revisando tu próxima actividad…
+        </p>
+      </>
+    )
+  } else if (enCurso) {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Estás en curso: {enCurso.titulo}
+        </p>
+
+        <p className="next-step__detail">
+          <Clock3 aria-hidden="true" />
+          No olvides registrar tu salida antes de
+          que termine.
+        </p>
+
+        <Link
+          className="summary-action"
+          to={`/actividades/${encodeURIComponent(enCurso.id)}`}
+        >
+          Ver actividad
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </>
+    )
+  } else if (proxima) {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Tu próxima actividad: {proxima.titulo}
+        </p>
+
+        <p className="next-step__detail">
+          <CalendarDays aria-hidden="true" />
+          {formatearFechaActividad(proxima.fecha)}
+          {proxima.horaInicio
+            ? ` · ${proxima.horaInicio} hrs`
+            : ''}
+
+          {proxima.lugar
+            ? ` · ${proxima.lugar}`
+            : ''}
+        </p>
+
+        <Link
+          className="summary-action"
+          to="/actividades"
+        >
+          Ver actividades
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </>
+    )
+  } else if (aportacionesEnRevision > 0) {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Tienes {aportacionesEnRevision}{' '}
+          {aportacionesEnRevision === 1
+            ? 'aportación en revisión'
+            : 'aportaciones en revisión'}
+        </p>
+
+        <Link
+          className="summary-action"
+          to="/aportaciones"
+        >
+          Ir a aportaciones
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </>
+    )
+  } else if (mesesSinPagar > 0) {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Te {mesesSinPagar === 1 ? 'falta' : 'faltan'}{' '}
+          {mesesSinPagar}{' '}
+          {mesesSinPagar === 1 ? 'mes' : 'meses'} de
+          aportación
+        </p>
+
+        <Link
+          className="summary-action"
+          to="/aportaciones"
+        >
+          Ir a aportaciones
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </>
+    )
+  } else {
+    contenido = (
+      <>
+        <p className="next-step__title">
+          Estás al día. Nada pendiente.
+        </p>
+
+        <p className="next-step__detail">
+          <Info aria-hidden="true" />
+          Sigue registrando tus actividades para
+          avanzar en tus horas.
+        </p>
+      </>
+    )
+  }
+
+  return (
+    <section
+      className="dashboard-next-step"
+      aria-labelledby="next-step-title"
+    >
+      <div className="dashboard-next-step__icon">
+        <TrendingUp aria-hidden="true" />
+      </div>
+
+      <div className="dashboard-next-step__body">
+        <h2 id="next-step-title">Siguiente paso</h2>
+
+        {contenido}
+      </div>
+    </section>
+  )
+}
+
 function Dashboard() {
   /*
    * Obtenemos la información compartida por UsuarioProvider.
@@ -61,29 +283,65 @@ function Dashboard() {
   } = useUsuario()
 
 
-  const [proximasActividades, setProximasActividades] = useState([])
+  const [proximasInscritas, setProximasInscritas] = useState([])
+  const [actividadesRecientes, setActividadesRecientes] = useState([])
+  const [aportacionesEnRevision, setAportacionesEnRevision] = useState(0)
   const [cargandoActividades, setCargandoActividades] = useState(true)
 
   useEffect(() => {
-    async function cargarProximas() {
+    let componenteActivo = true
+
+    async function cargarActividades() {
       try {
         setCargandoActividades(true)
 
-        // Llamamos a la nueva función unificada
-        const data = await listarTodasLasProximasActividades()
+        const [proximas, historial, aportaciones] =
+          await Promise.allSettled([
+            listarProximasActividadesInscritas(),
+            listarHistorialActividades(),
+            listarAportacionesEstudiante(),
+          ])
 
-        if (Array.isArray(data)) {
-          // Tomamos únicamente las primeras 3 (las más cercanas)
-          setProximasActividades(data.slice(0, 3))
+        if (!componenteActivo) {
+          return
         }
-      } catch (error) {
-        console.error('Error al cargar actividades en Dashboard:', error)
+
+        setProximasInscritas(
+          proximas.status === 'fulfilled' &&
+            Array.isArray(proximas.value)
+            ? proximas.value
+            : [],
+        )
+
+        setActividadesRecientes(
+          historial.status === 'fulfilled' &&
+            Array.isArray(historial.value)
+            ? historial.value.slice(0, 3)
+            : [],
+        )
+
+        setAportacionesEnRevision(
+          aportaciones.status === 'fulfilled' &&
+            Array.isArray(aportaciones.value)
+            ? aportaciones.value.filter(
+              (aportacion) =>
+                aportacion.estado ===
+                ESTADOS_APORTACION.PENDIENTE,
+            ).length
+            : 0,
+        )
       } finally {
-        setCargandoActividades(false)
+        if (componenteActivo) {
+          setCargandoActividades(false)
+        }
       }
     }
 
-    cargarProximas()
+    cargarActividades()
+
+    return () => {
+      componenteActivo = false
+    }
   }, [])
 
   const datosPersonales =
@@ -500,128 +758,88 @@ function Dashboard() {
                     </div>
                   </article>
                 </section>
+                  <TarjetaSiguientePaso
+                    proximasInscritas={proximasInscritas}
+                    aportacionesEnRevision={aportacionesEnRevision}
+                    mesesSinPagar={mesesSinPagar}
+                    cargando={cargandoActividades}
+                  />
 
-                <section className="dashboard-activities-preview" style={{ marginTop: '28px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '1.1rem', color: '#10283e', margin: 0 }}>
-                      Próximas actividades inscritas
-                    </h2>
-                    <Link to="/actividades" className="summary-action">
-                      Ver todas <ArrowRight size={16} />
-                    </Link>
-                  </div>
+                  <section
+                    className="dashboard-recent"
+                    aria-labelledby="recent-title"
+                  >
+                    <div className="dashboard-recent__heading">
+                      <h2 id="recent-title">
+                        Actividades recientes
+                      </h2>
 
-                  {cargandoActividades && (
-                    <p style={{ fontSize: '0.85rem', color: '#7a8793' }}>Cargando actividades...</p>
-                  )}
+                      <Link
+                        className="summary-action"
+                        to="/actividades"
+                      >
+                        Ver historial completo
 
-                  {!cargandoActividades && proximasActividades.length === 0 && (
-                    <div className="summary-card" style={{ padding: '16px' }}>
-                      <p className="summary-card__description" style={{ margin: 0 }}>
-                        No tienes próximas actividades inscritas en este momento.
-                      </p>
+                        <ArrowRight aria-hidden="true" />
+                      </Link>
                     </div>
-                  )}
 
-                  {!cargandoActividades && proximasActividades.length > 0 && (
-                    <div style={{ display: 'grid', gap: '12px' }}>
-                      {proximasActividades.map((actividad) => {
-                        const estaInscrito = actividad.inscrito === true || Boolean(actividad.inscripcionId)
+                    {actividadesRecientes.length === 0 ? (
+                      <div className="dashboard-recent__empty">
+                        <CalendarDays aria-hidden="true" />
 
-                        return (
-                          <article
-                            key={actividad.id || actividad.inscripcionId}
-                            className="summary-card"
-                            style={{ padding: '16px' }}
-                          >
-                            <div
-                              className={`summary-card__icon ${estaInscrito ? 'summary-card__icon--blue' : 'summary-card__icon--purple'
-                                }`}
+                        <p>
+                          Todavía no tienes actividades
+                          acreditadas.
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="dashboard-recent__list">
+                        {actividadesRecientes.map(
+                          (actividad) => (
+                            <li
+                              key={
+                                actividad.id ??
+                                actividad.actividadId
+                              }
                             >
-                              <CalendarDays size={20} />
-                            </div>
-
-                            <div className="summary-card__content">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span className="summary-card__label">
-                                  {actividad.fecha || 'Fecha pendiente'}
-                                </span>
-
-                                {/* Badge indicador de estado */}
-                                {estaInscrito ? (
-                                  <span
-                                    style={{
-                                      fontSize: '0.65rem',
-                                      fontWeight: '700',
-                                      color: '#0b5688',
-                                      backgroundColor: '#e1eff9',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                    }}
-                                  >
-                                    Inscrito
-                                  </span>
-                                ) : (
-                                  <span
-                                    style={{
-                                      fontSize: '0.65rem',
-                                      fontWeight: '700',
-                                      color: '#278153',
-                                      backgroundColor: '#e6f6ec',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                    }}
-                                  >
-                                    {actividad.cuposDisponibles ?? 0} cupos libres
-                                  </span>
-                                )}
+                              <div className="dashboard-recent__icon">
+                                <CalendarDays
+                                  aria-hidden="true"
+                                />
                               </div>
 
-                              <h3
-                                style={{
-                                  margin: '4px 0 6px',
-                                  fontSize: '0.95rem',
-                                  color: '#10283e',
-                                }}
-                              >
-                                {actividad.titulo}
-                              </h3>
+                              <div className="dashboard-recent__body">
+                                <strong>
+                                  {actividad.titulo ||
+                                    'Actividad'}
+                                </strong>
 
-                              <div
-                                className="summary-card__details"
-                                style={{ marginTop: '4px' }}
-                              >
                                 <span>
-                                  <Clock3 size={14} />
-                                  {actividad.horaInicio
-                                    ? `${actividad.horaInicio} hrs`
-                                    : 'Horario pendiente'}
-                                </span>
-                                <span>
-                                  <MapPin size={14} />
-                                  {actividad.lugar || 'Lugar no especificado'}
+                                  {formatearFechaActividad(
+                                    actividad.fecha,
+                                  )}
                                 </span>
                               </div>
-                            </div>
 
-                            <Link
-                              to={`/actividades/${encodeURIComponent(actividad.id)}`}
-                              className="summary-action"
-                              title={estaInscrito ? 'Ver marcación' : 'Ir a inscripción'}
-                            >
-                              {estaInscrito ? 'Ver detalle' : 'Inscribirme'}
-                            </Link>
-                          </article>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                </section>
-              </>
-            )}
+                              <span className="dashboard-recent__hours">
+                                {actividad.horasRegistradas ??
+                                  actividad.horasAcreditables ??
+                                  0}
+                                {' '}
+                                h
+                              </span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                  </section>
+                </>
+              )}
         </main>
 
+        {/**
         {/*
          * Navegación inferior para celulares.
          * AppLayout.css la oculta en computadoras.
