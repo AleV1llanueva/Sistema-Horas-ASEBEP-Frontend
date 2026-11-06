@@ -366,6 +366,61 @@ BOTÓN PRINCIPAL
 }
 
 /*
+Cuenta sin activar: se ofrece ir al primer ingreso con la cuenta cargada.
+*/
+
+.login-activation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  color: #7a5312;
+  border: 1px solid #ead59d;
+  border-radius: 10px;
+  background: #fff8e6;
+  text-align: left;
+}
+
+.login-activation p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.login-activation strong {
+  color: #5f4009;
+  font-weight: 750;
+}
+
+.login-activation a {
+  flex-shrink: 0;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--login-navy, #002b4f);
+  border: 1px solid #d9bf7a;
+  border-radius: 7px;
+  background: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 720;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.login-activation a:hover {
+  border-color: #c4a457;
+  background: #fffdf6;
+}
+
+/*
 ENLACES Y PIE DE PÁGINA
 */
 

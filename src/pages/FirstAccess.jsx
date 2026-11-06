@@ -23,6 +23,7 @@ import {
 import {
     Link,
     useNavigate,
+    useSearchParams,
 } from 'react-router'
 
 import {
@@ -179,7 +180,25 @@ function obtenerErrorActivacion(error) {
 
 function FirstAccess() {
     const navigate = useNavigate()
-    const [numeroCuenta, setNumeroCuenta] = useState('')
+
+    /*
+    * El login envía la cuenta de un usuario sin activar en `?cuenta=`,
+    * para que solo tenga que pedir su PIN y no volver a escribirla.
+    */
+    const [parametros] = useSearchParams()
+    const cuentaRecibida = (
+        parametros.get('cuenta') ?? ''
+    ).trim()
+
+    const [numeroCuenta, setNumeroCuenta] = useState(
+        /^\d{11}$/.test(cuentaRecibida)
+            ? cuentaRecibida
+            : '',
+    )
+
+    // La cuenta que llega del login ya está validada: no se edita.
+    const cuentaBloqueada =
+        /^\d{11}$/.test(cuentaRecibida)
     const [pin, setPin] = useState('')
     const [contrasena, setContrasena] = useState('')
     const [confirmacion, setConfirmacion] = useState('')
@@ -480,7 +499,8 @@ function FirstAccess() {
                     value={numeroCuenta}
                     disabled={
                       pinSolicitado ||
-                      solicitandoPin
+                      solicitandoPin ||
+                      cuentaBloqueada
                     }
                     aria-invalid={Boolean(
                       errorNumeroCuenta,
@@ -553,7 +573,16 @@ function FirstAccess() {
                     solicitandoPin ||
                     activandoCuenta
                   }
-                  onClick={cambiarNumeroCuenta}
+                  onClick={() => {
+                    cambiarNumeroCuenta()
+
+                    /* Permite corregir también la cuenta recibida del login. */
+                    if (cuentaBloqueada) {
+                      navigate('/primer-ingreso', {
+                        replace: true,
+                      })
+                    }
+                  }}
                 >
                   <Pencil aria-hidden="true" />
                   Cambiar número

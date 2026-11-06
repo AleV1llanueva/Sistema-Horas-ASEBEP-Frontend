@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Link,
   useNavigate,
+  useSearchParams,
 } from 'react-router'
 
 import {
@@ -61,6 +62,8 @@ function IconoOjo({ visible }) {
 function Login() {
   const navigate = useNavigate()
 
+  const [parametros, setParametros] = useSearchParams()
+
   /*
    * El contexto permite utilizar el mismo formulario
    * con la API real o con las cuentas simuladas.
@@ -74,6 +77,14 @@ function Login() {
 
   const [formulario, setFormulario] =
     useState(formularioInicial)
+
+  /*
+   * Siempre que llegue una cuenta de una cuenta sin activar,
+   * se lleva a activarla con el PIN, sin pedirle la contraseña.
+   */
+  const [cuentaSinActivar, setCuentaSinActivar] = useState(
+    () => (parametros.get('cuenta') ?? '').trim(),
+  )
 
   const [errores, setErrores] = useState({})
 
@@ -209,6 +220,9 @@ function Login() {
    * 4. Obtiene la ruta correspondiente al rol.
    * 5. Carga la información personal de la cuenta.
    * 6. Redirige al dashboard apropiado.
+   *
+   * Si la cuenta todavía no está activada, se envía a activarla
+   * en lugar de mostrar "credenciales incorrectas".
    */
   async function manejarEnvio(event) {
     event.preventDefault()
@@ -304,20 +318,32 @@ function Login() {
       const descripcionError =
         obtenerDescripcionError(error)
 
-      const mensajeError = String(
-        error.message || '',
-      ).toLowerCase()
+      const esCuentaInactiva =
+        error?.details?.detail?.codigo ===
+        'cuenta_inactiva'
+
+      if (esCuentaInactiva) {
+        /*
+         * El primer acceso pide el PIN al número de cuenta.
+         * La cuenta viaja en la URL para que solo falte el PIN.
+         */
+        const cuenta =
+          formulario.numeroCuenta.trim()
+
+        setCuentaSinActivar(cuenta)
+        setParametros({ cuenta })
+
+        return
+      }
 
       const tituloError =
         error instanceof SesionError
           ? 'Sesión inválida'
           : error.status === 401
-            ? mensajeError.includes('inactiv')
-              ? 'Cuenta inactiva'
-              : 'Credenciales incorrectas'
+            ? 'Credenciales incorrectas'
             : 'No fue posible iniciar sesión'
 
-      console.log(error);
+      console.log(error)
 
       notificarError({
         id: ID_NOTIFICACION_LOGIN,
@@ -493,6 +519,33 @@ function Login() {
               </>
             )}
           </button>
+
+          {/* Aviso cuando la cuenta existe pero todavía no está activada. */}
+          {cuentaSinActivar && (
+            <div
+              className="login-activation"
+              role="status"
+            >
+              <p>
+                <strong>Tu cuenta aún no está activada</strong>
+
+                <span>
+                  Crea tu contraseña con el PIN enviado a tu
+                  correo institucional.
+                </span>
+              </p>
+
+              <Link
+                to={
+                  `/primer-ingreso?cuenta=${encodeURIComponent(
+                    cuentaSinActivar,
+                  )}`
+                }
+              >
+                Activar mi cuenta
+              </Link>
+            </div>
+          )}
         </form>
 
         <nav

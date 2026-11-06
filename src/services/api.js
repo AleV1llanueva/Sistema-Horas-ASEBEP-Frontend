@@ -44,6 +44,15 @@ function obtenerMensajeError(data) {
         return data.detail
     }
 
+    /*
+     * Algunos errores traen detalle estructurado, por ejemplo
+     * { mensaje, codigo }. Se usa el mensaje legible y el código
+     * queda disponible en `details`.
+     */
+    if (typeof data?.detail?.mensaje === 'string') {
+        return data.detail.mensaje
+    }
+
     if (Array.isArray(data?.detail)) {
         const mensajes = data.detail
         .map((detalle) => detalle?.msg)
