@@ -932,7 +932,7 @@ export async function listarEstudiantesSinCorreo() {
  * Si el catálogo no está disponible se usa el respaldo local.
  */
 export async function listarCarrerasDisponibles() {
-  const respuesta = await peticionApi('/carreras/activas')
+  const respuesta = await peticionApi('/carreras/catalogo')
 
   const registros = Array.isArray(respuesta) ? respuesta : respuesta?.elementos
 
