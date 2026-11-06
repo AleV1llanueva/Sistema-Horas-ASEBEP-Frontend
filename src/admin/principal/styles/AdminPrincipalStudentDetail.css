@@ -373,6 +373,12 @@
   gap: 12px;
 }
 
+/* La sección de asistencia tiene cuatro métricas. */
+.admin-student-progress-metrics:has(article:nth-child(4)) {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
 .admin-student-progress-metrics article {
   min-width: 0;
   display: grid;
@@ -619,6 +625,113 @@
 .admin-student-contribution-status--en-curso {
   color: #155f91;
   background: #e3f2fb;
+}
+
+/* ACREDITACIÓN, HORAS POR MES Y MULTAS */
+
+.admin-student-contribution-status--acreditado,
+.admin-student-contribution-status--completo {
+  color: #28734e;
+  background: #e2f4ea;
+}
+
+.admin-student-contribution-status--pendiente-acreditacion,
+.admin-student-contribution-status--incompleto {
+  color: #9a5418;
+  background: #fff0dd;
+}
+
+.admin-student-detail-table__row--pendiente td:first-child {
+  box-shadow: inset 3px 0 0 #d98b2b;
+}
+
+.admin-student-detail-activity-link {
+  color: var(--admin-blue);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.admin-student-detail-activity-link:hover {
+  color: var(--admin-navy);
+  text-decoration: underline;
+}
+
+.admin-student-detail-activity-place {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-xs);
+}
+
+.admin-student-progress-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 14px 0 0;
+  color: var(--admin-text-soft);
+  font-size: var(--admin-text-xs);
+  font-weight: 650;
+}
+
+.admin-student-progress-summary svg {
+  width: 15px;
+  color: var(--admin-blue);
+}
+
+.admin-student-progress-metrics__note--ok {
+  color: #28734e;
+  font-weight: 700;
+}
+
+.admin-student-attendance-rate {
+  margin-left: auto;
+  padding: 4px 11px;
+  color: #155f91;
+  border-radius: 999px;
+  background: #e3f2fb;
+  font-size: var(--admin-text-xs);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-student-detail-card__header .admin-student-attendance-rate {
+  align-self: center;
+}
+
+.admin-student-detail-subheading {
+  margin: 20px 0 10px;
+  color: var(--admin-text);
+  font-size: var(--admin-text-sm);
+  font-weight: 800;
+}
+
+.admin-student-detail-note {
+  margin: 10px 0 0;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-xs);
+}
+
+.admin-student-contribution-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0 0 14px;
+  color: var(--admin-text-soft);
+  font-size: var(--admin-text-xs);
+}
+
+.admin-student-contribution-summary span {
+  padding: 3px 9px;
+  color: #9a5418;
+  border-radius: 999px;
+  background: #fff0dd;
+  font-weight: 800;
+}
+
+.admin-student-summary__icon--fine {
+  color: #a53030;
+  background: #fde8e8;
 }
 
 /* Estado utilizado cuando el dato no está disponible. */

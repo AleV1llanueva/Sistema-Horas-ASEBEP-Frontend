@@ -1,11 +1,13 @@
 import {
   ArrowLeft,
   CalendarDays,
+  ChartColumn,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
   CircleDollarSign,
   Clock3,
+  Gavel,
   GraduationCap,
   IdCard,
   LoaderCircle,
@@ -31,6 +33,7 @@ import {
 
 import {
   listarHistorialActividadesPorEstudiante,
+  listarInscripcionesPorEstudiante,
 } from '../services/adminActividadesService.js'
 
 import {
@@ -39,8 +42,25 @@ import {
 } from '../services/adminAportacionesService.js'
 
 import {
+  ESTADOS_MULTA,
+  listarMultas,
+} from '../services/adminMultasService.js'
+
+import {
   obtenerEstudiante,
 } from '../services/adminEstudiantesService.js'
+
+import {
+  agruparHorasPorMes,
+  construirPeriodoBeca,
+  HORAS_POR_MES,
+  MESES_ABREVIADOS,
+  obtenerResumenHoras,
+} from '../../../utils/becaHoras.js'
+
+import {
+  calcularEstadoAportaciones,
+} from '../../../utils/becaAportaciones.js'
 
 import '../styles/AdminPrincipalStudentDetail.css'
 
@@ -463,6 +483,23 @@ function AdminPrincipalStudentDetail() {
     setPaginaActividades,
   ] = useState(1)
 
+  // INSCRIPCIONES DEL ESTUDIANTE (faltas y próximas)
+  const [
+    inscripciones,
+    setInscripciones,
+  ] = useState([])
+
+  // MULTAS DEL ESTUDIANTE
+  const [
+    multas,
+    setMultas,
+  ] = useState([])
+
+  const [
+    errorMultas,
+    setErrorMultas,
+  ] = useState('')
+
   // HISTORIAL DE APORTACIONES
   const [
     aportaciones,
@@ -492,14 +529,19 @@ function AdminPrincipalStudentDetail() {
       setError('')
       setErrorActividades('')
       setErrorAportaciones('')
+      setErrorMultas('')
       setEstudiante(null)
       setActividades([])
+      setInscripciones([])
+      setMultas([])
       setAportaciones([])
 
       const [
         resultadoEstudiante,
         resultadoActividades,
         resultadoAportaciones,
+        resultadoInscripciones,
+        resultadoMultas,
       ] = await Promise.allSettled([
         obtenerEstudiante(
           numeroCuenta,
@@ -512,6 +554,12 @@ function AdminPrincipalStudentDetail() {
         listarAportacionesPorEstudiante(
           numeroCuenta,
         ),
+
+        listarInscripcionesPorEstudiante(
+          numeroCuenta,
+        ),
+
+        listarMultas(),
       ])
 
       if (!componenteMontado) {
@@ -585,6 +633,42 @@ function AdminPrincipalStudentDetail() {
           obtenerMensajeError(
             resultadoAportaciones.reason,
             'No fue posible cargar el historial de aportaciones.',
+          ),
+        )
+      }
+
+      /*
+       * Las inscripciones permiten separar faltas de
+       * próximas actividades; si fallan, la sección de
+       * asistencia se apoya solo en el historial.
+       */
+      if (
+        resultadoInscripciones.status ===
+        'fulfilled'
+      ) {
+        setInscripciones(
+          Array.isArray(
+            resultadoInscripciones.value,
+          )
+            ? resultadoInscripciones.value
+            : [],
+        )
+      }
+
+      if (
+        resultadoMultas.status ===
+        'fulfilled'
+      ) {
+        setMultas(
+          Array.isArray(resultadoMultas.value)
+            ? resultadoMultas.value
+            : [],
+        )
+      } else {
+        setErrorMultas(
+          obtenerMensajeError(
+            resultadoMultas.reason,
+            'No fue posible cargar las multas.',
           ),
         )
       }
@@ -828,6 +912,117 @@ function AdminPrincipalStudentDetail() {
   const ultimaActividad =
     actividades[0] ?? null
 
+  /*
+   * Progreso de horas. La vía administrativa no entrega
+   * el exceso real, así que solo se informa el porcentaje
+   * y si la meta está cubierta.
+   */
+  const resumenHoras = obtenerResumenHoras({
+    horasAcumuladas,
+    horasFaltantes,
+    enExceso: false,
+  })
+
+  /*
+   * Periodo de beca: 20 horas por mes, máximo 10 meses.
+   *
+   * La vía administrativa conoce el mes y el año de
+   * inicio; la del portal solo entrega el PAC, por lo que
+   * allí no se puede ubicar ningún mes y se informa como
+   * no definido en lugar de inventar filas.
+   */
+  const periodoBeca = construirPeriodoBeca({
+    mesInicio: datosBecario.mesInicio,
+    anioInicio: datosBecario.anioInicio,
+  })
+
+  const horasPorMes = agruparHorasPorMes({
+    registros: actividades,
+    periodo: periodoBeca,
+  })
+
+  const inicialesSinMarcar = (inscripcion) =>
+    inscripcion.estadoActividad === 'programada' ||
+    inscripcion.estadoActividad === 'en-curso'
+
+  const asistenciasConfirmadas = actividades.length
+
+  const faltas = inscripciones.filter(
+    (inscripcion) =>
+      inscripcion.estadoActividad === 'finalizada' &&
+      !inscripcion.checkIn &&
+      !inscripcion.checkOut,
+  ).length
+
+  const proximas = inscripciones.filter(
+    inicialesSinMarcar,
+  ).length
+
+  const totalResueltas =
+    asistenciasConfirmadas + faltas
+
+  const porcentajeAsistencia =
+    totalResueltas > 0
+      ? Math.round(
+        (asistenciasConfirmadas / totalResueltas) *
+        100,
+      )
+      : null
+
+  const horasAcreditadas =
+    actividades.reduce(
+      (total, actividad) =>
+        total +
+        prepararCantidad(
+          actividad.horasAcreditadas,
+        ),
+      0,
+    )
+
+  /*
+   * Multas del estudiante. La ruta administrativa no
+   * filtra por cuenta, así que se filtra aquí.
+   */
+  const multasDelEstudiante = multas.filter(
+    (multa) =>
+      prepararTexto(multa.numCuenta) ===
+      prepararTexto(numeroCuenta),
+  )
+
+  const multasPendientes =
+    multasDelEstudiante
+      .filter(
+        (multa) =>
+          multa.estado !==
+          ESTADOS_MULTA.APROBADO,
+      )
+      .reduce(
+        (total, multa) =>
+          total + prepararCantidad(multa.monto),
+        0,
+      )
+
+  const estadoAportaciones =
+    calcularEstadoAportaciones({
+      mesesAportadosPrevios:
+        datosBecario.montoAcumulado,
+      mesesAprobadosEnSistema: aportaciones
+        .filter(
+          (aportacion) =>
+            prepararTexto(aportacion.estado) ===
+            ESTADOS_APORTACION.APROBADO,
+        )
+        .reduce(
+          (total, aportacion) =>
+            total +
+            prepararCantidad(
+              aportacion.meses_aprobados,
+            ),
+          0,
+        ),
+      periodo: periodoBeca,
+    })
+
   return (
     <div className="admin-student-detail-page">
       {/* NAVEGACIÓN DE REGRESO */}
@@ -1009,7 +1204,18 @@ function AdminPrincipalStudentDetail() {
                   {horasFaltantes}
                 </strong>
 
-                <p>Horas faltantes</p>
+                <p
+                  className={
+                    resumenHoras.estado ===
+                    'cumplida'
+                      ? 'admin-student-progress-metrics__note--ok'
+                      : undefined
+                  }
+                >
+                  {resumenHoras.estado === 'cumplida'
+                    ? 'Meta cumplida'
+                    : 'Horas faltantes'}
+                </p>
               </article>
 
               <article>
@@ -1028,6 +1234,141 @@ function AdminPrincipalStudentDetail() {
                 </p>
               </article>
             </div>
+
+            <p className="admin-student-progress-summary">
+              <ChartColumn aria-hidden="true" />
+              Progreso: {resumenHoras.porcentaje}% de{' '}
+              {resumenHoras.meta} horas
+            </p>
+          </section>
+
+          {/* ASISTENCIA */}
+          <section
+            className="admin-student-detail-card"
+            aria-labelledby="student-attendance-title"
+          >
+            <header className="admin-student-detail-card__header">
+              <CircleCheck aria-hidden="true" />
+
+              <h2 id="student-attendance-title">
+                Asistencia
+              </h2>
+
+              <span className="admin-student-attendance-rate">
+                {porcentajeAsistencia === null
+                  ? 'Asistencia: —'
+                  : `Asistencia: ${porcentajeAsistencia} %`}
+              </span>
+            </header>
+
+            <div className="admin-student-progress-metrics">
+              <article>
+                <span>
+                  <CircleCheck aria-hidden="true" />
+                </span>
+
+                <strong>
+                  {asistenciasConfirmadas}
+                </strong>
+
+                <p>Asistidas</p>
+              </article>
+
+              <article>
+                <span>
+                  <TriangleAlert aria-hidden="true" />
+                </span>
+
+                <strong>{faltas}</strong>
+
+                <p>Faltas</p>
+              </article>
+
+              <article>
+                <span>
+                  <CalendarDays aria-hidden="true" />
+                </span>
+
+                <strong>{proximas}</strong>
+
+                <p>Próximas</p>
+              </article>
+
+              <article>
+                <span>
+                  <Clock3 aria-hidden="true" />
+                </span>
+
+                <strong>{horasAcreditadas}</strong>
+
+                <p>Horas del historial</p>
+              </article>
+            </div>
+
+            <h3 className="admin-student-detail-subheading">
+              Horas por mes
+            </h3>
+
+            {periodoBeca.inicio === null ? (
+              <div className="admin-student-detail-empty">
+                <CalendarDays aria-hidden="true" />
+
+                <p>Periodo de ingreso no definido</p>
+              </div>
+            ) : (
+              <div className="admin-student-detail-table-wrapper">
+                <table className="admin-student-detail-table">
+                  <caption>
+                    Horas acreditadas por mes del periodo
+                    de beca
+                  </caption>
+
+                  <thead>
+                    <tr>
+                      <th scope="col">Mes</th>
+                      <th scope="col">
+                        Horas acreditadas
+                      </th>
+                      <th scope="col">Estado</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {horasPorMes.map(
+                      ({ anio, mes, horas, estado }) => (
+                        <tr
+                          key={`${anio}-${mes}`}
+                        >
+                          <td data-label="Mes">
+                            {MESES_ABREVIADOS[mes - 1]}{' '}
+                            {anio}
+                          </td>
+
+                          <td data-label="Horas acreditadas">
+                            {horas} de {HORAS_POR_MES}
+                          </td>
+
+                          <td data-label="Estado">
+                            <span
+                              className={
+                                'admin-student-contribution-status ' +
+                                `admin-student-contribution-status--${estado}`
+                              }
+                            >
+                              {estado === 'completo'
+                                ? 'Completo'
+                                : estado === 'incompleto'
+                                  ? 'Incompleto'
+                                  : 'Sin horas'}
+                            </span>
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           {/* HISTORIAL DE ACTIVIDADES */}
@@ -1083,7 +1424,7 @@ function AdminPrincipalStudentDetail() {
                         </th>
 
                         <th scope="col">
-                          Estado
+                          Acreditación
                         </th>
                       </tr>
                     </thead>
@@ -1095,6 +1436,12 @@ function AdminPrincipalStudentDetail() {
                             key={
                               actividad.id ??
                               actividad.actividadId
+                            }
+                            className={
+                              actividad.estadoAcreditacion ===
+                              'pendiente'
+                                ? 'admin-student-detail-table__row--pendiente'
+                                : undefined
                             }
                           >
                             <td data-label="Fecha">
@@ -1110,8 +1457,21 @@ function AdminPrincipalStudentDetail() {
                             </td>
 
                             <td data-label="Actividad">
-                              {mostrarDato(
-                                actividad.titulo,
+                              <Link
+                                className="admin-student-detail-activity-link"
+                                to={`/admin-principal/actividades/${encodeURIComponent(
+                                  actividad.actividadId,
+                                )}`}
+                              >
+                                {mostrarDato(
+                                  actividad.titulo,
+                                )}
+                              </Link>
+
+                              {actividad.lugar && (
+                                <small className="admin-student-detail-activity-place">
+                                  {actividad.lugar}
+                                </small>
                               )}
                             </td>
 
@@ -1122,18 +1482,17 @@ function AdminPrincipalStudentDetail() {
                               )}
                             </td>
 
-                            <td data-label="Estado">
+                            <td data-label="Acreditación">
                               <span
                                 className={
                                   'admin-student-contribution-status ' +
-                                  `admin-student-contribution-status--${obtenerClaseEstado(
-                                    actividad.estado,
-                                  )}`
+                                  `admin-student-contribution-status--${actividad.estadoAcreditacion}`
                                 }
                               >
-                                {formatearEstado(
-                                  actividad.estado,
-                                )}
+                                {actividad.estadoAcreditacion ===
+                                'acreditado'
+                                  ? 'Acreditado'
+                                  : 'Pendiente'}
                               </span>
                             </td>
                           </tr>
@@ -1162,6 +1521,94 @@ function AdminPrincipalStudentDetail() {
             )}
           </section>
 
+          {/* MULTAS DEL ESTUDIANTE: solo si tiene */}
+          {multasDelEstudiante.length > 0 && (
+            <section
+              className="admin-student-detail-card"
+              aria-labelledby="student-fines-title"
+            >
+              <header className="admin-student-detail-card__header">
+                <Gavel aria-hidden="true" />
+
+                <h2 id="student-fines-title">
+                  Multas
+                </h2>
+              </header>
+
+              <div className="admin-student-detail-table-wrapper">
+                <table className="admin-student-detail-table">
+                  <caption>
+                    Multas registradas del estudiante
+                  </caption>
+
+                  <thead>
+                    <tr>
+                      <th scope="col">Fecha</th>
+                      <th scope="col">Motivo</th>
+                      <th scope="col">Monto</th>
+                      <th scope="col">Estado</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {multasDelEstudiante.map(
+                      (multa) => (
+                        <tr key={multa.id}>
+                          <td data-label="Fecha">
+                            <time
+                              dateTime={
+                                multa.fechaMulta ??
+                                undefined
+                              }
+                            >
+                              {formatearFecha(
+                                multa.fechaMulta,
+                              )}
+                            </time>
+                          </td>
+
+                          <td data-label="Motivo">
+                            {mostrarDato(multa.motivo)}
+                          </td>
+
+                          <td data-label="Monto">
+                            {formatearLempiras(
+                              multa.monto,
+                            )}
+                          </td>
+
+                          <td data-label="Estado">
+                            <span
+                              className={
+                                'admin-student-contribution-status ' +
+                                `admin-student-contribution-status--${obtenerClaseEstado(
+                                  multa.estado,
+                                )}`
+                              }
+                            >
+                              {multa.estado ===
+                              ESTADOS_MULTA.APROBADO
+                                ? 'Pagada'
+                                : multa.estado ===
+                                  ESTADOS_MULTA.RECHAZADO
+                                  ? 'Comprobante rechazado'
+                                  : 'Pendiente de pago'}
+                            </span>
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="admin-student-detail-note">
+                Solo consulta. El pago lo registra el
+                estudiante desde su portal.
+              </p>
+            </section>
+          )}
+
           {/* APORTACIONES */}
           <section
             className="admin-student-detail-card"
@@ -1174,6 +1621,23 @@ function AdminPrincipalStudentDetail() {
                 Aportaciones
               </h2>
             </header>
+
+            {estadoAportaciones && (
+              <p className="admin-student-contribution-summary">
+                {estadoAportaciones.cubiertos} de{' '}
+                {estadoAportaciones.mesesCompletados}{' '}
+                meses cubiertos
+
+                {estadoAportaciones.sinPagar > 0 && (
+                  <span>
+                    {estadoAportaciones.sinPagar}{' '}
+                    {estadoAportaciones.sinPagar === 1
+                      ? 'mes pendiente'
+                      : 'meses pendientes'}
+                  </span>
+                )}
+              </p>
+            )}
 
             <div
               className="admin-student-contribution-tabs"
@@ -1506,6 +1970,39 @@ function AdminPrincipalStudentDetail() {
                 )}
               </div>
             </div>
+
+            {/*
+             * Solo aparece cuando hay saldo pendiente:
+             * una cifra en cero no aporta información.
+             */}
+            {multasPendientes > 0 && (
+              <div className="admin-student-summary__item">
+                <span
+                  className="admin-student-summary__icon admin-student-summary__icon--fine"
+                  aria-hidden="true"
+                >
+                  <Gavel />
+                </span>
+
+                <div>
+                  <small>
+                    Multas pendientes
+                  </small>
+
+                  <strong>
+                    {formatearLempiras(
+                      multasPendientes,
+                    )}
+                  </strong>
+
+                  <p>
+                    {multasDelEstudiante.length === 1
+                      ? '1 multa registrada'
+                      : `${multasDelEstudiante.length} multas registradas`}
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
         </aside>
       </div>
