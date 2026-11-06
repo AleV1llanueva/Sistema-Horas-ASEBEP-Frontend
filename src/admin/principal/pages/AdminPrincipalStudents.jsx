@@ -25,7 +25,7 @@ import {
   useState,
 } from 'react'
 
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
 import AdminPagination from '../../shared/components/AdminPagination.jsx'
 
@@ -33,6 +33,7 @@ import {
   asignarCorreoInstitucional,
   cambiarEstadoEstudiante,
   contarEstudiantesPorEstado,
+  eliminarEstudiante,
   listarEstudiantesPaginados,
   listarEstudiantesSinCorreo,
 } from '../services/adminEstudiantesService.js'
@@ -40,7 +41,6 @@ import {
 import {
   notificarError,
   notificarExito,
-  notificarInformacion,
 } from '../../../services/notificationService.js'
 
 import '../styles/AdminPrincipalStudents.css'
@@ -158,6 +158,11 @@ function describirMesesPendientes(
 }
 
 function AdminPrincipalStudents() {
+  /*
+   * Permite abrir el listado con una búsqueda ya aplicada,
+   * por ejemplo al llegar desde el alta de estudiantes.
+   */
+  const [parametros] = useSearchParams()
   const [
     estudiantes,
     setEstudiantes,
@@ -202,11 +207,14 @@ function AdminPrincipalStudents() {
   const [
     busqueda,
     setBusqueda,
-  ] = useState('')
+  ] = useState(
+    () => parametros.get('busqueda') ?? '',
+  )
 
   /*
-   * La búsqueda remota se retrasa 300 ms para no
-   * consultar al servidor por cada letra escrita.
+   * La búsqueda remota se retrasa para no consultar al servidor
+   * por cada letra escrita. El campo no se vuelve a montar, así que
+   * el foco se conserva mientras se escribe.
    */
   const [
     busquedaAplicada,
@@ -220,7 +228,7 @@ function AdminPrincipalStudents() {
           busqueda.trim(),
         )
       },
-      300,
+      250,
     )
 
     return () => {
@@ -829,25 +837,87 @@ function AdminPrincipalStudents() {
   }
 
   /*
-   * El backend todavía no permite eliminar estudiantes.
-   * El botón se conserva preparado mientras llega el contrato.
+   * Eliminación definitiva: se muestra el estudiante y, si se confirma,
+   * el backend puede rechazarla cuando tiene registros relacionados.
    */
-  function mostrarEliminacionPendiente(
-    estudiante,
-  ) {
-    const nombre =
-      estudiante.datosPersonales
-        ?.nombreCompleto ||
-      'el estudiante seleccionado'
+  const [
+    estudiantePorEliminar,
+    setEstudiantePorEliminar,
+  ] = useState(null)
 
-    notificarInformacion({
-      id:
-        `eliminar-estudiante-pendiente-${estudiante.id}`,
-      titulo:
-        'Eliminación disponible próximamente',
-      descripcion:
-        `La opción para eliminar a ${nombre} todavía no está disponible en el backend.`,
-    })
+  const [
+    dialogoEliminarAbierto,
+    setDialogoEliminarAbierto,
+  ] = useState(false)
+
+  const [
+    errorEliminacion,
+    setErrorEliminacion,
+  ] = useState('')
+
+  /*
+   * Abre la confirmación de eliminación definitiva.
+   */
+  function solicitarEliminacion(estudiante) {
+    if (!estudiante?.id || estudianteProcesando) {
+      return
+    }
+
+    setErrorEliminacion('')
+    setEstudiantePorEliminar(estudiante)
+    setDialogoEliminarAbierto(true)
+  }
+
+  function cerrarDialogoEliminacion() {
+    if (estudianteProcesando) {
+      return
+    }
+
+    setDialogoEliminarAbierto(false)
+  }
+
+  /*
+   * Elimina al estudiante del sistema. Si el backend indica que tiene
+   * registros relacionados, el mensaje se muestra dentro del diálogo.
+   */
+  async function confirmarEliminacion() {
+    if (
+      !estudiantePorEliminar?.id ||
+      estudianteProcesando
+    ) {
+      return
+    }
+
+    const estudiante =
+      estudiantePorEliminar
+
+    setEstudianteProcesando(
+      estudiante.id,
+    )
+    setErrorEliminacion('')
+
+    try {
+      await eliminarEstudiante(estudiante)
+
+      setDialogoEliminarAbierto(false)
+
+      notificarExito({
+        id: `estudiante-eliminado-${estudiante.id}`,
+        titulo: 'Estudiante eliminado',
+        descripcion:
+          'El estudiante y su perfil de becario fueron eliminados definitivamente.',
+      })
+
+      setRecarga((valorActual) => valorActual + 1)
+    } catch (errorEliminar) {
+      setErrorEliminacion(
+        errorEliminar instanceof Error
+          ? errorEliminar.message
+          : 'No fue posible eliminar al estudiante.',
+      )
+    } finally {
+      setEstudianteProcesando('')
+    }
   }
 
   return (
@@ -1024,7 +1094,7 @@ function AdminPrincipalStudents() {
                     <input
                       type="search"
                       value={busquedaSinCorreo}
-                      placeholder="Buscar por nombre, cuenta o carrera"
+                      placeholder="Buscar por nombre, cuenta, correo o teléfono"
                       onChange={(evento) =>
                         setBusquedaSinCorreo(
                           evento.target.value,
@@ -1309,7 +1379,7 @@ function AdminPrincipalStudents() {
                 <input
                   type="search"
                   value={busqueda}
-                  placeholder="Buscar por nombre, cuenta o carrera"
+                  placeholder="Buscar por nombre, cuenta, correo o teléfono"
                   onChange={(evento) =>
                     setBusqueda(
                       evento.target.value,
@@ -1397,11 +1467,6 @@ function AdminPrincipalStudents() {
         !error &&
         existenEstudiantes && (
           <section
-            /*
-             * La key vuelve a montar el panel cuando cambia
-             * la pestaña y permite repetir la animación.
-             */
-            key={pestanaActiva}
             id="admin-students-tab-panel"
             className="admin-students-list"
             role="tabpanel"
@@ -1682,7 +1747,7 @@ function AdminPrincipalStudents() {
                                     }
                                     disabled={procesando}
                                     onClick={() =>
-                                      mostrarEliminacionPendiente(
+                                      solicitarEliminacion(
                                         estudiante,
                                       )
                                     }
@@ -1935,6 +2000,95 @@ function AdminPrincipalStudents() {
                   : accionEsActivacion
                     ? 'Activar estudiante'
                     : 'Desactivar estudiante'}
+              </button>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+      {/* Confirmación de eliminación definitiva. */}
+      <AlertDialog.Root
+        open={dialogoEliminarAbierto}
+        onOpenChange={(abierto) => {
+          if (!estudianteProcesando) {
+            setDialogoEliminarAbierto(
+              abierto,
+            )
+          }
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="admin-student-confirm-dialog__overlay" />
+
+          <AlertDialog.Content className="admin-student-confirm-dialog__content">
+            <div className="admin-student-confirm-dialog__icon admin-student-confirm-dialog__icon--delete">
+              <Trash2 aria-hidden="true" />
+            </div>
+
+            <AlertDialog.Title className="admin-student-confirm-dialog__title">
+              Eliminar estudiante
+            </AlertDialog.Title>
+
+            <AlertDialog.Description className="admin-student-confirm-dialog__description">
+              Se eliminarán el estudiante y su
+              perfil de becario. Esta acción no
+              se puede deshacer.
+            </AlertDialog.Description>
+
+            <p className="admin-student-confirm-dialog__student">
+              {
+                estudiantePorEliminar
+                  ?.datosPersonales
+                  ?.nombreCompleto
+              }
+            </p>
+
+            {errorEliminacion && (
+              <p
+                className="admin-students-missing-email__field-error"
+                role="alert"
+              >
+                {errorEliminacion}
+              </p>
+            )}
+
+            <div className="admin-student-confirm-dialog__actions">
+              <AlertDialog.Cancel asChild>
+                <button
+                  className="admin-student-confirm-dialog__cancel"
+                  type="button"
+                  disabled={
+                    Boolean(
+                      estudianteProcesando,
+                    )
+                  }
+                  onClick={
+                    cerrarDialogoEliminacion
+                  }
+                >
+                  Cancelar
+                </button>
+              </AlertDialog.Cancel>
+
+              <button
+                className="admin-student-confirm-dialog__confirm admin-student-confirm-dialog__confirm--delete"
+                type="button"
+                disabled={
+                  Boolean(estudianteProcesando)
+                }
+                onClick={confirmarEliminacion}
+              >
+                {estudianteProcesando ? (
+                  <LoaderCircle
+                    className="admin-student-confirm-dialog__loader"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Trash2 aria-hidden="true" />
+                )}
+
+                {estudianteProcesando
+                  ? 'Eliminando...'
+                  : 'Eliminar definitivamente'}
               </button>
             </div>
           </AlertDialog.Content>

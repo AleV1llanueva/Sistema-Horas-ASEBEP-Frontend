@@ -1032,6 +1032,12 @@
   background: #fff5da;
 }
 
+.admin-student-confirm-dialog__icon--delete {
+  color: #a72a2a;
+  border-color: #f0c4c4;
+  background: #fdeaea;
+}
+
 .admin-student-confirm-dialog__title {
   margin: 0;
   color: var(--admin-navy);
@@ -1143,6 +1149,22 @@
   ) {
   border-color: #8c6111;
   background: #8c6111;
+  transform: translateY(-1px);
+}
+
+.admin-student-confirm-dialog__confirm--delete {
+  border-color: #a72a2a;
+  background: #a72a2a;
+  box-shadow:
+    0 7px 16px
+    rgb(167 42 42 / 18%);
+}
+
+.admin-student-confirm-dialog__confirm--delete:hover:not(
+    :disabled
+  ) {
+  border-color: #8d1f1f;
+  background: #8d1f1f;
   transform: translateY(-1px);
 }
 
