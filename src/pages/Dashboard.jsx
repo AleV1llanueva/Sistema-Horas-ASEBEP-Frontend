@@ -5,6 +5,7 @@ import {
   GraduationCap,
   MapPin,
   Scale,
+  TrendingUp,
   WalletCards,
 } from 'lucide-react'
 
@@ -19,6 +20,10 @@ import { useEffect, useState } from 'react'
 import { listarProximasActividadesInscritas } from '../services/estudianteActividadesService.js'
 
 import { listarTodasLasProximasActividades } from '../services/estudianteActividadesService.js'
+import {
+  describirExcesoHoras,
+  obtenerResumenHoras,
+} from '../utils/becaHoras.js'
 
 // Estado para almacenar las próximas actividades
 
@@ -100,42 +105,24 @@ function Dashboard() {
     'Becario'
 
   /*
-   * Math.max impide mostrar cantidades negativas
+   * La meta se mantiene como acumuladas + faltantes,
+   * que es la fórmula con la que el backend entrega
+   * sus datos. Así el exceso se detecta sin inventar
+   * cifras cuando el becario se adelanta.
    */
-  const horasAcumuladas = Math.max(
-    0,
-    datosBecario?.horasAcumuladas ?? 0,
-  )
+  const resumenHoras = obtenerResumenHoras({
+    horasAcumuladas:
+      datosBecario?.horasAcumuladas ?? 0,
+    horasFaltantes:
+      datosBecario?.horasFaltantes ?? 0,
+    enExceso: true,
+  })
 
-  const horasRestantes = Math.max(
-    0,
-    datosBecario?.horasFaltantes ?? 0,
-  )
-
-  /*
-   * El backend entrega horas acumuladas y faltantes.
-   * Sumamos ambas cantidades para obtener la meta total.
-   */
-  const metaHoras =
-    horasAcumuladas + horasRestantes
-
-  /*
-   * Evitamos dividir entre cero cuando todavía
-   * no existe información de horas.
-   */
-  const porcentaje =
-    metaHoras > 0
-      ? Math.min(
-        100,
-        Math.round(
-          (horasAcumuladas / metaHoras) *
-          100,
-        ),
-      )
-      : 0
+  const hayExceso =
+    resumenHoras.exceso > 0
 
   const maximoProgreso =
-    Math.max(metaHoras, 1)
+    Math.max(resumenHoras.meta, 1)
 
   const estadoBeca = prepararEstado(
     datosBecario?.estadoBeca ||
@@ -339,12 +326,12 @@ function Dashboard() {
 
                   <div className="hours-number">
                     <strong>
-                      {horasAcumuladas}
+                      {resumenHoras.acumuladas}
                     </strong>
 
                     <span>
                       {' '}
-                      / {metaHoras} horas
+                      / {resumenHoras.meta} horas
                     </span>
                   </div>
 
@@ -352,38 +339,78 @@ function Dashboard() {
                    * Barra de progreso accesible.
                    * aria-valuenow contiene el progreso actual.
                    * aria-valuemax contiene la meta total.
+                   * aria-valuetext explica el exceso cuando existe.
                    */}
                   <div
                     className="progress-track"
                     role="progressbar"
                     aria-label="Progreso de horas acumuladas"
                     aria-valuemin="0"
-                    aria-valuemax={
-                      maximoProgreso
-                    }
+                    aria-valuemax={maximoProgreso}
                     aria-valuenow={
-                      horasAcumuladas
+                      resumenHoras.acumuladas
+                    }
+                    aria-valuetext={
+                      hayExceso
+                        ? `${resumenHoras.acumuladas} de ${resumenHoras.meta} horas, ${resumenHoras.exceso} horas adelantadas`
+                        : `${resumenHoras.acumuladas} de ${resumenHoras.meta} horas`
                     }
                   >
                     <span
-                      className="progress-value"
+                      className={
+                        hayExceso
+                          ? 'progress-value progress-value--exceso'
+                          : 'progress-value'
+                      }
                       style={{
-                        width: `${porcentaje}%`,
+                        width: `${resumenHoras.porcentaje}%`,
                       }}
                     />
+
+                    {/*
+                     * El exceso no cambia el llenado: la meta
+                     * ya está cubierta y solo se informa aparte.
+                     */}
+                    {hayExceso && (
+                      <span className="progress-badge">
+                        Adelantado
+                      </span>
+                    )}
                   </div>
 
                   <div className="hours-panel__footer">
                     <span>
                       <Clock3 aria-hidden="true" />
 
-                      {horasRestantes} horas restantes
+                      {resumenHoras.estado ===
+                        'cumplida'
+                        ? 'Meta cumplida'
+                        : `${Math.max(
+                          0,
+                          datosBecario
+                            ?.horasFaltantes ?? 0,
+                        )} horas restantes`}
                     </span>
 
                     <span>
-                      Progreso total: {porcentaje}%
+                      Progreso total:{' '}
+                      {resumenHoras.porcentaje}%
                     </span>
                   </div>
+
+                  {hayExceso && (
+                    <p
+                      className="hours-exceso"
+                      role="status"
+                    >
+                      <TrendingUp aria-hidden="true" />
+
+                      {describirExcesoHoras(
+                        resumenHoras.exceso,
+                      )}{' '}
+                      frente a la meta
+                    </p>
+                  )}
                 </section>
 
                 {/* Resumen de aportaciones y multas. */}

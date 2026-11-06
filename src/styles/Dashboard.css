@@ -251,20 +251,65 @@
 
 .progress-track {
   height: 10px;
-  overflow: hidden;
+  display: flex;
+  position: relative;
   margin-top: 14px;
   border-radius: 999px;
   background: #e4e9ee;
+  transition: height 220ms ease;
 }
 
 .progress-value {
   height: 100%;
   display: block;
+  overflow: hidden;
   border-radius: inherit;
   background:
     linear-gradient(90deg, #002b4f, #0b5688);
   animation: llenar-progreso 1s
     cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* El exceso necesita altura para que el badge quepa. */
+.progress-track:has(.progress-value--exceso) {
+  height: 18px;
+}
+
+.progress-value--exceso {
+  background:
+    linear-gradient(90deg, #0f5c41, #1c8a5f);
+}
+
+.progress-badge {
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  padding: 0 8px;
+  color: #0f5c41;
+  border-radius: 999px;
+  background: #e6f6ec;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hours-exceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: #1c7a55;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.hours-exceso svg {
+  width: 15px;
 }
 
 .hours-panel__footer {
@@ -596,5 +641,9 @@
   .summary-card,
   .progress-value {
     animation: none;
+  }
+
+  .progress-track {
+    transition: none;
   }
 }
