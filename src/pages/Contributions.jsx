@@ -38,11 +38,22 @@ import {
   calcularResumenDeuda,
   CUOTA_MENSUAL_APORTACION,
   ESTADOS_APORTACION,
-  FORMATOS_COMPROBANTE_ACEPTADOS,
   listarAportacionesEstudiante,
   registrarAportacionEstudiante,
+  validarComprobante,
   validarComprobantePdf,
 } from '../services/estudianteAportacionesService.js'
+
+/*
+ * Valores del atributo `accept` de cada selector.
+ *
+ * El usuario puede adjuntar un PDF, una imagen o ambos.
+ */
+const FORMATOS_PDF_ACEPTADOS =
+  '.pdf,application/pdf'
+
+const FORMATOS_IMAGEN_ACEPTADOS =
+  '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
 
 import {
   notificarError,
@@ -138,6 +149,7 @@ function crearFormularioInicial() {
     numeroReferencia: '',
     descripcion: '',
     archivo: null,
+    archivoImagen: null,
   }
 }
 
@@ -149,6 +161,7 @@ function crearErroresIniciales() {
     numeroReferencia: '',
     descripcion: '',
     archivo: '',
+    archivoImagen: '',
   }
 }
 
@@ -337,10 +350,45 @@ function obtenerTextoMesesAprobados(
 }
 
 /* =========================================================
- * SELECTOR DEL COMPROBANTE PDF
+ * SELECTOR DEL COMPROBANTE (PDF O IMAGEN)
  * ======================================================= */
 
-function SelectorComprobantePdf({
+/*
+ * Genera una URL temporal para previsualizar la imagen
+ * seleccionada y la libera al desmontar o cambiar el archivo.
+ */
+function useVistaPreviaImagen(
+  archivo,
+) {
+  const [urlVista, setUrlVista] =
+    useState('')
+
+  useEffect(() => {
+    if (
+      !archivo ||
+      typeof URL === 'undefined' ||
+      typeof URL.createObjectURL !==
+        'function'
+    ) {
+      setUrlVista('')
+      return undefined
+    }
+
+    const url =
+      URL.createObjectURL(archivo)
+
+    setUrlVista(url)
+
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [archivo])
+
+  return urlVista
+}
+
+function SelectorComprobante({
+  tipo,
   archivo,
   error,
   deshabilitado,
@@ -356,6 +404,25 @@ function SelectorComprobantePdf({
     setArrastrando,
   ] = useState(false)
 
+  const esImagen =
+    tipo === 'imagen'
+
+  const idCampo =
+    esImagen
+      ? 'comprobante-imagen-aportacion'
+      : 'comprobante-aportacion'
+
+  const idAyuda =
+    `ayuda-${idCampo}`
+
+  const idError =
+    `error-${idCampo}`
+
+  const urlVistaPrevia =
+    useVistaPreviaImagen(
+      esImagen ? archivo : null,
+    )
+
   /*
    * Valida el archivo antes de entregarlo
    * al formulario principal.
@@ -368,8 +435,11 @@ function SelectorComprobantePdf({
     }
 
     try {
-      validarComprobantePdf(
+      validarComprobante(
         archivoSeleccionado,
+        esImagen
+          ? 'imagen'
+          : 'pdf',
       )
 
       onError('')
@@ -464,8 +534,10 @@ function SelectorComprobantePdf({
 
   return (
     <div className="student-contributions-upload-field">
-      <label htmlFor="comprobante-aportacion">
-        Comprobante PDF
+      <label htmlFor={idCampo}>
+        {esImagen
+          ? 'Comprobante en imagen (opcional)'
+          : 'Comprobante PDF (opcional)'}
       </label>
 
       {!archivo && (
@@ -491,21 +563,26 @@ function SelectorComprobantePdf({
           </strong>
 
           <span>
-            El archivo debe estar en
-            formato PDF.
+            {esImagen
+              ? 'La imagen debe estar en formato JPG, PNG o WEBP.'
+              : 'El archivo debe estar en formato PDF.'}
           </span>
 
           <span className="student-contributions-select-file">
-            Seleccionar PDF
+            {esImagen
+              ? 'Seleccionar imagen'
+              : 'Seleccionar PDF'}
           </span>
 
           <input
             ref={referenciaInput}
-            id="comprobante-aportacion"
+            id={idCampo}
             className="student-contributions-file-input"
             type="file"
             accept={
-              FORMATOS_COMPROBANTE_ACEPTADOS
+              esImagen
+                ? FORMATOS_IMAGEN_ACEPTADOS
+                : FORMATOS_PDF_ACEPTADOS
             }
             disabled={deshabilitado}
             aria-invalid={
@@ -513,8 +590,8 @@ function SelectorComprobantePdf({
             }
             aria-describedby={
               error
-                ? 'error-comprobante-aportacion'
-                : 'ayuda-comprobante-aportacion'
+                ? idError
+                : idAyuda
             }
             onChange={
               manejarCambioArchivo
@@ -525,17 +602,18 @@ function SelectorComprobantePdf({
 
       {!archivo && !error && (
         <p
-          id="ayuda-comprobante-aportacion"
+          id={idAyuda}
           className="student-contributions-field__help"
         >
-          Solo se aceptan
-          comprobantes con extensión PDF.
+          {esImagen
+            ? 'Solo se aceptan imágenes JPG, PNG o WEBP.'
+            : 'Solo se aceptan comprobantes con extensión PDF.'}
         </p>
       )}
 
       {error && (
         <p
-          id="error-comprobante-aportacion"
+          id={idError}
           className="student-contributions-field__error"
           role="alert"
         >
@@ -550,9 +628,16 @@ function SelectorComprobantePdf({
       {archivo && (
         <div className="student-contributions-file-preview">
           <div className="student-contributions-file-thumbnail">
-            <FileText
-              aria-hidden="true"
-            />
+            {esImagen && urlVistaPrevia ? (
+              <img
+                src={urlVistaPrevia}
+                alt={`Vista previa de ${archivo.name}`}
+              />
+            ) : (
+              <FileText
+                aria-hidden="true"
+              />
+            )}
           </div>
 
           <div className="student-contributions-file-copy">
@@ -573,7 +658,9 @@ function SelectorComprobantePdf({
                 aria-hidden="true"
               />
 
-              PDF listo para enviar
+              {esImagen
+                ? 'Imagen lista para enviar'
+                : 'PDF listo para enviar'}
             </small>
           </div>
 
@@ -603,7 +690,7 @@ function InformacionAntesDeEnviar() {
   const recomendaciones = [
     'Verifica que el número de referencia sea correcto.',
     'Describe brevemente a qué corresponde el comprobante.',
-    'Confirma que el comprobante sea legible y esté en formato PDF.',
+    'Confirma que el comprobante sea legible y esté en formato PDF o imagen.',
     'Los meses serán determinados por el administrador durante la revisión.',
   ]
 
@@ -1172,6 +1259,19 @@ function Contributions() {
     setErrorGeneral('')
   }
 
+  function seleccionarImagen(
+    archivo,
+  ) {
+    setFormulario(
+      (formularioActual) => ({
+        ...formularioActual,
+        archivoImagen: archivo,
+      }),
+    )
+
+    setErrorGeneral('')
+  }
+
   function establecerErrorArchivo(
     mensaje,
   ) {
@@ -1179,6 +1279,17 @@ function Contributions() {
       (erroresActuales) => ({
         ...erroresActuales,
         archivo: mensaje,
+      }),
+    )
+  }
+
+  function establecerErrorImagen(
+    mensaje,
+  ) {
+    setErroresFormulario(
+      (erroresActuales) => ({
+        ...erroresActuales,
+        archivoImagen: mensaje,
       }),
     )
   }
@@ -1192,6 +1303,17 @@ function Contributions() {
     )
 
     establecerErrorArchivo('')
+  }
+
+  function quitarImagen() {
+    setFormulario(
+      (formularioActual) => ({
+        ...formularioActual,
+        archivoImagen: null,
+      }),
+    )
+
+    establecerErrorImagen('')
   }
 
   /*
@@ -1218,8 +1340,9 @@ function Contributions() {
   }
 
   /*
-   * Valida los tres únicos campos aceptados
-   * por POST /aportaciones.
+   * Valida los campos aceptados por POST /aportaciones.
+   *
+   * El backend exige al menos un comprobante: PDF, imagen o ambos.
    */
   function validarFormulario() {
     const nuevosErrores =
@@ -1247,15 +1370,39 @@ function Contributions() {
         'Escribe una descripción para la aportación.'
     }
 
-    try {
-      validarComprobantePdf(
-        formulario.archivo,
-      )
-    } catch (error) {
+    if (
+      !formulario.archivo &&
+      !formulario.archivoImagen
+    ) {
       nuevosErrores.archivo =
-        error instanceof Error
-          ? error.message
-          : 'Selecciona un comprobante PDF válido.'
+        'Adjunta el comprobante en PDF o en imagen.'
+    } else {
+      if (formulario.archivo) {
+        try {
+          validarComprobantePdf(
+            formulario.archivo,
+          )
+        } catch (error) {
+          nuevosErrores.archivo =
+            error instanceof Error
+              ? error.message
+              : 'Selecciona un comprobante PDF válido.'
+        }
+      }
+
+      if (formulario.archivoImagen) {
+        try {
+          validarComprobante(
+            formulario.archivoImagen,
+            'imagen',
+          )
+        } catch (error) {
+          nuevosErrores.archivoImagen =
+            error instanceof Error
+              ? error.message
+              : 'Selecciona una imagen válida.'
+        }
+      }
     }
 
     setErroresFormulario(
@@ -1266,7 +1413,8 @@ function Contributions() {
       !nuevosErrores
         .numeroReferencia &&
       !nuevosErrores.descripcion &&
-      !nuevosErrores.archivo
+      !nuevosErrores.archivo &&
+      !nuevosErrores.archivoImagen
     )
   }
 
@@ -1275,7 +1423,8 @@ function Contributions() {
    *
    * - num_referencia
    * - descripcion
-   * - archivo_pdf
+   * - archivo_pdf (opcional)
+   * - archivo_imagen (opcional)
    */
   async function enviarAportacion(
     evento,
@@ -1302,8 +1451,11 @@ function Contributions() {
           descripcion:
             formulario.descripcion,
 
-          archivo:
+          archivoPdf:
             formulario.archivo,
+
+          archivoImagen:
+            formulario.archivoImagen,
         })
 
       setAportaciones(
@@ -1402,7 +1554,7 @@ function Contributions() {
 
             <span>
               Envía tu comprobante en
-              formato PDF y consulta el
+              formato PDF o imagen y consulta el
               estado de revisión de cada
               aportación.
             </span>
@@ -1820,7 +1972,7 @@ function Contributions() {
                         <p>
                           Completa los datos
                           definidos y adjunta el comprobante
-                          en formato PDF.
+                          en formato PDF o imagen.
                         </p>
                       </header>
 
@@ -1975,7 +2127,8 @@ function Contributions() {
                           </div>
 
                           <div className="student-contributions-field--full">
-                            <SelectorComprobantePdf
+                            <SelectorComprobante
+                              tipo="pdf"
                               archivo={
                                 formulario.archivo
                               }
@@ -1994,6 +2147,32 @@ function Contributions() {
                               }
                               onError={
                                 establecerErrorArchivo
+                              }
+                            />
+                          </div>
+
+                          <div className="student-contributions-field--full">
+                            <SelectorComprobante
+                              tipo="imagen"
+                              archivo={
+                                formulario
+                                  .archivoImagen
+                              }
+                              error={
+                                erroresFormulario
+                                  .archivoImagen
+                              }
+                              deshabilitado={
+                                enviando
+                              }
+                              onSeleccionar={
+                                seleccionarImagen
+                              }
+                              onQuitar={
+                                quitarImagen
+                              }
+                              onError={
+                                establecerErrorImagen
                               }
                             />
                           </div>

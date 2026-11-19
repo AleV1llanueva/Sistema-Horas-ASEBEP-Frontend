@@ -603,6 +603,17 @@ function AdminPrincipalContributionDetail() {
     aportacion.estado ===
     ESTADOS_APORTACION.APROBADO
 
+  /*
+   * Cuando el estudiante adjuntó una imagen, se descarga
+   * como comprobante principal y el botón lo indica.
+   */
+  const tieneImagen =
+    Boolean(
+      prepararTexto(
+        aportacion.ruta_imagen,
+      ),
+    )
+
   return (
     <section className="admin-contribution-detail-page">
       {/* Regreso al listado administrativo. */}
@@ -835,7 +846,9 @@ function AdminPrincipalContributionDetail() {
               <p>Comprobante</p>
 
               <h2>
-                Archivo PDF
+                {tieneImagen
+                  ? 'Imagen adjunta'
+                  : 'Archivo PDF'}
               </h2>
             </div>
           </header>
@@ -848,8 +861,9 @@ function AdminPrincipalContributionDetail() {
             </h3>
 
             <p>
-              El archivo PDF está disponible
-              para revisión y descarga.
+              {tieneImagen
+                ? 'La imagen del comprobante está disponible para revisión y descarga.'
+                : 'El archivo PDF está disponible para revisión y descarga.'}
             </p>
 
             <button
@@ -869,7 +883,9 @@ function AdminPrincipalContributionDetail() {
 
               {descargandoComprobante
                 ? 'Descargando...'
-                : 'Descargar PDF'}
+                : tieneImagen
+                  ? 'Descargar imagen'
+                  : 'Descargar PDF'}
             </button>
           </div>
 
@@ -880,7 +896,8 @@ function AdminPrincipalContributionDetail() {
 
             <strong>
               {obtenerNombreArchivo(
-                aportacion.ruta_pdf,
+                aportacion.ruta_imagen ||
+                  aportacion.ruta_pdf,
               )}
             </strong>
           </div>

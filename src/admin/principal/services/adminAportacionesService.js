@@ -200,6 +200,11 @@ function normalizarAportacion(
       aportacion.ruta_pdf,
     )
 
+  const rutaImagen =
+    prepararTexto(
+      aportacion.ruta_imagen,
+    ) || null
+
   if (!numeroCuenta) {
     throw new AportacionAdminError(
       'Una aportación no contiene número de cuenta.',
@@ -235,6 +240,8 @@ function normalizarAportacion(
       ) || null,
 
     ruta_pdf: rutaPdf,
+
+    ruta_imagen: rutaImagen,
 
     estado:
       normalizarEstado(

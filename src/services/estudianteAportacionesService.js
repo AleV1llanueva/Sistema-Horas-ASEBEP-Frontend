@@ -34,13 +34,37 @@ const usarDatosSimulados =
   'true'
 
 /*
- * El backend únicamente acepta comprobantes PDF.
+ * El backend acepta el comprobante en PDF o como imagen.
+ *
+ * Se listan extensión y tipo MIME porque el selector nativo
+ * del navegador necesita ambos para filtrar bien el diálogo.
  */
 export const FORMATOS_COMPROBANTE_ACEPTADOS =
-  '.pdf,application/pdf'
+  '.pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp'
 
 const TIPO_MIME_PDF =
   'application/pdf'
+
+/*
+ * Tipos MIME admitidos para cada extensión de imagen.
+ */
+const TIPOS_MIME_IMAGEN =
+  Object.freeze({
+    'image/jpeg': 'image/jpeg',
+    'image/jpg': 'image/jpeg',
+    'image/pjpeg': 'image/jpeg',
+    'image/png': 'image/png',
+    'image/x-png': 'image/png',
+    'image/webp': 'image/webp',
+  })
+
+const EXTENSIONES_IMAGEN =
+  Object.freeze([
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp',
+  ])
 
 /*
  * Cuota utilizada solamente para presentar el resumen
@@ -426,6 +450,12 @@ function normalizarAportacion(
       aportacion.rutaPdf,
     )
 
+  const rutaImagen =
+    prepararTexto(
+      aportacion.ruta_imagen ??
+      aportacion.rutaImagen,
+    ) || null
+
   const fechaSubida =
     normalizarFechaSubida(
       aportacion.fecha_subida ??
@@ -501,6 +531,8 @@ function normalizarAportacion(
     descripcion,
 
     ruta_pdf: rutaPdf,
+
+    ruta_imagen: rutaImagen,
 
     estado,
 
@@ -596,6 +628,10 @@ function convertirAContrato(
       aportacionNormalizada
         .ruta_pdf,
 
+    ruta_imagen:
+      aportacionNormalizada
+        .ruta_imagen,
+
     estado:
       aportacionNormalizada.estado,
 
@@ -646,21 +682,25 @@ function validarDescripcion(valor) {
 }
 
 /*
- * Valida el comprobante PDF.
+ * Valida el comprobante enviado por el estudiante.
  *
- * El backend valida principalmente la extensión .pdf.
+ * Acepta PDF e imágenes (JPG, PNG o WEBP). El backend valida
+ * extensión y tipo MIME, por lo que aquí se aplican las mismas
+ * reglas para dar un mensaje claro antes de enviar.
+ *
  * No se agrega un límite de tamaño inventado porque el
  * contrato actual no establece uno.
  */
-export function validarComprobantePdf(
+export function validarComprobante(
   archivo,
+  tipoEsperado,
 ) {
   if (
     !archivo ||
     typeof archivo !== 'object'
   ) {
     throw new EstudianteAportacionesError(
-      'Selecciona el comprobante en formato PDF.',
+      'Selecciona el comprobante en formato PDF o imagen.',
       'COMPROBANTE_OBLIGATORIO',
     )
   }
@@ -682,10 +722,24 @@ export function validarComprobantePdf(
     )
   }
 
-  if (
-    !nombreOriginal
+  const nombreMinusculas =
+    nombreOriginal
       .toLocaleLowerCase('es')
-      .endsWith('.pdf')
+
+  const esPdf =
+    nombreMinusculas.endsWith('.pdf')
+
+  const extensionImagen =
+    EXTENSIONES_IMAGEN.find(
+      (extension) =>
+        nombreMinusculas.endsWith(
+          extension,
+        ),
+    )
+
+  if (
+    tipoEsperado === 'pdf' &&
+    !esPdf
   ) {
     throw new EstudianteAportacionesError(
       'El comprobante debe ser un archivo PDF.',
@@ -693,16 +747,47 @@ export function validarComprobantePdf(
     )
   }
 
-  /*
-   * Algunos navegadores pueden entregar el tipo MIME vacío.
-   * En ese caso se conserva la validación por extensión.
-   */
+  if (esPdf && tipoEsperado !== 'imagen') {
+    /*
+     * Algunos navegadores pueden entregar el tipo MIME vacío.
+     * En ese caso se conserva la validación por extensión.
+     */
+    if (
+      tipoMime &&
+      tipoMime !== TIPO_MIME_PDF
+    ) {
+      throw new EstudianteAportacionesError(
+        'El tipo del archivo seleccionado no corresponde a un PDF.',
+        'TIPO_ARCHIVO_INVALIDO',
+      )
+    }
+
+    return {
+      archivo,
+      nombreOriginal,
+      tipoMime:
+        tipoMime ||
+        TIPO_MIME_PDF,
+      tipo: 'pdf',
+      tamanioBytes,
+    }
+  }
+
+  if (!extensionImagen) {
+    throw new EstudianteAportacionesError(
+      tipoEsperado === 'imagen'
+        ? 'La imagen debe ser JPG, PNG o WEBP.'
+        : 'El comprobante debe ser un archivo PDF, JPG, PNG o WEBP.',
+      'FORMATO_ARCHIVO_INVALIDO',
+    )
+  }
+
   if (
     tipoMime &&
-    tipoMime !== TIPO_MIME_PDF
+    !TIPOS_MIME_IMAGEN[tipoMime]
   ) {
     throw new EstudianteAportacionesError(
-      'El tipo del archivo seleccionado no corresponde a un PDF.',
+      'El tipo del archivo seleccionado no corresponde a una imagen válida.',
       'TIPO_ARCHIVO_INVALIDO',
     )
   }
@@ -712,7 +797,7 @@ export function validarComprobantePdf(
     tamanioBytes <= 0
   ) {
     throw new EstudianteAportacionesError(
-      'El archivo PDF está vacío o no puede leerse.',
+      'El archivo está vacío o no puede leerse.',
       'ARCHIVO_VACIO',
     )
   }
@@ -722,29 +807,31 @@ export function validarComprobantePdf(
     nombreOriginal,
     tipoMime:
       tipoMime ||
-      TIPO_MIME_PDF,
-
+      TIPOS_MIME_IMAGEN[extensionImagen],
+    tipo: 'imagen',
     tamanioBytes,
   }
 }
 
 /*
- * Alias temporal para que Contributions.jsx siga compilando.
+ * Valida exclusivamente un comprobante PDF.
  *
- * Aunque conserva el nombre antiguo, ahora valida PDF.
- * Se eliminará cuando actualicemos esa página.
+ * Se conserva para el formulario que todavía usa este nombre.
  */
-export function validarComprobanteImagen(
+export function validarComprobantePdf(
   archivo,
 ) {
-  return validarComprobantePdf(
+  return validarComprobante(
     archivo,
+    'pdf',
   )
 }
 
 /*
- * Prepara solamente los tres campos permitidos
- * por POST /aportaciones.
+ * Prepara los campos permitidos por POST /aportaciones.
+ *
+ * El backend exige al menos un comprobante:
+ * PDF, imagen o ambos.
  */
 function normalizarDatosRegistro(
   datosFormulario,
@@ -769,21 +856,74 @@ function normalizarDatosRegistro(
       datosFormulario.descripcion,
     )
 
-  const comprobante =
-    validarComprobantePdf(
-      datosFormulario.archivoPdf ??
-      datosFormulario.archivo_pdf ??
-      datosFormulario.archivo,
+  const archivoPdfCrudo =
+    datosFormulario.archivoPdf ??
+    datosFormulario.archivo_pdf
+
+  const archivoImagenCrudo =
+    datosFormulario.archivoImagen ??
+    datosFormulario.archivo_imagen
+
+  /*
+   * `archivo` se conserva por compatibilidad con el
+   * formulario anterior, que solo enviaba un PDF.
+   */
+  const archivoUnico =
+    datosFormulario.archivo
+
+  const pdfSeleccionado =
+    archivoPdfCrudo ||
+    archivoUnico
+
+  const comprobantePdf =
+    pdfSeleccionado
+      ? validarComprobantePdf(
+          pdfSeleccionado,
+        )
+      : null
+
+  const comprobanteImagen =
+    archivoImagenCrudo
+      ? validarComprobante(
+          archivoImagenCrudo,
+          'imagen',
+        )
+      : null
+
+  if (
+    !comprobantePdf &&
+    !comprobanteImagen
+  ) {
+    throw new EstudianteAportacionesError(
+      'Selecciona el comprobante en PDF o en imagen.',
+      'COMPROBANTE_OBLIGATORIO',
     )
+  }
 
   return {
     numeroReferencia,
     descripcion,
-    archivo:
-      comprobante.archivo,
+
+    archivoPdf:
+      comprobantePdf
+        ?.archivo ??
+      null,
+
+    archivoImagen:
+      comprobanteImagen
+        ?.archivo ??
+      null,
 
     nombreArchivo:
-      comprobante.nombreOriginal,
+      comprobantePdf
+        ?.nombreOriginal ??
+      comprobanteImagen
+        ?.nombreOriginal,
+
+    nombreArchivoImagen:
+      comprobanteImagen
+        ?.nombreOriginal ??
+      null,
   }
 }
 
@@ -1031,6 +1171,7 @@ function registrarAportacionSimulada({
   numeroReferencia,
   descripcion,
   nombreArchivo,
+  nombreArchivoImagen,
 }) {
   const aportaciones =
     leerAportacionesSimuladas()
@@ -1054,10 +1195,25 @@ function registrarAportacionSimulada({
       nombreArchivo,
     ) || 'comprobante.pdf'
 
+  const nombreRutaImagen =
+    nombreArchivoImagen
+      ? prepararSegmentoRuta(
+          nombreArchivoImagen,
+        )
+      : null
+
   const referenciaRuta =
     prepararSegmentoRuta(
       numeroReferencia,
     ) || 'sin-referencia'
+
+  const rutaPdf =
+    `uploads/aportaciones/${numeroCuenta}_${referenciaRuta}_${nombreRuta}`
+
+  const rutaImagen =
+    nombreRutaImagen
+      ? `uploads/aportaciones/${numeroCuenta}_${referenciaRuta}_${nombreRutaImagen}`
+      : null
 
   const nuevaAportacion = {
     id:
@@ -1074,7 +1230,10 @@ function registrarAportacionSimulada({
     descripcion,
 
     ruta_pdf:
-      `uploads/aportaciones/${numeroCuenta}_${referenciaRuta}_${nombreRuta}`,
+      rutaPdf,
+
+    ruta_imagen:
+      rutaImagen,
 
     estado:
       ESTADOS_APORTACION.PENDIENTE,
@@ -1194,7 +1353,8 @@ async function registrarAportacionBackend({
   numeroCuenta,
   numeroReferencia,
   descripcion,
-  archivo,
+  archivoPdf,
+  archivoImagen,
 }) {
   if (
     typeof FormData === 'undefined'
@@ -1205,13 +1365,28 @@ async function registrarAportacionBackend({
     )
   }
 
+  const archivos = [
+    archivoPdf,
+    archivoImagen,
+  ].filter(Boolean)
+
+  if (archivos.length === 0) {
+    throw new EstudianteAportacionesError(
+      'Selecciona el comprobante en PDF o en imagen.',
+      'COMPROBANTE_OBLIGATORIO',
+    )
+  }
+
   /*
    * En modo API se requiere un archivo real para que
    * FormData pueda enviarlo como UploadFile.
    */
   if (
     typeof Blob !== 'undefined' &&
-    !(archivo instanceof Blob)
+    archivos.some(
+      (archivo) =>
+        !(archivo instanceof Blob),
+    )
   ) {
     throw new EstudianteAportacionesError(
       'El comprobante seleccionado no es un archivo válido.',
@@ -1223,8 +1398,8 @@ async function registrarAportacionBackend({
     new FormData()
 
   /*
-   * Estos son los únicos tres campos aceptados
-   * actualmente por el backend.
+   * El backend acepta `archivo_pdf` y `archivo_imagen`
+   * como campos opcionales, pero exige al menos uno.
    */
   formulario.append(
     'num_referencia',
@@ -1236,11 +1411,21 @@ async function registrarAportacionBackend({
     descripcion,
   )
 
-  formulario.append(
-    'archivo_pdf',
-    archivo,
-    archivo.name,
-  )
+  if (archivoPdf) {
+    formulario.append(
+      'archivo_pdf',
+      archivoPdf,
+      archivoPdf.name,
+    )
+  }
+
+  if (archivoImagen) {
+    formulario.append(
+      'archivo_imagen',
+      archivoImagen,
+      archivoImagen.name,
+    )
+  }
 
   const respuesta =
     await peticionApi(
@@ -1367,6 +1552,9 @@ export async function registrarAportacionEstudiante(
 
           nombreArchivo:
             datos.nombreArchivo,
+
+          nombreArchivoImagen:
+            datos.nombreArchivoImagen,
         })
       : await registrarAportacionBackend({
           numeroCuenta,
@@ -1377,8 +1565,11 @@ export async function registrarAportacionEstudiante(
           descripcion:
             datos.descripcion,
 
-          archivo:
-            datos.archivo,
+          archivoPdf:
+            datos.archivoPdf,
+
+          archivoImagen:
+            datos.archivoImagen,
         })
 
   return clonarDatos(

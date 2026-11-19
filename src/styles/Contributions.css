@@ -838,6 +838,13 @@
   height: 27px;
 }
 
+.student-contributions-file-thumbnail img {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 .student-contributions-file-copy {
   min-width: 0;
   display: grid;
